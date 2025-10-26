@@ -175,7 +175,7 @@ export default function Products() {
       <footer className="bg-card border-t border-border py-8 md:py-12 px-4 md:px-6 mt-12 md:mt-20">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            © 2024 Saree Elegance. Celebrating India's textile heritage.
+            © 2024 Moha. Celebrating India's textile heritage.
           </p>
         </div>
       </footer>

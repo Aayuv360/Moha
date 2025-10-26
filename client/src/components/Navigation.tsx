@@ -23,7 +23,7 @@ export function Navigation() {
           <Link href="/">
             <a className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2" data-testid="link-home">
               <h1 className="text-2xl md:text-3xl font-serif font-light tracking-wide">
-                Saree <span className="text-primary">Elegance</span>
+                <span style={{ color: '#9b083a' }}>Moha</span>
               </h1>
             </a>
           </Link>
