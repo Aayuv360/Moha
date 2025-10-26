@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -22,10 +21,11 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const images = product.images && product.images.length > 0 
-    ? product.images 
-    : [product.imageUrl];
+  console.log(product);
+  const images =
+    product.images && product.images.length > 0
+      ? product.images
+      : [product.imageUrl];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -49,7 +49,9 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   useEffect(() => {
     if (isHovered && images.length > 1) {
       intervalRef.current = setInterval(() => {
-        setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+        setCurrentImageIndex((prev) =>
+          prev === images.length - 1 ? 0 : prev + 1,
+        );
       }, 1000);
     } else {
       if (intervalRef.current) {
@@ -76,7 +78,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       <Link href={`/product/${product.id}`}>
         <a className="block">
           <Card className="group overflow-hidden hover-elevate transition-all duration-300">
-            <div 
+            <div
               className="aspect-[3/4] overflow-hidden bg-muted relative"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
@@ -86,16 +88,16 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
                 alt={product.name}
                 className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
               />
-              
+
               {images.length > 1 && (
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   {images.map((_, idx) => (
                     <div
                       key={idx}
                       className={`h-1.5 rounded-full transition-all ${
-                        idx === currentImageIndex 
-                          ? 'w-6 bg-white shadow-sm' 
-                          : 'w-1.5 bg-white/60'
+                        idx === currentImageIndex
+                          ? "w-6 bg-white shadow-sm"
+                          : "w-1.5 bg-white/60"
                       }`}
                     />
                   ))}
@@ -137,7 +139,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
               </p>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-2xl md:text-3xl font-semibold">
-                  ₹{parseFloat(product.price).toLocaleString('en-IN')}
+                  ₹{parseFloat(product.price).toLocaleString("en-IN")}
                 </p>
                 <Button
                   size="sm"
