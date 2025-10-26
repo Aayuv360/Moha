@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import { useRoute, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import gsap from "gsap";
@@ -9,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Heart, Truck, RotateCcw, Shield, ChevronLeft } from "lucide-react";
+import { ShoppingCart, Heart, Truck, RotateCcw, Shield, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Product, InsertCartItem } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
@@ -20,11 +21,16 @@ export default function ProductDetail() {
   const imageRef = useRef<HTMLImageElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ['/api/products', params?.id],
     enabled: !!params?.id,
   });
+
+  const images = product?.images && product.images.length > 0 
+    ? product.images 
+    : product?.imageUrl ? [product.imageUrl] : [];
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
@@ -92,6 +98,14 @@ export default function ProductDetail() {
     });
   };
 
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -108,9 +122,7 @@ export default function ProductDetail() {
         <div className="max-w-7xl mx-auto px-4 py-12 text-center">
           <h1 className="text-2xl font-serif mb-4">Product not found</h1>
           <Link href="/products">
-            <a data-testid="link-back-to-products">
-              <Button>Back to Products</Button>
-            </a>
+            <Button>Back to Products</Button>
           </Link>
         </div>
       </div>
@@ -148,19 +160,66 @@ export default function ProductDetail() {
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-12">
         <Link href="/products">
-          <a className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 md:mb-8" data-testid="link-back">
+          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 md:mb-8 cursor-pointer" data-testid="link-back">
             <ChevronLeft className="h-4 w-4" />
             Back to Products
-          </a>
+          </span>
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
-          <div ref={imageRef} className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="space-y-4">
+            {/* Main Image with Navigation */}
+            <div ref={imageRef} className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative group">
+              <img
+                src={images[currentImageIndex]}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+              
+              {images.length > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handlePrevImage}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handleNextImage}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnail Gallery */}
+            {images.length > 1 && (
+              <div className="grid grid-cols-4 gap-3">
+                {images.map((image, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                      idx === currentImageIndex 
+                        ? 'border-primary ring-2 ring-primary/20' 
+                        : 'border-transparent hover:border-muted-foreground/30'
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} view ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div ref={contentRef} className="flex flex-col">
@@ -238,9 +297,7 @@ export default function ProductDetail() {
           </h2>
           <div className="text-center text-muted-foreground py-12">
             <Link href="/products">
-              <a data-testid="link-explore-more">
-                <Button variant="outline" size="lg">Explore More Sarees</Button>
-              </a>
+              <Button variant="outline" size="lg">Explore More Sarees</Button>
             </Link>
           </div>
         </section>

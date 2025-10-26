@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -18,6 +19,12 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const images = product.images && product.images.length > 0 
+    ? product.images 
+    : [product.imageUrl];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -43,17 +50,67 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     onAddToCart(product);
   };
 
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
   return (
     <div ref={cardRef} data-testid={`card-product-${product.id}`}>
       <Link href={`/product/${product.id}`}>
         <a className="block">
           <Card className="group overflow-hidden hover-elevate transition-all duration-300">
-            <div className="aspect-[3/4] overflow-hidden bg-muted relative">
+            <div 
+              className="aspect-[3/4] overflow-hidden bg-muted relative"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+            >
               <img
-                src={product.imageUrl}
+                src={images[currentImageIndex]}
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
+              
+              {images.length > 1 && isHovered && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handlePrevImage}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handleNextImage}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                    {images.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`h-1.5 rounded-full transition-all ${
+                          idx === currentImageIndex 
+                            ? 'w-6 bg-white' 
+                            : 'w-1.5 bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
               <Button
                 variant="ghost"
                 size="icon"

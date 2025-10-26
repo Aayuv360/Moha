@@ -42,6 +42,37 @@ export class MemStorage implements IStorage {
     const seedData: Omit<Product, 'id'>[] = [
       {
         name: "Royal Burgundy Silk Saree",
+        description: "Exquisite handwoven silk saree with intricate golden zari work. Perfect for weddings and special occasions.",
+        price: "12500.00",
+        imageUrl: "/attached_assets/generated_images/Burgundy_silk_saree_with_golden_border_42ff257b.png",
+        images: [
+          "/attached_assets/generated_images/Burgundy_silk_saree_with_golden_border_42ff257b.png",
+          "/attached_assets/generated_images/Model_in_burgundy_saree_hero_554d9242.png",
+          "/attached_assets/generated_images/Zari_embroidery_close-up_detail_f166f911.png",
+        ],
+        fabric: "Silk",
+        color: "Burgundy",
+        occasion: "Wedding",
+        category: "Banarasi",
+        inStock: 5,
+      },
+      {
+        name: "Emerald Kanjivaram Saree",
+        description: "Traditional Kanjivaram silk saree in rich emerald green with temple border design and contrasting pallu.",
+        price: "18000.00",
+        imageUrl: "/attached_assets/generated_images/Emerald_Kanjivaram_saree_with_gold_c3e9d260.png",
+        images: [
+          "/attached_assets/generated_images/Emerald_Kanjivaram_saree_with_gold_c3e9d260.png",
+          "/attached_assets/generated_images/Peacock_blue_silk_with_embroidery_1a4cb141.png",
+        ],
+        fabric: "Silk",
+        color: "Green",
+        occasion: "Wedding",
+        category: "Kanjivaram",
+        inStock: 3,
+      },
+      {
+        name: "Royal Burgundy Silk Saree",
         description: "Luxurious pure silk saree in deep burgundy with intricate golden zari border work and traditional paisley motifs. Perfect for weddings and grand celebrations.",
         price: "18500.00",
         fabric: "Silk",

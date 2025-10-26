@@ -8,10 +8,11 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  imageUrl: text("image_url").notNull(),
+  images: text("images", { mode: "json" }).$type<string[]>(), // Added for multiple images
   fabric: text("fabric").notNull(),
   color: text("color").notNull(),
   occasion: text("occasion").notNull(),
-  imageUrl: text("image_url").notNull(),
   category: text("category").notNull(),
   inStock: integer("in_stock").notNull().default(1),
 });
