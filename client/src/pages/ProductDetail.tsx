@@ -1,0 +1,258 @@
+import { useEffect, useRef } from "react";
+import { useRoute, Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import gsap from "gsap";
+import { Navigation } from "@/components/Navigation";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { ShoppingCart, Heart, Truck, RotateCcw, Shield, ChevronLeft } from "lucide-react";
+import type { Product, InsertCartItem } from "@shared/schema";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { getOrCreateSessionId } from "@/lib/session";
+
+export default function ProductDetail() {
+  const [, params] = useRoute("/product/:id");
+  const { toast } = useToast();
+  const imageRef = useRef<HTMLImageElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const { data: product, isLoading } = useQuery<Product>({
+    queryKey: ['/api/products', params?.id],
+    enabled: !!params?.id,
+  });
+
+  const addToCartMutation = useMutation({
+    mutationFn: async (item: InsertCartItem) => {
+      return await apiRequest('POST', '/api/cart', item);
+    },
+    onSuccess: () => {
+      const sessionId = getOrCreateSessionId();
+      queryClient.invalidateQueries({ queryKey: ['/api/cart', sessionId] });
+      
+      if (buttonRef.current) {
+        gsap.timeline()
+          .to(buttonRef.current, {
+            scale: 1.15,
+            duration: 0.3,
+            ease: "back.out(3)",
+          })
+          .to(buttonRef.current, {
+            scale: 1,
+            duration: 0.3,
+            ease: "power2.out",
+          });
+      }
+
+      toast({
+        title: "Added to cart",
+        description: "Item has been added to your cart successfully.",
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (product) {
+      const ctx = gsap.context(() => {
+        const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+        
+        tl.from(imageRef.current, {
+          opacity: 0,
+          scale: 0.95,
+          duration: 0.8,
+        })
+          .from(
+            contentRef.current?.children || [],
+            {
+              y: 30,
+              opacity: 0,
+              duration: 0.6,
+              stagger: 0.1,
+            },
+            "-=0.4"
+          );
+      });
+
+      return () => ctx.revert();
+    }
+  }, [product]);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    const sessionId = getOrCreateSessionId();
+    addToCartMutation.mutate({
+      productId: product.id,
+      quantity: 1,
+      sessionId,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
+          <h1 className="text-2xl font-serif mb-4">Product not found</h1>
+          <Link href="/products">
+            <a data-testid="link-back-to-products">
+              <Button>Back to Products</Button>
+            </a>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const specifications = [
+    { label: "Fabric", value: product.fabric },
+    { label: "Color", value: product.color },
+    { label: "Occasion", value: product.occasion },
+    { label: "Category", value: product.category },
+  ];
+
+  const features = [
+    {
+      icon: <Truck className="h-5 w-5" />,
+      title: "Free Shipping",
+      description: "On orders above ₹5,000",
+    },
+    {
+      icon: <RotateCcw className="h-5 w-5" />,
+      title: "Easy Returns",
+      description: "7-day return policy",
+    },
+    {
+      icon: <Shield className="h-5 w-5" />,
+      title: "Authentic",
+      description: "100% genuine product",
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation />
+
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-12">
+        <Link href="/products">
+          <a className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 md:mb-8" data-testid="link-back">
+            <ChevronLeft className="h-4 w-4" />
+            Back to Products
+          </a>
+        </Link>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+          <div ref={imageRef} className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          <div ref={contentRef} className="flex flex-col">
+            <div className="mb-4">
+              <Badge variant="secondary" className="mb-4">
+                {product.fabric}
+              </Badge>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light mb-4">
+                {product.name}
+              </h1>
+              <p className="text-3xl md:text-4xl font-semibold mb-6" data-testid="text-price">
+                ₹{parseFloat(product.price).toLocaleString('en-IN')}
+              </p>
+            </div>
+
+            <Separator className="my-6" />
+
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-3">Description</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                {product.description}
+              </p>
+            </div>
+
+            <Separator className="my-6" />
+
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-4">Specifications</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {specifications.map((spec) => (
+                  <div key={spec.label}>
+                    <p className="text-sm text-muted-foreground mb-1">{spec.label}</p>
+                    <p className="font-medium">{spec.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator className="my-6" />
+
+            <div className="flex flex-wrap gap-3 mb-6">
+              <Button
+                ref={buttonRef}
+                size="lg"
+                className="flex-1 gap-2"
+                onClick={handleAddToCart}
+                disabled={product.inStock === 0 || addToCartMutation.isPending}
+                data-testid="button-add-to-cart"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {addToCartMutation.isPending ? 'Adding...' : product.inStock === 0 ? 'Out of Stock' : 'Add to Cart'}
+              </Button>
+              <Button variant="outline" size="lg" data-testid="button-add-to-wishlist">
+                <Heart className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-4 mt-6">
+              {features.map((feature) => (
+                <div key={feature.title} className="flex items-start gap-3">
+                  <div className="text-primary mt-1">{feature.icon}</div>
+                  <div>
+                    <p className="font-medium mb-1">{feature.title}</p>
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <section className="mt-16 md:mt-24">
+          <h2 className="text-2xl md:text-3xl font-serif font-normal mb-8 md:mb-12">
+            You May Also Like
+          </h2>
+          <div className="text-center text-muted-foreground py-12">
+            <Link href="/products">
+              <a data-testid="link-explore-more">
+                <Button variant="outline" size="lg">Explore More Sarees</Button>
+              </a>
+            </Link>
+          </div>
+        </section>
+      </div>
+
+      <footer className="bg-card border-t border-border py-8 md:py-12 px-4 md:px-6 mt-12 md:mt-20">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-sm text-muted-foreground">
+            © 2024 Saree Elegance. Celebrating India's textile heritage.
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
