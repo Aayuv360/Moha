@@ -90,6 +90,10 @@ export class MemStorage implements IStorage {
         color: "Blue",
         occasion: "Wedding",
         imageUrl: "/attached_assets/generated_images/Royal_blue_Banarasi_silk_saree_10d05351.png",
+        images: [
+          "/attached_assets/generated_images/Royal_blue_Banarasi_silk_saree_10d05351.png",
+          "/attached_assets/generated_images/Peacock_blue_silk_with_embroidery_1a4cb141.png",
+        ],
         category: "Banarasi Collection",
         inStock: 3,
       },
@@ -123,6 +127,10 @@ export class MemStorage implements IStorage {
         color: "Blue",
         occasion: "Festive",
         imageUrl: "/attached_assets/generated_images/Peacock_blue_silk_with_embroidery_1a4cb141.png",
+        images: [
+          "/attached_assets/generated_images/Peacock_blue_silk_with_embroidery_1a4cb141.png",
+          "/attached_assets/generated_images/Royal_blue_Banarasi_silk_saree_10d05351.png",
+        ],
         category: "Designer Collection",
         inStock: 6,
       },

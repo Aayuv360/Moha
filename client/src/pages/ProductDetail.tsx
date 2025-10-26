@@ -169,46 +169,49 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
           <div className="space-y-4">
             {/* Main Image with Navigation */}
-            <div ref={imageRef} className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative group">
+            <div ref={imageRef} className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative group/detail sticky top-20">
               <img
                 src={images[currentImageIndex]}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-300"
               />
               
               {images.length > 1 && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  <button
                     onClick={handlePrevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-sm hover:bg-white h-12 w-12 rounded-full shadow-lg opacity-0 group-hover/detail:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10"
+                    aria-label="Previous image"
                   >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    <ChevronLeft className="h-6 w-6 text-gray-700" />
+                  </button>
+                  <button
                     onClick={handleNextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-sm hover:bg-white h-12 w-12 rounded-full shadow-lg opacity-0 group-hover/detail:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10"
+                    aria-label="Next image"
                   >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
+                    <ChevronRight className="h-6 w-6 text-gray-700" />
+                  </button>
+                  
+                  {/* Image counter */}
+                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
                 </>
               )}
             </div>
 
             {/* Thumbnail Gallery */}
             {images.length > 1 && (
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-5 gap-2">
                 {images.map((image, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentImageIndex(idx)}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`aspect-square rounded-md overflow-hidden border-2 transition-all hover:scale-105 ${
                       idx === currentImageIndex 
-                        ? 'border-primary ring-2 ring-primary/20' 
-                        : 'border-transparent hover:border-muted-foreground/30'
+                        ? 'border-primary ring-2 ring-primary/20 scale-105' 
+                        : 'border-transparent hover:border-gray-300'
                     }`}
                   >
                     <img

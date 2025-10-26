@@ -68,7 +68,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
         <a className="block">
           <Card className="group overflow-hidden hover-elevate transition-all duration-300">
             <div 
-              className="aspect-[3/4] overflow-hidden bg-muted relative"
+              className="aspect-[3/4] overflow-hidden bg-muted relative group/image"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
@@ -78,32 +78,30 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               
-              {images.length > 1 && isHovered && (
+              {images.length > 1 && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  <button
                     onClick={handlePrevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-10 w-10 rounded-full shadow-md opacity-0 group-hover/image:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10"
+                    aria-label="Previous image"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    <ChevronLeft className="h-5 w-5 text-gray-700" />
+                  </button>
+                  <button
                     onClick={handleNextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-10 w-10 rounded-full shadow-md opacity-0 group-hover/image:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10"
+                    aria-label="Next image"
                   >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                    <ChevronRight className="h-5 w-5 text-gray-700" />
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover/image:opacity-100 transition-opacity duration-200">
                     {images.map((_, idx) => (
                       <div
                         key={idx}
                         className={`h-1.5 rounded-full transition-all ${
                           idx === currentImageIndex 
-                            ? 'w-6 bg-white' 
-                            : 'w-1.5 bg-white/50'
+                            ? 'w-6 bg-white shadow-sm' 
+                            : 'w-1.5 bg-white/60'
                         }`}
                       />
                     ))}
