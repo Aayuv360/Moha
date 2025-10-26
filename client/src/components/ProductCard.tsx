@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Heart, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -21,6 +21,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const images = product.images && product.images.length > 0 
     ? product.images 
@@ -45,21 +46,29 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     return () => ctx.revert();
   }, [index]);
 
+  useEffect(() => {
+    if (isHovered && images.length > 1) {
+      intervalRef.current = setInterval(() => {
+        setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      setCurrentImageIndex(0);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isHovered, images.length]);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     onAddToCart(product);
-  };
-
-  const handlePrevImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const handleNextImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
   return (
@@ -68,45 +77,29 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
         <a className="block">
           <Card className="group overflow-hidden hover-elevate transition-all duration-300">
             <div 
-              className="aspect-[3/4] overflow-hidden bg-muted relative group/image"
+              className="aspect-[3/4] overflow-hidden bg-muted relative"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
               <img
                 src={images[currentImageIndex]}
                 alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
               />
               
               {images.length > 1 && (
-                <>
-                  <button
-                    onClick={handlePrevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-10 w-10 rounded-full shadow-md opacity-0 group-hover/image:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10"
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="h-5 w-5 text-gray-700" />
-                  </button>
-                  <button
-                    onClick={handleNextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white h-10 w-10 rounded-full shadow-md opacity-0 group-hover/image:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10"
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="h-5 w-5 text-gray-700" />
-                  </button>
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover/image:opacity-100 transition-opacity duration-200">
-                    {images.map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={`h-1.5 rounded-full transition-all ${
-                          idx === currentImageIndex 
-                            ? 'w-6 bg-white shadow-sm' 
-                            : 'w-1.5 bg-white/60'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {images.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === currentImageIndex 
+                          ? 'w-6 bg-white shadow-sm' 
+                          : 'w-1.5 bg-white/60'
+                      }`}
+                    />
+                  ))}
+                </div>
               )}
 
               <Button

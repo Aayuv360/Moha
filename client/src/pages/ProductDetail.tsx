@@ -21,7 +21,10 @@ export default function ProductDetail() {
   const imageRef = useRef<HTMLImageElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [isZooming, setIsZooming] = useState(false);
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ['/api/products', params?.id],
@@ -106,6 +109,24 @@ export default function ProductDetail() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!zoomContainerRef.current) return;
+    
+    const rect = zoomContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    setZoomPosition({ x, y });
+  };
+
+  const handleMouseEnter = () => {
+    setIsZooming(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsZooming(false);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -168,13 +189,28 @@ export default function ProductDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
           <div className="space-y-4">
-            {/* Main Image with Navigation */}
-            <div ref={imageRef} className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative group/detail sticky top-20">
-              <img
-                src={images[currentImageIndex]}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-300"
-              />
+            {/* Main Image with Navigation and Zoom */}
+            <div 
+              ref={zoomContainerRef}
+              className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative group/detail sticky top-20 cursor-crosshair"
+              onMouseMove={handleMouseMove}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <div 
+                ref={imageRef}
+                className="w-full h-full relative overflow-hidden"
+              >
+                <img
+                  src={images[currentImageIndex]}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-200"
+                  style={{
+                    transform: isZooming ? 'scale(2)' : 'scale(1)',
+                    transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                  }}
+                />
+              </div>
               
               {images.length > 1 && (
                 <>
