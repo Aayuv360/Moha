@@ -9,6 +9,17 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   isAdmin: boolean("is_admin").notNull().default(false),
+  isStoreOwner: boolean("is_store_owner").notNull().default(false),
+  storeId: varchar("store_id"),
+  isBlocked: boolean("is_blocked").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const stores = pgTable("stores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  ownerId: varchar("owner_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -18,12 +29,14 @@ export const products = pgTable("products", {
   description: text("description").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   imageUrl: text("image_url").notNull(),
-  images: text("images", { mode: "json" }).$type<string[]>(), // Added for multiple images
+  images: text("images", { mode: "json" }).$type<string[]>(),
   fabric: text("fabric").notNull(),
   color: text("color").notNull(),
   occasion: text("occasion").notNull(),
   category: text("category").notNull(),
   inStock: integer("in_stock").notNull().default(1),
+  storeId: varchar("store_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const cartItems = pgTable("cart_items", {
@@ -44,8 +57,9 @@ export const orders = pgTable("orders", {
   state: text("state").notNull(),
   pincode: text("pincode").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  items: text("items").notNull(), // JSON string of order items
+  items: text("items").notNull(),
   status: text("status").notNull().default("pending"),
+  storeId: varchar("store_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -56,14 +70,17 @@ export const wishlistItems = pgTable("wishlist_items", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, isAdmin: true });
-export const insertProductSchema = createInsertSchema(products).omit({ id: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, isAdmin: true, isStoreOwner: true, isBlocked: true });
+export const insertStoreSchema = createInsertSchema(stores).omit({ id: true, createdAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
 export const insertCartItemSchema = createInsertSchema(cartItems).omit({ id: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, status: true });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems).omit({ id: true, createdAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertStore = z.infer<typeof insertStoreSchema>;
+export type Store = typeof stores.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertCartItem = z.infer<typeof insertCartItemSchema>;

@@ -1,9 +1,29 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartItemSchema, insertOrderSchema, insertUserSchema, insertWishlistItemSchema } from "@shared/schema";
+import { insertCartItemSchema, insertOrderSchema, insertUserSchema, insertWishlistItemSchema, insertProductSchema, insertStoreSchema } from "@shared/schema";
 import { z } from "zod";
 import { generateToken, hashPassword, comparePasswords, authMiddleware, optionalAuthMiddleware, type AuthRequest } from "./auth";
+
+const adminAuthMiddleware = (req: any, res: any, next: any) => {
+  authMiddleware(req, res, () => {
+    if (req.isAdmin) {
+      next();
+    } else {
+      res.status(403).json({ error: "Admin access required" });
+    }
+  });
+};
+
+const storeAuthMiddleware = (req: any, res: any, next: any) => {
+  authMiddleware(req, res, () => {
+    if (req.isStoreOwner) {
+      next();
+    } else {
+      res.status(403).json({ error: "Store owner access required" });
+    }
+  });
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth endpoints
@@ -55,9 +75,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      if (user.isBlocked) {
+        return res.status(403).json({ error: "User account has been blocked" });
+      }
+
       const validPassword = await comparePasswords(password, user.password);
       if (!validPassword) {
         return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const token = generateToken(user.id);
+      
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.json({
+        user: userWithoutPassword,
+        token,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.post("/api/auth/admin-login", async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email(),
+        password: z.string(),
+      });
+      const { email, password } = schema.parse(req.body);
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.isAdmin) {
+        return res.status(401).json({ error: "Invalid admin credentials" });
+      }
+
+      const validPassword = await comparePasswords(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: "Invalid admin credentials" });
+      }
+
+      const token = generateToken(user.id);
+      
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.json({
+        user: userWithoutPassword,
+        token,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.post("/api/auth/store-login", async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email(),
+        password: z.string(),
+      });
+      const { email, password } = schema.parse(req.body);
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.isStoreOwner) {
+        return res.status(401).json({ error: "Invalid store credentials" });
+      }
+
+      if (user.isBlocked) {
+        return res.status(403).json({ error: "Store account has been blocked" });
+      }
+
+      const validPassword = await comparePasswords(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: "Invalid store credentials" });
       }
 
       const token = generateToken(user.id);
@@ -87,6 +183,264 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+
+  // Admin endpoints
+  app.get("/api/admin/users", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const users = await storage.getAllUsers();
+      res.json(users.map(u => {
+        const { password: _, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      }));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/admin/stores", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const schema = insertStoreSchema;
+      const validatedData = schema.parse(req.body);
+
+      const existingStore = await storage.getStoreByEmail(validatedData.email);
+      if (existingStore) {
+        return res.status(400).json({ error: "Store email already exists" });
+      }
+
+      const store = await storage.createStore(validatedData);
+      
+      const owner = await storage.getUserById(validatedData.ownerId);
+      if (owner) {
+        await storage.updateUser(validatedData.ownerId, {
+          isStoreOwner: true,
+          storeId: store.id,
+        } as any);
+      }
+
+      res.status(201).json(store);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create store" });
+    }
+  });
+
+  app.delete("/api/admin/stores/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const success = await storage.deleteStore(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete store" });
+    }
+  });
+
+  app.post("/api/admin/users/:id/block", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      await storage.blockUser(req.params.id);
+      res.json({ message: "User blocked" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to block user" });
+    }
+  });
+
+  app.post("/api/admin/users/:id/unblock", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      await storage.unblockUser(req.params.id);
+      res.json({ message: "User unblocked" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to unblock user" });
+    }
+  });
+
+  app.get("/api/admin/orders", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const orders = await storage.getAllOrders();
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.get("/api/admin/all-products", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const products = await storage.getAllProducts();
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  // Store endpoints
+  app.get("/api/store/products", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isStoreOwner || !user.storeId) {
+        return res.status(403).json({ error: "Store access required" });
+      }
+
+      const products = await storage.getStoreProducts(user.storeId);
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  app.post("/api/store/products", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isStoreOwner || !user.storeId) {
+        return res.status(403).json({ error: "Store access required" });
+      }
+
+      const schema = insertProductSchema;
+      const validatedData = schema.parse(req.body);
+
+      const product = await storage.createProduct({
+        ...validatedData,
+        storeId: user.storeId,
+      });
+
+      res.status(201).json(product);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create product" });
+    }
+  });
+
+  app.patch("/api/store/products/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isStoreOwner || !user.storeId) {
+        return res.status(403).json({ error: "Store access required" });
+      }
+
+      const product = await storage.getProduct(req.params.id);
+      if (!product || product.storeId !== user.storeId) {
+        return res.status(404).json({ error: "Product not found or unauthorized" });
+      }
+
+      const updatedProduct = await storage.updateProduct(req.params.id, req.body);
+      res.json(updatedProduct);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update product" });
+    }
+  });
+
+  app.delete("/api/store/products/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isStoreOwner || !user.storeId) {
+        return res.status(403).json({ error: "Store access required" });
+      }
+
+      const product = await storage.getProduct(req.params.id);
+      if (!product || product.storeId !== user.storeId) {
+        return res.status(404).json({ error: "Product not found or unauthorized" });
+      }
+
+      const success = await storage.deleteProduct(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
+  app.get("/api/store/orders", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isStoreOwner || !user.storeId) {
+        return res.status(403).json({ error: "Store access required" });
+      }
+
+      const orders = await storage.getStoreOrders(user.storeId);
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.patch("/api/store/orders/:id/status", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isStoreOwner || !user.storeId) {
+        return res.status(403).json({ error: "Store access required" });
+      }
+
+      const { status } = req.body;
+      if (!['pending', 'shipped', 'delivered'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const order = await storage.getOrder(req.params.id);
+      if (!order || order.storeId !== user.storeId) {
+        return res.status(404).json({ error: "Order not found or unauthorized" });
+      }
+
+      const oldStatus = order.status;
+      const updatedOrder = await storage.updateOrderStatus(req.params.id, status);
+
+      if (status === 'shipped' && oldStatus !== 'shipped') {
+        const items = JSON.parse(order.items);
+        for (const item of items) {
+          const product = await storage.getProduct(item.productId);
+          if (product) {
+            const newStock = Math.max(0, product.inStock - item.quantity);
+            await storage.updateProduct(item.productId, { inStock: newStock });
+          }
+        }
+      }
+
+      res.json(updatedOrder);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update order status" });
     }
   });
 
