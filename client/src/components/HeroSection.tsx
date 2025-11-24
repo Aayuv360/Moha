@@ -63,28 +63,26 @@ export function HeroSection() {
             Discover handcrafted sarees that celebrate India's rich textile heritage. From traditional silk to contemporary designs, each piece tells a story.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Link href="/products">
-              <a data-testid="button-shop-collection">
-                <Button
-                  size="lg"
-                  variant="default"
-                  className="px-8 bg-primary/90 backdrop-blur-sm hover:bg-primary"
-                >
-                  Shop Collection
-                </Button>
-              </a>
-            </Link>
-            <Link href="/products?occasion=Wedding">
-              <a data-testid="button-wedding-collection">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="px-8 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20"
-                >
-                  Wedding Collection
-                </Button>
-              </a>
-            </Link>
+            <Button
+              size="lg"
+              variant="default"
+              className="px-8 bg-primary/90 backdrop-blur-sm hover:bg-primary"
+              asChild
+            >
+              <Link href="/products" data-testid="button-shop-collection">
+                Shop Collection
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="px-8 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20"
+              asChild
+            >
+              <Link href="/products?occasion=Wedding" data-testid="button-wedding-collection">
+                Wedding Collection
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
