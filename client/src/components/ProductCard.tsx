@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
+import { useAuth } from "@/lib/auth";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -21,6 +25,35 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { user, token } = useAuth();
+  const { toast } = useToast();
+
+  const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
+    queryKey: [`/api/wishlist/check/${product.id}`],
+    enabled: !!token,
+  });
+  
+  const isInWishlist = wishlistData?.isInWishlist || false;
+
+  const toggleWishlistMutation = useMutation({
+    mutationFn: async () => {
+      if (isInWishlist) {
+        return await apiRequest('DELETE', `/api/wishlist/${product.id}`);
+      } else {
+        return await apiRequest('POST', '/api/wishlist', { productId: product.id });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/wishlist/check/${product.id}`] });
+      toast({
+        title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
+        description: isInWishlist 
+          ? "Item has been removed from your wishlist" 
+          : "Item has been added to your wishlist successfully.",
+      });
+    },
+  });
   console.log(product);
   const images =
     product.images && product.images.length > 0
@@ -73,6 +106,22 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     onAddToCart(product);
   };
 
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please login to add items to your wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toggleWishlistMutation.mutate();
+  };
+
   return (
     <div ref={cardRef} data-testid={`card-product-${product.id}`}>
       <Link href={`/product/${product.id}`}>
@@ -108,13 +157,15 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
                 variant="ghost"
                 size="icon"
                 className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm hover:bg-white"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
+                onClick={handleWishlistToggle}
+                disabled={toggleWishlistMutation.isPending}
                 data-testid={`button-wishlist-${product.id}`}
               >
-                <Heart className="h-4 w-4" />
+                <Heart 
+                  className={`h-4 w-4 transition-all ${
+                    isInWishlist ? "fill-red-500 text-red-500" : ""
+                  }`} 
+                />
               </Button>
               {product.inStock === 0 && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">

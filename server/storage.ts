@@ -5,16 +5,35 @@ import {
   type InsertCartItem,
   type Order,
   type InsertOrder,
+  type User,
+  type InsertUser,
+  type WishlistItem,
+  type InsertWishlistItem,
   products,
   cartItems,
   orders,
+  users,
+  wishlistItems,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, or, ilike, sql, gte, lte } from "drizzle-orm";
+
+interface ProductFilters {
+  search?: string;
+  fabric?: string;
+  occasion?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
 
 export interface IStorage {
+  // Users
+  createUser(user: InsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
+  
   // Products
-  getAllProducts(): Promise<Product[]>;
+  getAllProducts(filters?: ProductFilters): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
 
@@ -28,11 +47,81 @@ export interface IStorage {
   // Orders
   createOrder(order: InsertOrder): Promise<Order>;
   getOrder(id: string): Promise<Order | undefined>;
+  getUserOrders(userId: string): Promise<Order[]>;
+  
+  // Wishlist
+  getUserWishlist(userId: string): Promise<WishlistItem[]>;
+  addToWishlist(item: InsertWishlistItem): Promise<WishlistItem>;
+  removeFromWishlist(userId: string, productId: string): Promise<boolean>;
+  isInWishlist(userId: string, productId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async getAllProducts(): Promise<Product[]> {
-    return await db.select().from(products);
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getAllProducts(filters?: ProductFilters): Promise<Product[]> {
+    const conditions: any[] = [];
+
+    if (filters?.search) {
+      const searchPattern = `%${filters.search}%`;
+      conditions.push(
+        or(
+          ilike(products.name, searchPattern),
+          ilike(products.description, searchPattern),
+          ilike(products.category, searchPattern),
+          ilike(products.fabric, searchPattern),
+          ilike(products.color, searchPattern)
+        )
+      );
+    }
+
+    if (filters?.fabric && filters.fabric !== 'All') {
+      conditions.push(eq(products.fabric, filters.fabric));
+    }
+
+    if (filters?.occasion && filters.occasion !== 'All') {
+      conditions.push(eq(products.occasion, filters.occasion));
+    }
+
+    if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
+      if (filters.minPrice !== undefined && filters.maxPrice !== undefined) {
+        conditions.push(
+          and(
+            gte(sql`CAST(${products.price} AS DECIMAL)`, filters.minPrice),
+            lte(sql`CAST(${products.price} AS DECIMAL)`, filters.maxPrice)
+          )
+        );
+      } else if (filters.minPrice !== undefined) {
+        conditions.push(gte(sql`CAST(${products.price} AS DECIMAL)`, filters.minPrice));
+      } else if (filters.maxPrice !== undefined) {
+        conditions.push(lte(sql`CAST(${products.price} AS DECIMAL)`, filters.maxPrice));
+      }
+    }
+
+    if (conditions.length === 0) {
+      return await db.select().from(products);
+    }
+
+    return await db
+      .select()
+      .from(products)
+      .where(and(...conditions));
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
@@ -116,6 +205,70 @@ export class DatabaseStorage implements IStorage {
   async getOrder(id: string): Promise<Order | undefined> {
     const [order] = await db.select().from(orders).where(eq(orders.id, id));
     return order || undefined;
+  }
+
+  async getUserOrders(userId: string): Promise<Order[]> {
+    return await db
+      .select()
+      .from(orders)
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async getUserWishlist(userId: string): Promise<WishlistItem[]> {
+    return await db
+      .select()
+      .from(wishlistItems)
+      .where(eq(wishlistItems.userId, userId))
+      .orderBy(desc(wishlistItems.createdAt));
+  }
+
+  async addToWishlist(item: InsertWishlistItem): Promise<WishlistItem> {
+    const existing = await db
+      .select()
+      .from(wishlistItems)
+      .where(
+        and(
+          eq(wishlistItems.userId, item.userId),
+          eq(wishlistItems.productId, item.productId)
+        )
+      );
+
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const [wishlistItem] = await db
+      .insert(wishlistItems)
+      .values(item)
+      .returning();
+    return wishlistItem;
+  }
+
+  async removeFromWishlist(userId: string, productId: string): Promise<boolean> {
+    const result = await db
+      .delete(wishlistItems)
+      .where(
+        and(
+          eq(wishlistItems.userId, userId),
+          eq(wishlistItems.productId, productId)
+        )
+      )
+      .returning();
+    return result.length > 0;
+  }
+
+  async isInWishlist(userId: string, productId: string): Promise<boolean> {
+    const [item] = await db
+      .select()
+      .from(wishlistItems)
+      .where(
+        and(
+          eq(wishlistItems.userId, userId),
+          eq(wishlistItems.productId, productId)
+        )
+      );
+    return !!item;
   }
 
   async seedProducts(): Promise<void> {

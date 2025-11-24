@@ -1,14 +1,108 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartItemSchema, insertOrderSchema } from "@shared/schema";
+import { insertCartItemSchema, insertOrderSchema, insertUserSchema, insertWishlistItemSchema } from "@shared/schema";
 import { z } from "zod";
+import { generateToken, hashPassword, comparePasswords, authMiddleware, optionalAuthMiddleware, type AuthRequest } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth endpoints
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const schema = insertUserSchema.extend({
+        email: z.string().email(),
+        password: z.string().min(6),
+      });
+      const validatedData = schema.parse(req.body);
+      
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const hashedPassword = await hashPassword(validatedData.password);
+      const user = await storage.createUser({
+        ...validatedData,
+        password: hashedPassword,
+      });
+
+      const token = generateToken(user.id);
+      
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.status(201).json({
+        user: userWithoutPassword,
+        token,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to register user" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email(),
+        password: z.string(),
+      });
+      const { email, password } = schema.parse(req.body);
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const validPassword = await comparePasswords(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const token = generateToken(user.id);
+      
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.json({
+        user: userWithoutPassword,
+        token,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.get("/api/auth/me", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+
   // Product endpoints
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await storage.getAllProducts();
+      const { search, fabric, occasion, minPrice, maxPrice } = req.query;
+      
+      const filters: any = {};
+      if (typeof search === 'string') filters.search = search;
+      if (typeof fabric === 'string') filters.fabric = fabric;
+      if (typeof occasion === 'string') filters.occasion = occasion;
+      if (typeof minPrice === 'string') filters.minPrice = parseFloat(minPrice);
+      if (typeof maxPrice === 'string') filters.maxPrice = parseFloat(maxPrice);
+      
+      const products = await storage.getAllProducts(filters);
       res.json(products);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch products" });
@@ -103,10 +197,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Order endpoints
-  app.post("/api/orders", async (req, res) => {
+  app.get("/api/orders", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const orders = await storage.getUserOrders(req.userId!);
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.post("/api/orders", optionalAuthMiddleware, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertOrderSchema.parse(req.body);
-      const order = await storage.createOrder(validatedData);
+      const orderData = {
+        ...validatedData,
+        userId: req.userId || null,
+      };
+      const order = await storage.createOrder(orderData);
       
       const orderItems = JSON.parse(validatedData.items);
       const sessionId = orderItems.length > 0 ? orderItems[0].sessionId : null;
@@ -135,6 +242,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(order);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch order" });
+    }
+  });
+
+  // Wishlist endpoints
+  app.get("/api/wishlist", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const wishlistItems = await storage.getUserWishlist(req.userId!);
+      res.json(wishlistItems);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch wishlist" });
+    }
+  });
+
+  app.post("/api/wishlist", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertWishlistItemSchema.parse({
+        userId: req.userId!,
+        productId: req.body.productId,
+      });
+      const wishlistItem = await storage.addToWishlist(validatedData);
+      res.status(201).json(wishlistItem);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to add to wishlist" });
+    }
+  });
+
+  app.delete("/api/wishlist/:productId", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const success = await storage.removeFromWishlist(req.userId!, req.params.productId);
+      if (!success) {
+        return res.status(404).json({ error: "Wishlist item not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove from wishlist" });
+    }
+  });
+
+  app.get("/api/wishlist/check/:productId", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const isInWishlist = await storage.isInWishlist(req.userId!, req.params.productId);
+      res.json({ isInWishlist });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check wishlist" });
     }
   });
 
