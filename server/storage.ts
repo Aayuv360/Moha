@@ -5,8 +5,12 @@ import {
   type InsertCartItem,
   type Order,
   type InsertOrder,
+  products,
+  cartItems,
+  orders,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Products
@@ -26,20 +30,101 @@ export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private products: Map<string, Product>;
-  private cartItems: Map<string, CartItem>;
-  private orders: Map<string, Order>;
-
-  constructor() {
-    this.products = new Map();
-    this.cartItems = new Map();
-    this.orders = new Map();
-    this.seedProducts();
+export class DatabaseStorage implements IStorage {
+  async getAllProducts(): Promise<Product[]> {
+    return await db.select().from(products);
   }
 
-  private seedProducts() {
-    const seedData: Omit<Product, 'id'>[] = [
+  async getProduct(id: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+
+  async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    const [product] = await db
+      .insert(products)
+      .values(insertProduct)
+      .returning();
+    return product;
+  }
+
+  async getCartItems(sessionId: string): Promise<CartItem[]> {
+    return await db
+      .select()
+      .from(cartItems)
+      .where(eq(cartItems.sessionId, sessionId));
+  }
+
+  async addToCart(insertItem: InsertCartItem): Promise<CartItem> {
+    const [existingItem] = await db
+      .select()
+      .from(cartItems)
+      .where(
+        and(
+          eq(cartItems.productId, insertItem.productId),
+          eq(cartItems.sessionId, insertItem.sessionId)
+        )
+      );
+
+    if (existingItem) {
+      const [updatedItem] = await db
+        .update(cartItems)
+        .set({ quantity: existingItem.quantity + insertItem.quantity })
+        .where(eq(cartItems.id, existingItem.id))
+        .returning();
+      return updatedItem;
+    }
+
+    const [cartItem] = await db
+      .insert(cartItems)
+      .values(insertItem)
+      .returning();
+    return cartItem;
+  }
+
+  async updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined> {
+    const [updatedItem] = await db
+      .update(cartItems)
+      .set({ quantity })
+      .where(eq(cartItems.id, id))
+      .returning();
+    return updatedItem || undefined;
+  }
+
+  async removeFromCart(id: string): Promise<boolean> {
+    const result = await db
+      .delete(cartItems)
+      .where(eq(cartItems.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async clearCart(sessionId: string): Promise<void> {
+    await db
+      .delete(cartItems)
+      .where(eq(cartItems.sessionId, sessionId));
+  }
+
+  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+    const [order] = await db
+      .insert(orders)
+      .values(insertOrder)
+      .returning();
+    return order;
+  }
+
+  async getOrder(id: string): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    return order || undefined;
+  }
+
+  async seedProducts(): Promise<void> {
+    const existingProducts = await this.getAllProducts();
+    if (existingProducts.length > 0) {
+      return;
+    }
+
+    const seedData: InsertProduct[] = [
       {
         name: "Royal Burgundy Silk Saree",
         description: "Exquisite handwoven silk saree with intricate golden zari work. Perfect for weddings and special occasions.",
@@ -194,89 +279,10 @@ export class MemStorage implements IStorage {
       },
     ];
 
-    seedData.forEach((data) => {
-      const id = randomUUID();
-      const product: Product = { ...data, id };
-      this.products.set(id, product);
-    });
-  }
-
-  // Products
-  async getAllProducts(): Promise<Product[]> {
-    return Array.from(this.products.values());
-  }
-
-  async getProduct(id: string): Promise<Product | undefined> {
-    return this.products.get(id);
-  }
-
-  async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const id = randomUUID();
-    const product: Product = { ...insertProduct, id };
-    this.products.set(id, product);
-    return product;
-  }
-
-  // Cart
-  async getCartItems(sessionId: string): Promise<CartItem[]> {
-    return Array.from(this.cartItems.values()).filter(
-      (item) => item.sessionId === sessionId
-    );
-  }
-
-  async addToCart(insertItem: InsertCartItem): Promise<CartItem> {
-    const existingItem = Array.from(this.cartItems.values()).find(
-      (item) => item.productId === insertItem.productId && item.sessionId === insertItem.sessionId
-    );
-
-    if (existingItem) {
-      existingItem.quantity += insertItem.quantity;
-      this.cartItems.set(existingItem.id, existingItem);
-      return existingItem;
+    for (const data of seedData) {
+      await this.createProduct(data);
     }
-
-    const id = randomUUID();
-    const cartItem: CartItem = { ...insertItem, id };
-    this.cartItems.set(id, cartItem);
-    return cartItem;
-  }
-
-  async updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined> {
-    const item = this.cartItems.get(id);
-    if (!item) return undefined;
-
-    item.quantity = quantity;
-    this.cartItems.set(id, item);
-    return item;
-  }
-
-  async removeFromCart(id: string): Promise<boolean> {
-    return this.cartItems.delete(id);
-  }
-
-  async clearCart(sessionId: string): Promise<void> {
-    const itemsToDelete = Array.from(this.cartItems.entries())
-      .filter(([, item]) => item.sessionId === sessionId)
-      .map(([id]) => id);
-
-    itemsToDelete.forEach((id) => this.cartItems.delete(id));
-  }
-
-  // Orders
-  async createOrder(insertOrder: InsertOrder): Promise<Order> {
-    const id = randomUUID();
-    const order: Order = {
-      ...insertOrder,
-      id,
-      createdAt: new Date(),
-    };
-    this.orders.set(id, order);
-    return order;
-  }
-
-  async getOrder(id: string): Promise<Order | undefined> {
-    return this.orders.get(id);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
