@@ -150,6 +150,7 @@ export default function InventoryDashboard() {
                 totalReturns={totalReturns}
                 refundedAmount={refundedAmount}
                 totalInventoryValue={totalInventoryValue}
+                inventoryReturns={inventoryReturns}
               />
             )}
 

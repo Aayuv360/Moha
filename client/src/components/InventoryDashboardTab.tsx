@@ -1,5 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Order, Product } from "@shared/schema";
+import { SalesTrendsChart } from "./SalesTrendsChart";
+import { TopProductsChart } from "./TopProductsChart";
+import { ReturnsAnalyticsCard } from "./ReturnsAnalyticsCard";
+import type { Order, Product, Return } from "@shared/schema";
 
 interface DashboardTabProps {
   totalSales: number;
@@ -7,6 +10,10 @@ interface DashboardTabProps {
   products: Product[];
   orders: Order[];
   lowStockProducts: number;
+  totalReturns?: number;
+  refundedAmount?: number;
+  totalInventoryValue?: number;
+  inventoryReturns?: Return[];
 }
 
 export function DashboardTab({
@@ -15,10 +22,14 @@ export function DashboardTab({
   products,
   orders,
   lowStockProducts,
+  totalReturns = 0,
+  refundedAmount = 0,
+  totalInventoryValue = 0,
+  inventoryReturns = [],
 }: DashboardTabProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -73,6 +84,19 @@ export function DashboardTab({
             </p>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Inventory Value
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              ₹{totalInventoryValue.toLocaleString("en-IN")}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Current stock value</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -102,6 +126,18 @@ export function DashboardTab({
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <SalesTrendsChart orders={orders} />
+        <TopProductsChart orders={orders} products={products} />
+      </div>
+
+      <ReturnsAnalyticsCard
+        returns={inventoryReturns}
+        orders={orders}
+        refundedAmount={refundedAmount}
+        totalRevenue={totalRevenue}
+      />
     </div>
   );
 }
