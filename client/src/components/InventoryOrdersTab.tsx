@@ -487,7 +487,7 @@ export function OrdersTab({
                 </div>
 
                 {/* Order Details Footer */}
-                <div className="p-4 border-t bg-muted/20 space-y-3">
+                <div className="p-4 border-t bg-muted/20 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="text-sm">
                       <p className="text-muted-foreground text-xs mb-1">
@@ -511,6 +511,90 @@ export function OrdersTab({
                       <p className="text-xs text-muted-foreground">
                         {order.city}, {order.state} - {order.pincode}
                       </p>
+                    </div>
+                  </div>
+
+                  {/* Order Timeline */}
+                  <div className="border-t pt-3">
+                    <p className="text-muted-foreground text-xs font-semibold mb-3">
+                      ORDER TIMELINE
+                    </p>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-start gap-3 pb-2 border-b">
+                        <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-1.5" />
+                        <div className="flex-1">
+                          <p className="text-muted-foreground">Order Placed</p>
+                          <p className="font-medium">
+                            {new Date(order.createdAt).toLocaleDateString("en-IN")} at{" "}
+                            {new Date(order.createdAt).toLocaleTimeString("en-IN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      {order.shippedAt && (
+                        <div className="flex items-start gap-3 pb-2 border-b">
+                          <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
+                          <div className="flex-1">
+                            <p className="text-muted-foreground">Shipped</p>
+                            <p className="font-medium">
+                              {new Date(order.shippedAt).toLocaleDateString("en-IN")} at{" "}
+                              {new Date(order.shippedAt).toLocaleTimeString("en-IN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {order.deliveredAt && (
+                        <div className="flex items-start gap-3 pb-2 border-b">
+                          <div className="flex-shrink-0 w-2 h-2 rounded-full bg-green-500 mt-1.5" />
+                          <div className="flex-1">
+                            <p className="text-muted-foreground">Delivered</p>
+                            <p className="font-medium">
+                              {new Date(order.deliveredAt).toLocaleDateString("en-IN")} at{" "}
+                              {new Date(order.deliveredAt).toLocaleTimeString("en-IN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {approvedReturn && (
+                        <>
+                          <div className="flex items-start gap-3 pb-2 border-b">
+                            <div className="flex-shrink-0 w-2 h-2 rounded-full bg-orange-500 mt-1.5" />
+                            <div className="flex-1">
+                              <p className="text-muted-foreground">Return Requested</p>
+                              <p className="font-medium">
+                                {new Date(approvedReturn.createdAt).toLocaleDateString("en-IN")} at{" "}
+                                {new Date(approvedReturn.createdAt).toLocaleTimeString("en-IN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          {approvedReturn.approvedAt && (
+                            <div className="flex items-start gap-3 pb-2">
+                              <div className="flex-shrink-0 w-2 h-2 rounded-full bg-green-600 mt-1.5" />
+                              <div className="flex-1">
+                                <p className="text-muted-foreground">Return Approved</p>
+                                <p className="font-medium">
+                                  {new Date(approvedReturn.approvedAt).toLocaleDateString("en-IN")} at{" "}
+                                  {new Date(approvedReturn.approvedAt).toLocaleTimeString("en-IN", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

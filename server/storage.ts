@@ -357,9 +357,13 @@ export class DatabaseStorage implements IStorage {
     id: string,
     status: string,
   ): Promise<Order | undefined> {
+    const updates: any = { status };
+    if (status === "shipped") updates.shippedAt = new Date();
+    if (status === "delivered") updates.deliveredAt = new Date();
+    
     const [order] = await db
       .update(orders)
-      .set({ status })
+      .set(updates)
       .where(eq(orders.id, id))
       .returning();
     return order || undefined;
@@ -469,9 +473,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateReturnStatus(id: string, status: string): Promise<Return | undefined> {
+    const updates: any = { status };
+    if (status === "approved") updates.approvedAt = new Date();
+    
     const [returnRecord] = await db
       .update(returns)
-      .set({ status })
+      .set(updates)
       .where(eq(returns.id, id))
       .returning();
     return returnRecord || undefined;
