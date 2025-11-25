@@ -270,7 +270,11 @@ export function OrdersTab({
                 ? JSON.parse(order.items)
                 : order.items
               : [];
+            const approvedReturn = inventoryReturns.find(
+              (ret: Return) => ret.orderId === order.id && ret.status === "approved"
+            );
             const hasReturn = order.status && order.returnNotes;
+            const isReturned = ordersSubTab === "delivered" && approvedReturn;
 
             return (
               <Card
@@ -306,27 +310,34 @@ export function OrdersTab({
                         <div className="flex items-center gap-2 mt-2">
                           <Badge
                             variant={
-                              order.status === "delivered"
-                                ? "default"
-                                : order.status === "shipped"
-                                  ? "secondary"
-                                  : "outline"
+                              isReturned
+                                ? "secondary"
+                                : order.status === "delivered"
+                                  ? "default"
+                                  : order.status === "shipped"
+                                    ? "secondary"
+                                    : "outline"
                             }
                             data-testid={`badge-status-${order.id}`}
                           >
-                            {order.status === "pending" && (
+                            {isReturned && (
+                              <RotateCw className="h-3 w-3 mr-1" />
+                            )}
+                            {!isReturned && order.status === "pending" && (
                               <Clock className="h-3 w-3 mr-1" />
                             )}
-                            {order.status === "shipped" && (
+                            {!isReturned && order.status === "shipped" && (
                               <Truck className="h-3 w-3 mr-1" />
                             )}
-                            {order.status === "delivered" && (
+                            {!isReturned && order.status === "delivered" && (
                               <CheckCircle className="h-3 w-3 mr-1" />
                             )}
-                            {order.status.charAt(0).toUpperCase() +
-                              order.status.slice(1)}
+                            {isReturned
+                              ? "Returned"
+                              : order.status.charAt(0).toUpperCase() +
+                                order.status.slice(1)}
                           </Badge>
-                          {hasReturn && (
+                          {hasReturn && !isReturned && (
                             <Badge
                               variant="destructive"
                               data-testid={`badge-return-${order.id}`}
