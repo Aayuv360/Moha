@@ -705,11 +705,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const sessionId =
           orderItems.length > 0 ? orderItems[0].sessionId : null;
 
+        // Enrich items with product details
+        const enrichedItems = await Promise.all(
+          orderItems.map(async (item: any) => {
+            if (item.productId) {
+              const product = await storage.getProduct(item.productId);
+              if (product) {
+                return {
+                  ...item,
+                  name: product.name,
+                  imageUrl: product.imageUrl,
+                  fabric: product.fabric,
+                  color: product.color,
+                  occasion: product.occasion,
+                  category: product.category,
+                };
+              }
+            }
+            return item;
+          }),
+        );
+
         // Get inventoryId from first product in order
         let inventoryId: string | undefined = undefined;
-        if (orderItems.length > 0) {
+        if (enrichedItems.length > 0 && enrichedItems[0].productId) {
           const firstProduct = await storage.getProduct(
-            orderItems[0].productId,
+            enrichedItems[0].productId,
           );
           if (firstProduct) {
             inventoryId = firstProduct.inventoryId;
@@ -718,6 +739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const orderData = {
           ...validatedData,
+          items: JSON.stringify(enrichedItems),
           userId: req.userId || null,
           inventoryId: inventoryId || null,
         };
