@@ -18,6 +18,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import InventoryLogin from "@/pages/InventoryLogin";
 import InventoryDashboard from "@/pages/InventoryDashboard";
 import StoreDashboard from "@/pages/StoreDashboard";
+import StoreLogin from "@/pages/StoreLogin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/inventory/login" component={InventoryLogin} />
       <Route path="/inventory/dashboard" component={InventoryDashboard} />
+      <Route path="/store/login" component={StoreLogin} />
       <Route path="/store/dashboard" component={StoreDashboard} />
       <Route component={NotFound} />
     </Switch>
