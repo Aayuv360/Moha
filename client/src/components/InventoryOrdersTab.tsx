@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import {
   MapPin,
   Printer,
   RotateCw,
+  ChevronDown,
 } from "lucide-react";
 
 interface OrdersTabProps {
@@ -27,6 +29,7 @@ export function OrdersTab({
   setOrdersSubTab,
 }: OrdersTabProps) {
   const { toast } = useToast();
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
 
   const updateOrderStatusMutation = useMutation({
     mutationFn: async ({
@@ -44,12 +47,61 @@ export function OrdersTab({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/orders"] });
+      setSelectedOrderIds(new Set());
       toast({ title: "Order updated successfully" });
     },
     onError: (error: any) => {
       toast({ title: "Failed to update order", variant: "destructive" });
     },
   });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({
+      orderIds,
+      status,
+    }: {
+      orderIds: string[];
+      status: string;
+    }) => {
+      return await Promise.all(
+        orderIds.map((id) =>
+          apiRequest("PATCH", `/api/inventory/orders/${id}/status`, { status }),
+        ),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/orders"] });
+      setSelectedOrderIds(new Set());
+      toast({ title: "Orders updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to update orders", variant: "destructive" });
+    },
+  });
+
+  const toggleOrderSelection = (orderId: string) => {
+    const newSelected = new Set(selectedOrderIds);
+    if (newSelected.has(orderId)) {
+      newSelected.delete(orderId);
+    } else {
+      newSelected.add(orderId);
+    }
+    setSelectedOrderIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrderIds.size === displayOrders.length) {
+      setSelectedOrderIds(new Set());
+    } else {
+      setSelectedOrderIds(new Set(displayOrders.map((o) => o.id)));
+    }
+  };
+
+  const getNextStatus = (currentStatus: string): string => {
+    if (currentStatus === "pending") return "shipped";
+    if (currentStatus === "shipped") return "delivered";
+    return currentStatus;
+  };
 
   const pendingOrders = orders.filter((o) => o.status === "pending");
   const shippedOrders = orders.filter((o) => o.status === "shipped");
@@ -129,19 +181,62 @@ export function OrdersTab({
         </Card>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedOrderIds.size > 0 && (
+        <Card className="border-primary bg-primary/5">
+          <CardContent className="p-4 flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {selectedOrderIds.size} order{selectedOrderIds.size !== 1 ? "s" : ""} selected
+            </span>
+            <div className="flex gap-2">
+              {ordersSubTab === "pending" && (
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    bulkUpdateMutation.mutate({
+                      orderIds: Array.from(selectedOrderIds),
+                      status: "shipped",
+                    })
+                  }
+                  disabled={bulkUpdateMutation.isPending}
+                  data-testid="button-bulk-mark-shipped"
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  Mark as Shipped
+                </Button>
+              )}
+              {ordersSubTab === "shipped" && (
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    bulkUpdateMutation.mutate({
+                      orderIds: Array.from(selectedOrderIds),
+                      status: "delivered",
+                    })
+                  }
+                  disabled={bulkUpdateMutation.isPending}
+                  data-testid="button-bulk-mark-delivered"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark as Delivered
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedOrderIds(new Set())}
+                data-testid="button-clear-selection"
+              >
+                Clear
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Orders List */}
       <div className="space-y-4">
         {displayOrders.length === 0 ? (
-          <Card>
-            <CardContent className="pt-8 text-center">
-              <p className="text-muted-foreground">
-                {ordersSubTab === "active"
-                  ? "No active orders"
-                  : "No completed orders"}
-              </p>
-            </CardContent>
-          </Card>
-        ) : displayOrders.length === 0 ? (
           <Card>
             <CardContent className="pt-8 text-center">
               <p className="text-muted-foreground">
@@ -171,55 +266,93 @@ export function OrdersTab({
                 {/* Order Header */}
                 <div className="p-4 border-b bg-muted/30">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div>
-                          <p className="font-semibold text-lg">
-                            Order {order.id.substring(0, 8)}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Customer:{" "}
-                            <span className="font-medium">
-                              {order.customerName}
-                            </span>
-                          </p>
+                    <div className="flex items-start gap-3 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.has(order.id)}
+                        onChange={() => toggleOrderSelection(order.id)}
+                        data-testid={`checkbox-order-${order.id}`}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div>
+                            <p className="font-semibold text-lg">
+                              Order {order.id.substring(0, 8)}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Customer:{" "}
+                              <span className="font-medium">
+                                {order.customerName}
+                              </span>
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge
-                          variant={
-                            order.status === "delivered"
-                              ? "default"
-                              : order.status === "shipped"
-                                ? "secondary"
-                                : "outline"
-                          }
-                          data-testid={`badge-status-${order.id}`}
-                        >
-                          {order.status === "pending" && (
-                            <Clock className="h-3 w-3 mr-1" />
-                          )}
-                          {order.status === "shipped" && (
-                            <Truck className="h-3 w-3 mr-1" />
-                          )}
-                          {order.status === "delivered" && (
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                          )}
-                          {order.status.charAt(0).toUpperCase() +
-                            order.status.slice(1)}
-                        </Badge>
-                        {hasReturn && (
+                        <div className="flex items-center gap-2 mt-2">
                           <Badge
-                            variant="destructive"
-                            data-testid={`badge-return-${order.id}`}
+                            variant={
+                              order.status === "delivered"
+                                ? "default"
+                                : order.status === "shipped"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                            data-testid={`badge-status-${order.id}`}
                           >
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Return: {order.refundStatus || "pending"}
+                            {order.status === "pending" && (
+                              <Clock className="h-3 w-3 mr-1" />
+                            )}
+                            {order.status === "shipped" && (
+                              <Truck className="h-3 w-3 mr-1" />
+                            )}
+                            {order.status === "delivered" && (
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                            )}
+                            {order.status.charAt(0).toUpperCase() +
+                              order.status.slice(1)}
                           </Badge>
-                        )}
+                          {hasReturn && (
+                            <Badge
+                              variant="destructive"
+                              data-testid={`badge-return-${order.id}`}
+                            >
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Return: {order.refundStatus || "pending"}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right min-w-fit">
+                      <div className="flex gap-2 justify-end mb-3">
+                        {order.status !== "delivered" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              updateOrderStatusMutation.mutate({
+                                orderId: order.id,
+                                status: getNextStatus(order.status),
+                              })
+                            }
+                            disabled={updateOrderStatusMutation.isPending}
+                            data-testid={`button-update-status-${order.id}`}
+                          >
+                            {order.status === "pending" && (
+                              <>
+                                <Truck className="h-4 w-4 mr-1" />
+                                Ship
+                              </>
+                            )}
+                            {order.status === "shipped" && (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Deliver
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                       <p className="font-bold text-2xl text-primary">
                         ₹
                         {parseFloat(
