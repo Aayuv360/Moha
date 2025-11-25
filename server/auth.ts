@@ -9,6 +9,9 @@ const JWT_EXPIRES_IN = "7d";
 export interface AuthRequest extends Request {
   user?: User;
   userId?: string;
+  isAdmin?: boolean;
+  isInventoryOwner?: boolean;
+  inventoryId?: string;
 }
 
 export function generateToken(userId: string): string {
@@ -32,7 +35,7 @@ export async function comparePasswords(password: string, hash: string): Promise<
   return await bcrypt.compare(password, hash);
 }
 
-export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -47,6 +50,20 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   }
 
   req.userId = decoded.userId;
+  
+  // Fetch user to get admin and inventory owner status
+  try {
+    const { storage } = require("./storage");
+    const user = await storage.getUserById(decoded.userId);
+    if (user) {
+      req.isAdmin = user.isAdmin;
+      req.isInventoryOwner = user.isInventoryOwner;
+      req.inventoryId = user.inventoryId;
+    }
+  } catch (error) {
+    // Continue even if user fetch fails
+  }
+  
   next();
 }
 
