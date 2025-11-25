@@ -54,11 +54,9 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       });
     },
   });
-  console.log(product);
-  const images =
-    product.images && product.images.length > 0
-      ? product.images
-      : [product.imageUrl];
+  const images = Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : [product.imageUrl];
 
   useEffect(() => {
     const ctx = gsap.context(() => {

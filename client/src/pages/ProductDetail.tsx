@@ -31,7 +31,7 @@ export default function ProductDetail() {
     enabled: !!params?.id,
   });
 
-  const images = product?.images && product.images.length > 0 
+  const images = Array.isArray(product?.images) && product.images.length > 0 
     ? product.images 
     : product?.imageUrl ? [product.imageUrl] : [];
 
