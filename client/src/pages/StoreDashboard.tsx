@@ -10,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, Order } from "@shared/schema";
-import { Store, LogOut, Plus, Trash2, Clock, Truck, CheckCircle } from "lucide-react";
+import { Store, LogOut, Plus, Trash2, Clock, Truck, CheckCircle, Edit2, AlertCircle, RotateCcw } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const productSchema = z.object({
   name: z.string().min(1, "Product name required"),
@@ -37,6 +39,9 @@ export default function StoreDashboard() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<"products" | "orders">("products");
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.isStoreOwner) {
@@ -97,13 +102,46 @@ export default function StoreDashboard() {
     },
   });
 
+  const updateProductMutation = useMutation({
+    mutationFn: async (data: ProductForm) => {
+      if (!editingProduct) return;
+      const images = data.multipleImages
+        ? data.multipleImages.split(',').map(url => url.trim()).filter(url => url)
+        : [];
+      
+      return await apiRequest("PATCH", `/api/store/products/${editingProduct.id}`, {
+        name: data.name,
+        description: data.description,
+        price: data.price.toString(),
+        fabric: data.fabric,
+        color: data.color,
+        occasion: data.occasion,
+        category: data.category,
+        inStock: data.inStock,
+        imageUrl: data.imageUrl,
+        images: images,
+        videoUrl: data.videoUrl || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/store/products'] });
+      setShowEditDialog(false);
+      setEditingProduct(null);
+      editForm.reset();
+      toast({ title: "Product updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to update product", description: error.message, variant: "destructive" });
+    },
+  });
+
   const updateOrderStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
-      return await apiRequest("PATCH", `/api/store/orders/${orderId}/status`, { status });
+    mutationFn: async ({ orderId, status, returnNotes, refundStatus }: { orderId: string; status: string; returnNotes?: string; refundStatus?: string }) => {
+      return await apiRequest("PATCH", `/api/store/orders/${orderId}/status`, { status, returnNotes, refundStatus });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/store/orders'] });
-      toast({ title: "Order status updated successfully" });
+      toast({ title: "Order updated successfully" });
     },
     onError: (error: any) => {
       toast({ title: "Failed to update order", variant: "destructive" });
@@ -126,6 +164,41 @@ export default function StoreDashboard() {
       videoUrl: "",
     },
   });
+
+  const editForm = useForm<ProductForm>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      price: "",
+      fabric: "Silk",
+      color: "",
+      occasion: "Wedding",
+      category: "",
+      inStock: "1",
+      imageUrl: "",
+      multipleImages: "",
+      videoUrl: "",
+    },
+  });
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    editForm.reset({
+      name: product.name,
+      description: product.description,
+      price: product.price.toString(),
+      fabric: product.fabric,
+      color: product.color,
+      occasion: product.occasion,
+      category: product.category,
+      inStock: product.inStock.toString(),
+      imageUrl: product.imageUrl,
+      multipleImages: Array.isArray(product.images) ? product.images.join(", ") : "",
+      videoUrl: product.videoUrl || "",
+    });
+    setShowEditDialog(true);
+  };
 
   const handleLogout = () => {
     logout();
@@ -337,25 +410,98 @@ export default function StoreDashboard() {
               <CardContent>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {products.map((product: any) => (
-                    <div key={product.id} className="p-3 border rounded flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-medium" data-testid={`text-product-${product.id}`}>{product.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono mt-1" data-testid={`text-tracking-${product.id}`}>Tracking ID: {product.trackingId}</p>
-                        <p className="text-sm text-muted-foreground">₹{product.price}</p>
-                        <div className="flex gap-2 mt-2">
-                          <Badge variant="secondary">{product.fabric}</Badge>
-                          <Badge variant="secondary">{product.occasion}</Badge>
-                          <Badge>Stock: {product.inStock}</Badge>
+                    <div key={product.id} className="p-3 border rounded">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <p className="font-medium" data-testid={`text-product-${product.id}`}>{product.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono mt-1" data-testid={`text-tracking-${product.id}`}>Tracking ID: {product.trackingId}</p>
+                          <p className="text-sm text-muted-foreground">₹{product.price}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Dialog open={showEditDialog && editingProduct?.id === product.id} onOpenChange={setShowEditDialog}>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => handleEditProduct(product)}
+                                data-testid={`button-edit-product-${product.id}`}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-h-96 overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Edit Product</DialogTitle>
+                              </DialogHeader>
+                              <Form {...editForm}>
+                                <form onSubmit={editForm.handleSubmit((data) => updateProductMutation.mutate(data))} className="space-y-3">
+                                  <FormField
+                                    control={editForm.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs">Name</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} className="text-sm" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={editForm.control}
+                                    name="price"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs">Price</FormLabel>
+                                        <FormControl>
+                                          <Input type="number" {...field} className="text-sm" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={editForm.control}
+                                    name="inStock"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs">Stock</FormLabel>
+                                        <FormControl>
+                                          <Input type="number" {...field} className="text-sm" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <Button type="submit" className="w-full" disabled={updateProductMutation.isPending} size="sm">
+                                    Update Product
+                                  </Button>
+                                </form>
+                              </Form>
+                            </DialogContent>
+                          </Dialog>
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            onClick={() => deleteProductMutation.mutate(product.id)}
+                            data-testid={`button-delete-product-${product.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteProductMutation.mutate(product.id)}
-                        data-testid={`button-delete-product-${product.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2 flex-wrap">
+                        <Badge variant="secondary">{product.fabric}</Badge>
+                        <Badge variant="secondary">{product.occasion}</Badge>
+                        {product.inStock <= 5 && (
+                          <Badge variant="destructive" className="flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Low Stock: {product.inStock}
+                          </Badge>
+                        )}
+                        {product.inStock > 5 && <Badge>Stock: {product.inStock}</Badge>}
+                      </div>
                     </div>
                   ))}
                 </div>

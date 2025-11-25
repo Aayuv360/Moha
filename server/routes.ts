@@ -420,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Store access required" });
       }
 
-      const { status } = req.body;
+      const { status, returnNotes, refundStatus } = req.body;
       if (!['pending', 'shipped', 'delivered'].includes(status)) {
         return res.status(400).json({ error: "Invalid status" });
       }
@@ -431,7 +431,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const oldStatus = order.status;
-      const updatedOrder = await storage.updateOrderStatus(req.params.id, status);
+      const updates: any = { status };
+      if (returnNotes !== undefined) updates.returnNotes = returnNotes;
+      if (refundStatus !== undefined) updates.refundStatus = refundStatus;
+
+      const updatedOrder = await db
+        .update(orders)
+        .set(updates)
+        .where(eq(orders.id, req.params.id))
+        .returning();
 
       if (status === 'shipped' && oldStatus !== 'shipped') {
         const items = JSON.parse(order.items);
@@ -444,9 +452,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json(updatedOrder);
+      res.json(updatedOrder[0]);
     } catch (error) {
       res.status(500).json({ error: "Failed to update order status" });
+    }
+  });
+
+  app.patch("/api/store/orders/:id/refund", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user?.isStoreOwner || !user.storeId) {
+        return res.status(403).json({ error: "Store access required" });
+      }
+
+      const { refundStatus, returnNotes } = req.body;
+      if (!['none', 'requested', 'approved', 'rejected'].includes(refundStatus)) {
+        return res.status(400).json({ error: "Invalid refund status" });
+      }
+
+      const order = await storage.getOrder(req.params.id);
+      if (!order || order.storeId !== user.storeId) {
+        return res.status(404).json({ error: "Order not found or unauthorized" });
+      }
+
+      const updatedOrder = await db
+        .update(orders)
+        .set({ refundStatus, returnNotes })
+        .where(eq(orders.id, req.params.id))
+        .returning();
+
+      res.json(updatedOrder[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to process refund" });
     }
   });
 

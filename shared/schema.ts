@@ -61,6 +61,8 @@ export const orders = pgTable("orders", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   items: text("items").notNull(),
   status: text("status").notNull().default("pending"),
+  returnNotes: text("return_notes"),
+  refundStatus: text("refund_status").default("none"),
   storeId: varchar("store_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
