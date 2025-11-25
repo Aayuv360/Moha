@@ -21,6 +21,7 @@ export default function InventoryDashboard() {
   const [ordersSubTab, setOrdersSubTab] = useState<"active" | "completed">(
     "active",
   );
+  const [categoryTab, setCategoryTab] = useState<string>("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(
@@ -61,7 +62,6 @@ export default function InventoryDashboard() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="border-b">
         <div className="max-w-full px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -80,7 +80,6 @@ export default function InventoryDashboard() {
       </header>
 
       <div className="flex flex-1">
-        {/* Sidebar Navigation */}
         <aside className="w-48 border-r bg-card">
           <nav className="space-y-1 p-4">
             <Button
@@ -120,7 +119,6 @@ export default function InventoryDashboard() {
           </nav>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 py-8">
             {tab === "dashboard" && (
