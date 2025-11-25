@@ -44,6 +44,7 @@ export default function AdminLogin() {
       const response = await apiRequest("POST", "/api/auth/admin-login", data);
       setUser(response.user);
       setToken(response.token);
+      localStorage.setItem("token", response.token);
       setLocation("/admin/dashboard");
       toast({
         title: "Login successful",

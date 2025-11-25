@@ -44,6 +44,7 @@ export default function StoreLogin() {
       const response = await apiRequest("POST", "/api/auth/store-login", data);
       setUser(response.user);
       setToken(response.token);
+      localStorage.setItem("token", response.token);
       setLocation("/store/dashboard");
       toast({
         title: "Login successful",
