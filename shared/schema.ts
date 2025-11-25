@@ -94,6 +94,21 @@ export const wishlistItems = pgTable("wishlist_items", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const returns = pgTable("returns", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  productId: varchar("product_id").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  reason: text("reason").notNull(),
+  status: text("status").notNull().default("requested"),
+  refundAmount: decimal("refund_amount", { precision: 10, scale: 2 }).notNull(),
+  inventoryId: varchar("inventory_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -122,6 +137,10 @@ export const insertWishlistItemSchema = createInsertSchema(wishlistItems).omit({
   id: true,
   createdAt: true,
 });
+export const insertReturnSchema = createInsertSchema(returns).omit({
+  id: true,
+  createdAt: true,
+});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -135,3 +154,5 @@ export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
 export type InsertWishlistItem = z.infer<typeof insertWishlistItemSchema>;
 export type WishlistItem = typeof wishlistItems.$inferSelect;
+export type InsertReturn = z.infer<typeof insertReturnSchema>;
+export type Return = typeof returns.$inferSelect;
