@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SalesTrendsChart } from "./SalesTrendsChart";
 import { TopProductsChart } from "./TopProductsChart";
 import { ReturnsAnalyticsCard } from "./ReturnsAnalyticsCard";
+import { ExportReportsCard } from "./ExportReportsCard";
 import type { Order, Product, Return } from "@shared/schema";
 
 interface DashboardTabProps {
@@ -138,6 +139,8 @@ export function DashboardTab({
         refundedAmount={refundedAmount}
         totalRevenue={totalRevenue}
       />
+
+      <ExportReportsCard orders={orders} products={products} returns={inventoryReturns} />
     </div>
   );
 }
