@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useState, useMutation } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,10 @@ export function ProductsTab({
   const categories = Array.from(
     new Set(products.map((p: any) => p.category || "Uncategorized")),
   ).sort();
+  
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    categories.length > 0 ? categories[0] : "Uncategorized"
+  );
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -90,6 +94,10 @@ export function ProductsTab({
     setShowProductDialog(true);
   };
 
+  const categoryProducts = products.filter(
+    (p: any) => (p.category || "Uncategorized") === selectedCategory,
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -139,97 +147,106 @@ export function ProductsTab({
         </div>
       ) : (
         <div className="space-y-6">
-          {categories.map((category) => {
-            const categoryProducts = products.filter(
-              (p: any) => (p.category || "Uncategorized") === category,
-            );
-            return (
-              <div key={category}>
-                <h3 className="font-semibold mb-3">{category}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {categoryProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="border rounded-lg p-4 space-y-2 hover:shadow-md transition-shadow"
-                      data-testid={`card-product-${product.id}`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.has(product.id)}
-                          onChange={(e) => {
-                            const newSelected = new Set(selectedProducts);
-                            if (e.target.checked) {
-                              newSelected.add(product.id);
-                            } else {
-                              newSelected.delete(product.id);
-                            }
-                            setSelectedProducts(newSelected);
-                          }}
-                          data-testid={`checkbox-product-${product.id}`}
-                        />
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm line-clamp-2">
-                            {product.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            ID: {product.trackingId}
-                          </p>
-                        </div>
-                      </div>
+          <div className="flex gap-2 flex-wrap">
+            {categories.map((category) => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                onClick={() => setSelectedCategory(category)}
+                data-testid={`button-category-${category}`}
+              >
+                {category} ({products.filter((p: any) => (p.category || "Uncategorized") === category).length})
+              </Button>
+            ))}
+          </div>
 
-                      <div className="flex gap-2 text-xs">
-                        {product.fabric && (
-                          <span className="bg-secondary px-2 py-1 rounded">
-                            {product.fabric}
-                          </span>
-                        )}
-                        {product.color && (
-                          <span className="bg-secondary px-2 py-1 rounded">
-                            {product.color}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex justify-between items-center pt-2 border-t">
-                        <div>
-                          <p className="text-sm font-bold text-primary">
-                            ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Stock: {product.inStock}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => handleEditProduct(product)}
-                          data-testid={`button-edit-product-${product.id}`}
-                        >
-                          <Edit2 className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="flex-1"
-                          onClick={() => handleDeleteProduct(product.id)}
-                          data-testid={`button-delete-product-${product.id}`}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Delete
-                        </Button>
-                      </div>
+          {categoryProducts.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No products in this category</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categoryProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="border rounded-lg p-4 space-y-2 hover:shadow-md transition-shadow"
+                  data-testid={`card-product-${product.id}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.has(product.id)}
+                      onChange={(e) => {
+                        const newSelected = new Set(selectedProducts);
+                        if (e.target.checked) {
+                          newSelected.add(product.id);
+                        } else {
+                          newSelected.delete(product.id);
+                        }
+                        setSelectedProducts(newSelected);
+                      }}
+                      data-testid={`checkbox-product-${product.id}`}
+                    />
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm line-clamp-2">
+                        {product.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ID: {product.trackingId}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+
+                  <div className="flex gap-2 text-xs">
+                    {product.fabric && (
+                      <span className="bg-secondary px-2 py-1 rounded">
+                        {product.fabric}
+                      </span>
+                    )}
+                    {product.color && (
+                      <span className="bg-secondary px-2 py-1 rounded">
+                        {product.color}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <div>
+                      <p className="text-sm font-bold text-primary">
+                        ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Stock: {product.inStock}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleEditProduct(product)}
+                      data-testid={`button-edit-product-${product.id}`}
+                    >
+                      <Edit2 className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleDeleteProduct(product.id)}
+                      data-testid={`button-delete-product-${product.id}`}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
+                    </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            );
-          })}
+            )}
         </div>
       )}
     </div>
