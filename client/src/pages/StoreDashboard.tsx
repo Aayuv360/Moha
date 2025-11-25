@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, Order } from "@shared/schema";
-import { Store, LogOut, Plus, Trash2, Clock, Truck, CheckCircle, Edit2, AlertCircle, RotateCcw, BarChart3, Settings, Trash, Download } from "lucide-react";
+import { Store, LogOut, Plus, Trash2, Clock, Truck, CheckCircle, Edit2, AlertCircle, RotateCcw, BarChart3, Settings, Trash, Download, MapPin, Phone, Mail, Printer, ChevronDown, RotateCw, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,6 +47,7 @@ export default function StoreDashboard() {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [refundNotes, setRefundNotes] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (!user?.isStoreOwner) {
@@ -832,59 +833,123 @@ export default function StoreDashboard() {
                   </Select>
                 </div>
 
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className="space-y-3">
                   {filteredOrders.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">No orders found</p>
                   ) : (
-                    filteredOrders.map((order: any) => (
-                      <div key={order.id} className="p-4 border rounded-lg hover-elevate transition-all">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            <p className="font-semibold" data-testid={`text-order-${order.id}`}>{order.customerName}</p>
-                            <p className="text-sm text-muted-foreground">{order.email}</p>
-                            <p className="text-xs text-muted-foreground mt-1">Order ID: {order.id.substring(0, 8)}...</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-lg">₹{order.totalAmount}</p>
-                            <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-
-                        <div className="mb-3 flex gap-2 items-center">
-                          <div className="flex-1">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-xs font-medium">Order Status:</span>
-                              <Badge 
-                                variant={order.status === 'delivered' ? 'default' : order.status === 'shipped' ? 'secondary' : 'outline'}
-                                data-testid={`badge-status-${order.id}`}
-                              >
-                                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                              </Badge>
+                    filteredOrders.map((order: any) => {
+                      const isExpanded = expandedOrder === order.id;
+                      const hasReturn = order.returnNotes && order.returnNotes.trim() !== "";
+                      let items = [];
+                      try {
+                        items = JSON.parse(order.items);
+                      } catch {
+                        items = [];
+                      }
+                      
+                      return (
+                        <Card key={order.id} className="overflow-hidden">
+                          <div className="p-4 cursor-pointer hover-elevate" onClick={() => setExpandedOrder(isExpanded ? null : order.id)} data-testid={`button-expand-order-${order.id}`}>
+                            <div className="flex gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    <p className="font-semibold text-base" data-testid={`text-order-customer-${order.id}`}>{order.customerName}</p>
+                                    <p className="text-xs text-muted-foreground">Order #{order.id.substring(0, 8).toUpperCase()}</p>
+                                  </div>
+                                  <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                </div>
+                                <div className="flex gap-2 items-center mb-3 flex-wrap">
+                                  <Badge variant={order.status === 'delivered' ? 'default' : order.status === 'shipped' ? 'secondary' : 'outline'} data-testid={`badge-status-${order.id}`}>
+                                    {order.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                                    {order.status === 'shipped' && <Truck className="h-3 w-3 mr-1" />}
+                                    {order.status === 'delivered' && <CheckCircle className="h-3 w-3 mr-1" />}
+                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                  </Badge>
+                                  {hasReturn && (
+                                    <Badge variant="destructive" data-testid={`badge-return-${order.id}`}>
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      Return: {order.refundStatus || 'pending'}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="w-full bg-muted rounded-full h-2 mb-2">
+                                  <div className={`h-full rounded-full transition-all ${order.status === 'delivered' ? 'bg-green-500 w-full' : order.status === 'shipped' ? 'bg-blue-500 w-2/3' : 'bg-yellow-500 w-1/3'}`} />
+                                </div>
+                              </div>
+                              <div className="text-right min-w-fit">
+                                <p className="font-bold text-lg">₹{parseFloat(order.totalAmount.toString()).toLocaleString('en-IN')}</p>
+                                <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
+                              </div>
                             </div>
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <div
-                                className={`h-full rounded-full transition-all ${
-                                  order.status === 'delivered' ? 'bg-green-500 w-full' :
-                                  order.status === 'shipped' ? 'bg-blue-500 w-2/3' :
-                                  'bg-yellow-500 w-1/3'
-                                }`}
-                              />
-                            </div>
                           </div>
-                        </div>
 
-                        <select
-                          value={order.status}
-                          onChange={(e) => updateOrderStatusMutation.mutate({ orderId: order.id, status: e.target.value })}
-                          className="w-full text-sm border rounded px-3 py-2 bg-background"
-                          data-testid={`select-order-status-${order.id}`}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                        </select>
-                      </div>
-                    ))
+                          {isExpanded && (
+                            <div className="border-t bg-muted/30 p-4 space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-background rounded border">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Mail className="h-3 w-3" /> Contact</p>
+                                  <p className="text-sm font-medium truncate">{order.email}</p>
+                                  <p className="text-sm flex items-center gap-1"><Phone className="h-3 w-3" /> {order.phone}</p>
+                                </div>
+                                <div className="p-3 bg-background rounded border">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-2">{items.length} Item{items.length !== 1 ? 's' : ''}</p>
+                                  <div className="space-y-1 max-h-20 overflow-y-auto">
+                                    {items.map((item: any, idx: number) => (
+                                      <p key={idx} className="text-sm text-muted-foreground truncate">
+                                        x{item.quantity} {item.name?.substring(0, 20)}
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-3 bg-background rounded border">
+                                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1"><MapPin className="h-3 w-3" /> Shipping Address</p>
+                                <p className="text-sm font-medium">{order.address}</p>
+                                <p className="text-sm text-muted-foreground">{order.city}, {order.state} - {order.pincode}</p>
+                                <Button size="sm" variant="outline" className="mt-2 w-full text-xs" onClick={() => window.print()} data-testid={`button-print-address-${order.id}`}>
+                                  <Printer className="h-3 w-3 mr-1" />
+                                  Print Address
+                                </Button>
+                              </div>
+
+                              {hasReturn && (
+                                <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
+                                  <p className="text-xs font-semibold text-red-900 dark:text-red-100 mb-2 flex items-center gap-1"><RotateCw className="h-3 w-3" /> Return Information</p>
+                                  <p className="text-sm text-red-800 dark:text-red-200 mb-2"><strong>Reason:</strong> {order.returnNotes}</p>
+                                  <p className="text-sm text-red-800 dark:text-red-200 mb-3"><strong>Status:</strong> {order.refundStatus || 'pending'}</p>
+                                  <div className="flex gap-2">
+                                    <Button size="sm" variant="outline" className="text-xs" data-testid={`button-approve-refund-${order.id}`}>
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Approve Refund
+                                    </Button>
+                                    <Button size="sm" variant="destructive" className="text-xs" data-testid={`button-reject-refund-${order.id}`}>
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="border-t pt-3 space-y-2">
+                                <label className="text-xs font-semibold text-muted-foreground block">Update Order Status</label>
+                                <select
+                                  value={order.status}
+                                  onChange={(e) => updateOrderStatusMutation.mutate({ orderId: order.id, status: e.target.value })}
+                                  className="w-full text-sm border rounded px-3 py-2 bg-background"
+                                  data-testid={`select-order-status-${order.id}`}
+                                >
+                                  <option value="pending">📋 Pending</option>
+                                  <option value="shipped">🚚 Shipped</option>
+                                  <option value="delivered">✓ Delivered</option>
+                                </select>
+                              </div>
+                            </div>
+                          )}
+                        </Card>
+                      );
+                    })
                   )}
                 </div>
               </CardContent>
