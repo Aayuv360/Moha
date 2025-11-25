@@ -66,7 +66,9 @@ export default function InventoryDashboard() {
         <div className="max-w-full px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Store className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">Inventory Dashboard</h1>
+            <h1 className="text-2xl font-bold">
+              {tab === "orders" ? "Order Management Dashboard" : "Inventory Dashboard"}
+            </h1>
           </div>
           <Button
             variant="outline"

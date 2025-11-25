@@ -199,9 +199,9 @@ export function OrdersTab({
                     <div className="text-right min-w-fit">
                       <p className="font-bold text-2xl text-primary">
                         ₹
-                        {parseFloat(order.totalAmount.toString()).toLocaleString(
-                          "en-IN",
-                        )}
+                        {parseFloat(
+                          order.totalAmount.toString(),
+                        ).toLocaleString("en-IN")}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(order.createdAt).toLocaleDateString()}{" "}
@@ -214,90 +214,77 @@ export function OrdersTab({
                   </div>
                 </div>
 
-                {/* Order Items Grid */}
-                <div className="p-4 bg-background">
+                {/* Order Items Table */}
+                <div className="p-4 bg-background overflow-x-auto">
                   {items.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No items found
                     </p>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {items.map((item: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="border rounded-lg overflow-hidden bg-card hover:shadow-sm transition-shadow"
-                        >
-                          <div className="aspect-square bg-muted overflow-hidden">
-                            <img
-                              src={item.imageUrl || item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3C/svg%3E";
-                              }}
-                            />
-                          </div>
-                          <div className="p-3 space-y-2">
-                            <div>
-                              <p className="text-sm font-semibold truncate">
-                                {item.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                ×{item.quantity}
-                              </p>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {item.color && (
-                                <Badge variant="secondary" className="text-xs h-5">
-                                  {item.color}
-                                </Badge>
-                              )}
-                              {item.fabric && (
-                                <Badge variant="secondary" className="text-xs h-5">
-                                  {item.fabric}
-                                </Badge>
-                              )}
-                              {item.occasion && (
-                                <Badge variant="secondary" className="text-xs h-5">
-                                  {item.occasion}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="border-t pt-2">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-xs text-muted-foreground">
-                                  Price
-                                </span>
-                                <span className="text-sm font-medium">
-                                  ₹
-                                  {item.price
-                                    ? parseFloat(
-                                        item.price.toString(),
-                                      ).toLocaleString("en-IN")
-                                    : "N/A"}
-                                </span>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">ITEM DETAILS</th>
+                          <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">QUANTITY</th>
+                          <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">UNIT PRICE</th>
+                          <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">SUBTOTAL</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((item: any, idx: number) => (
+                          <tr key={idx} className="border-b">
+                            <td className="py-3 px-2">
+                              <div className="flex gap-3">
+                                <div className="flex-shrink-0 w-12 h-12 bg-muted rounded overflow-hidden">
+                                  <img
+                                    src={item.imageUrl || item.image}
+                                    alt={item.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src =
+                                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3C/svg%3E";
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <p className="font-medium">{item.name}</p>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {item.color && (
+                                      <Badge variant="secondary" className="text-xs h-5">
+                                        {item.color}
+                                      </Badge>
+                                    )}
+                                    {item.fabric && (
+                                      <Badge variant="secondary" className="text-xs h-5">
+                                        {item.fabric}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs font-semibold">
-                                  Subtotal
-                                </span>
-                                <span className="text-sm font-bold text-primary">
-                                  ₹
-                                  {item.price
-                                    ? (
-                                        parseFloat(
-                                          item.price.toString(),
-                                        ) * item.quantity
-                                      ).toLocaleString("en-IN")
-                                    : "N/A"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                            </td>
+                            <td className="py-3 px-2 text-center">
+                              <span>×{item.quantity}</span>
+                            </td>
+                            <td className="py-3 px-2 text-right font-medium">
+                              ₹
+                              {item.price
+                                ? parseFloat(item.price.toString()).toLocaleString("en-IN")
+                                : "N/A"}
+                            </td>
+                            <td className="py-3 px-2 text-right font-bold text-primary">
+                              ₹
+                              {item.price
+                                ? (
+                                    parseFloat(item.price.toString()) *
+                                    item.quantity
+                                  ).toLocaleString("en-IN")
+                                : "N/A"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   )}
                 </div>
 
@@ -328,53 +315,6 @@ export function OrdersTab({
                       </p>
                     </div>
                   </div>
-
-                  <div className="flex gap-2 print:hidden pt-2 border-t">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs flex-1"
-                      onClick={() => window.print()}
-                      data-testid={`button-print-order-${order.id}`}
-                    >
-                      <Printer className="h-3 w-3 mr-1" />
-                      Print Order
-                    </Button>
-
-                    {ordersSubTab === "active" && (
-                      <select
-                        value={order.status}
-                        onChange={(e) =>
-                          updateOrderStatusMutation.mutate({
-                            orderId: order.id,
-                            status: e.target.value,
-                          })
-                        }
-                        className="text-xs border rounded px-2 py-1 bg-background flex-1"
-                        data-testid={`select-order-status-${order.id}`}
-                      >
-                        <option value="pending">📋 Pending</option>
-                        <option value="shipped">🚚 Shipped</option>
-                        <option value="delivered">✓ Delivered</option>
-                      </select>
-                    )}
-                  </div>
-
-                  {hasReturn && (
-                    <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800 text-sm">
-                      <p className="text-red-900 dark:text-red-100 font-semibold text-xs mb-1 flex items-center gap-1">
-                        <RotateCw className="h-3 w-3" /> Return Request
-                      </p>
-                      <p className="text-red-800 dark:text-red-200">
-                        <span className="font-semibold">Reason:</span>{" "}
-                        {order.returnNotes}
-                      </p>
-                      <p className="text-red-800 dark:text-red-200 text-xs mt-1">
-                        <span className="font-semibold">Status:</span>{" "}
-                        {order.refundStatus || "pending"}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </Card>
             );
