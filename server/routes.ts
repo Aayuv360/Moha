@@ -515,19 +515,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const updatedOrder = await storage.updateOrderStatus(req.params.id, status);
 
-        if (status === "shipped" && oldStatus !== "shipped") {
-          const items = JSON.parse(order.items);
-          for (const item of items) {
-            const product = await storage.getProduct(item.productId);
-            if (product) {
-              const newStock = Math.max(0, product.inStock - item.quantity);
-              await storage.updateProduct(item.productId, {
-                inStock: newStock,
-              });
-            }
-          }
-        }
-
         res.json(updatedOrder);
       } catch (error) {
         res.status(500).json({ error: "Failed to update order status" });
@@ -739,6 +726,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           inventoryId: inventoryId || null,
         };
         const order = await storage.createOrder(orderData);
+
+        // Reduce stock immediately when order is created (pending status)
+        for (const item of enrichedItems) {
+          if (item.productId) {
+            const product = await storage.getProduct(item.productId);
+            if (product) {
+              const newStock = Math.max(0, product.inStock - item.quantity);
+              await storage.updateProduct(item.productId, {
+                inStock: newStock,
+              });
+            }
+          }
+        }
 
         if (sessionId) {
           await storage.clearCart(sessionId);
