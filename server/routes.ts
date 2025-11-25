@@ -216,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const existingStore = await storage.getStoreByEmail(validatedData.email);
       if (existingStore) {
-        return res.status(400).json({ error: "Store email already exists" });
+        return res.status(400).json({ error: "Inventory email already exists" });
       }
 
       const store = await storage.createStore(validatedData);
@@ -234,7 +234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      res.status(500).json({ error: "Failed to create store" });
+      res.status(500).json({ error: "Failed to create inventory" });
     }
   });
 
@@ -247,12 +247,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const success = await storage.deleteStore(req.params.id);
       if (!success) {
-        return res.status(404).json({ error: "Store not found" });
+        return res.status(404).json({ error: "Inventory not found" });
       }
 
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete store" });
+      res.status(500).json({ error: "Failed to delete inventory" });
     }
   });
 
