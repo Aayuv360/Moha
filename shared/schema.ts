@@ -19,13 +19,13 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   isAdmin: boolean("is_admin").notNull().default(false),
-  isStoreOwner: boolean("is_store_owner").notNull().default(false),
-  storeId: varchar("store_id"),
+  isInventoryOwner: boolean("is_store_owner").notNull().default(false),
+  inventoryId: varchar("store_id"),
   isBlocked: boolean("is_blocked").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const stores = pgTable("stores", {
+export const inventories = pgTable("stores", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
@@ -51,7 +51,7 @@ export const products = pgTable("products", {
   occasion: text("occasion").notNull(),
   category: text("category").notNull(),
   inStock: integer("in_stock").notNull().default(1),
-  storeId: varchar("store_id"),
+  inventoryId: varchar("store_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -81,7 +81,7 @@ export const orders = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   returnNotes: text("return_notes"),
   refundStatus: text("refund_status").default("none"),
-  storeId: varchar("store_id"),
+  inventoryId: varchar("store_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -98,10 +98,10 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   isAdmin: true,
-  isStoreOwner: true,
+  isInventoryOwner: true,
   isBlocked: true,
 });
-export const insertStoreSchema = createInsertSchema(stores).omit({
+export const insertInventorySchema = createInsertSchema(inventories).omit({
   id: true,
   createdAt: true,
 });
@@ -125,8 +125,8 @@ export const insertWishlistItemSchema = createInsertSchema(wishlistItems).omit({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-export type InsertStore = z.infer<typeof insertStoreSchema>;
-export type Store = typeof stores.$inferSelect;
+export type InsertInventory = z.infer<typeof insertInventorySchema>;
+export type Inventory = typeof inventories.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertCartItem = z.infer<typeof insertCartItemSchema>;

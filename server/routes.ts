@@ -7,7 +7,7 @@ import {
   insertUserSchema,
   insertWishlistItemSchema,
   insertProductSchema,
-  insertStoreSchema,
+  insertInventorySchema,
 } from "@shared/schema";
 import { z } from "zod";
 import {
@@ -31,7 +31,7 @@ const adminAuthMiddleware = (req: any, res: any, next: any) => {
 
 const inventoryAuthMiddleware = (req: any, res: any, next: any) => {
   authMiddleware(req, res, () => {
-    if (req.isStoreOwner) {
+    if (req.isInventoryOwner) {
       next();
     } else {
       res.status(403).json({ error: "Inventory owner access required" });
@@ -223,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post(
-    "/api/admin/stores",
+    "/api/admin/inventories",
     authMiddleware,
     async (req: AuthRequest, res) => {
       try {
@@ -232,29 +232,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ error: "Admin access required" });
         }
 
-        const schema = insertStoreSchema;
+        const schema = insertInventorySchema;
         const validatedData = schema.parse(req.body);
 
-        const existingStore = await storage.getStoreByEmail(
+        const existingInventory = await storage.getInventoryByEmail(
           validatedData.email,
         );
-        if (existingStore) {
+        if (existingInventory) {
           return res
             .status(400)
             .json({ error: "Inventory email already exists" });
         }
 
-        const store = await storage.createStore(validatedData);
+        const inventory = await storage.createInventory(validatedData);
 
         const owner = await storage.getUserById(validatedData.ownerId);
         if (owner) {
           await storage.updateUser(validatedData.ownerId, {
-            isStoreOwner: true,
-            storeId: store.id,
+            isInventoryOwner: true,
+            inventoryId: inventory.id,
           } as any);
         }
 
-        res.status(201).json(store);
+        res.status(201).json(inventory);
       } catch (error) {
         if (error instanceof z.ZodError) {
           return res.status(400).json({ error: error.errors });
@@ -274,7 +274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ error: "Admin access required" });
         }
 
-        const success = await storage.deleteStore(req.params.id);
+        const success = await storage.deleteInventory(req.params.id);
         if (!success) {
           return res.status(404).json({ error: "Inventory not found" });
         }
@@ -369,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ error: "Inventory access required" });
         }
 
-        const products = await storage.getStoreProducts(user.inventoryId);
+        const products = await storage.getInventoryProducts(user.inventoryId);
         res.json(products);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products" });
@@ -478,7 +478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ error: "Inventory access required" });
         }
 
-        const orders = await storage.getStoreOrders(user.inventoryId);
+        const orders = await storage.getInventoryOrders(user.inventoryId);
         res.json(orders);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch orders" });

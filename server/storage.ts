@@ -9,14 +9,14 @@ import {
   type InsertUser,
   type WishlistItem,
   type InsertWishlistItem,
-  type Store,
-  type InsertStore,
+  type Inventory,
+  type InsertInventory,
   products,
   cartItems,
   orders,
   users,
   wishlistItems,
-  stores,
+  inventories,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, ilike, sql, gte, lte } from "drizzle-orm";
@@ -39,12 +39,12 @@ export interface IStorage {
   blockUser(id: string): Promise<void>;
   unblockUser(id: string): Promise<void>;
 
-  // Stores
-  createStore(store: InsertStore): Promise<Store>;
-  getStoreByEmail(email: string): Promise<Store | undefined>;
-  getStoreById(id: string): Promise<Store | undefined>;
-  getAllStores(): Promise<Store[]>;
-  deleteStore(id: string): Promise<boolean>;
+  // Inventories
+  createInventory(inventory: InsertInventory): Promise<Inventory>;
+  getInventoryByEmail(email: string): Promise<Inventory | undefined>;
+  getInventoryById(id: string): Promise<Inventory | undefined>;
+  getAllInventories(): Promise<Inventory[]>;
+  deleteInventory(id: string): Promise<boolean>;
 
   // Products
   getAllProducts(filters?: ProductFilters): Promise<Product[]>;
@@ -55,7 +55,7 @@ export interface IStorage {
     updates: Partial<Product>,
   ): Promise<Product | undefined>;
   deleteProduct(id: string): Promise<boolean>;
-  getStoreProducts(inventoryId: string): Promise<Product[]>;
+  getInventoryProducts(inventoryId: string): Promise<Product[]>;
 
   // Cart
   getCartItems(sessionId: string): Promise<CartItem[]>;
@@ -72,7 +72,7 @@ export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
   getUserOrders(userId: string): Promise<Order[]>;
   getAllOrders(): Promise<Order[]>;
-  getStoreOrders(inventoryId: string): Promise<Order[]>;
+  getInventoryOrders(inventoryId: string): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
 
   // Wishlist
@@ -122,38 +122,38 @@ export class DatabaseStorage implements IStorage {
     await db.update(users).set({ isBlocked: false }).where(eq(users.id, id));
   }
 
-  async createStore(insertStore: InsertStore): Promise<Store> {
-    const [store] = await db
-      .insert(stores)
-      .values(insertStore)
+  async createInventory(insertInventory: InsertInventory): Promise<Inventory> {
+    const [inventory] = await db
+      .insert(inventories)
+      .values(insertInventory)
       .returning();
-    return store;
+    return inventory;
   }
 
-  async getStoreByEmail(email: string): Promise<Store | undefined> {
-    const [store] = await db
+  async getInventoryByEmail(email: string): Promise<Inventory | undefined> {
+    const [inventory] = await db
       .select()
-      .from(stores)
-      .where(eq(stores.email, email));
-    return store || undefined;
+      .from(inventories)
+      .where(eq(inventories.email, email));
+    return inventory || undefined;
   }
 
-  async getStoreById(id: string): Promise<Store | undefined> {
-    const [store] = await db
+  async getInventoryById(id: string): Promise<Inventory | undefined> {
+    const [inventory] = await db
       .select()
-      .from(stores)
-      .where(eq(stores.id, id));
-    return store || undefined;
+      .from(inventories)
+      .where(eq(inventories.id, id));
+    return inventory || undefined;
   }
 
-  async getAllStores(): Promise<Store[]> {
-    return await db.select().from(stores);
+  async getAllInventories(): Promise<Inventory[]> {
+    return await db.select().from(inventories);
   }
 
-  async deleteStore(id: string): Promise<boolean> {
+  async deleteInventory(id: string): Promise<boolean> {
     const result = await db
-      .delete(stores)
-      .where(eq(stores.id, id))
+      .delete(inventories)
+      .where(eq(inventories.id, id))
       .returning();
     return result.length > 0;
   }
@@ -247,7 +247,7 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  async getStoreProducts(inventoryId: string): Promise<Product[]> {
+  async getInventoryProducts(inventoryId: string): Promise<Product[]> {
     return await db
       .select()
       .from(products)
@@ -334,7 +334,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(orders).orderBy(desc(orders.createdAt));
   }
 
-  async getStoreOrders(inventoryId: string): Promise<Order[]> {
+  async getInventoryOrders(inventoryId: string): Promise<Order[]> {
     return await db
       .select()
       .from(orders)
