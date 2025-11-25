@@ -25,7 +25,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const inventories = pgTable("stores", {
+export const inventories = pgTable("inventories", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
