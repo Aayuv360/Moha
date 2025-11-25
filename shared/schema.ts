@@ -19,8 +19,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   isAdmin: boolean("is_admin").notNull().default(false),
-  isInventoryOwner: boolean("is_store_owner").notNull().default(false),
-  inventoryId: varchar("store_id"),
+  isInventoryOwner: boolean("is_inventory_owner").notNull().default(false),
+  inventoryId: varchar("inventory_id"),
   isBlocked: boolean("is_blocked").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -51,7 +51,7 @@ export const products = pgTable("products", {
   occasion: text("occasion").notNull(),
   category: text("category").notNull(),
   inStock: integer("in_stock").notNull().default(1),
-  inventoryId: varchar("store_id"),
+  inventoryId: varchar("inventory_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -81,7 +81,7 @@ export const orders = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   returnNotes: text("return_notes"),
   refundStatus: text("refund_status").default("none"),
-  inventoryId: varchar("store_id"),
+  inventoryId: varchar("inventory_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
