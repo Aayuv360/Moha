@@ -6,8 +6,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -25,7 +38,7 @@ export default function InventoryLogin() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (user?.isStoreOwner) {
+    if (user?.isInventoryOwner) {
       setLocation("/inventory/dashboard");
     }
   }, [user, setLocation]);
@@ -41,7 +54,11 @@ export default function InventoryLogin() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/inventory-login", data);
+      const response = await apiRequest(
+        "POST",
+        "/api/auth/inventory-login",
+        data,
+      );
       setUser(response.user);
       setToken(response.token);
       localStorage.setItem("token", response.token);
@@ -80,7 +97,7 @@ export default function InventoryLogin() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="store@example.com"
+                        placeholder="inventory@example.com"
                         {...field}
                         data-testid="input-inventory-email"
                       />

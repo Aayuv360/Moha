@@ -48,19 +48,19 @@ export default function InventoryDashboard() {
   const [refundNotes, setRefundNotes] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
-    if (!user?.isStoreOwner) {
+    if (!user?.isInventoryOwner) {
       setLocation("/inventory/login");
     }
   }, [user, setLocation]);
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/inventory/products'],
-    enabled: !!user?.isStoreOwner,
+    enabled: !!user?.isInventoryOwner,
   });
 
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: ['/api/inventory/orders'],
-    enabled: !!user?.isStoreOwner,
+    enabled: !!user?.isInventoryOwner,
   });
 
   const addProductMutation = useMutation({
@@ -254,7 +254,7 @@ export default function InventoryDashboard() {
     }
   };
 
-  if (!user?.isStoreOwner) {
+  if (!user?.isInventoryOwner) {
     return null;
   }
 

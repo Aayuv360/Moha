@@ -1,9 +1,23 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartItemSchema, insertOrderSchema, insertUserSchema, insertWishlistItemSchema, insertProductSchema, insertStoreSchema } from "@shared/schema";
+import {
+  insertCartItemSchema,
+  insertOrderSchema,
+  insertUserSchema,
+  insertWishlistItemSchema,
+  insertProductSchema,
+  insertInventorySchema,
+} from "@shared/schema";
 import { z } from "zod";
-import { generateToken, hashPassword, comparePasswords, authMiddleware, optionalAuthMiddleware, type AuthRequest } from "./auth";
+import {
+  generateToken,
+  hashPassword,
+  comparePasswords,
+  authMiddleware,
+  optionalAuthMiddleware,
+  type AuthRequest,
+} from "./auth";
 
 const adminAuthMiddleware = (req: any, res: any, next: any) => {
   authMiddleware(req, res, () => {
@@ -17,7 +31,7 @@ const adminAuthMiddleware = (req: any, res: any, next: any) => {
 
 const inventoryAuthMiddleware = (req: any, res: any, next: any) => {
   authMiddleware(req, res, () => {
-    if (req.isStoreOwner) {
+    if (req.isInventoryOwner) {
       next();
     } else {
       res.status(403).json({ error: "Inventory owner access required" });
@@ -34,7 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: z.string().min(6),
       });
       const validatedData = schema.parse(req.body);
-      
+
       const existingUser = await storage.getUserByEmail(validatedData.email);
       if (existingUser) {
         return res.status(400).json({ error: "Email already registered" });
@@ -47,9 +61,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const token = generateToken(user.id);
-      
+
       const { password: _, ...userWithoutPassword } = user;
-      
+
       res.status(201).json({
         user: userWithoutPassword,
         token,
@@ -85,9 +99,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const token = generateToken(user.id);
-      
+
       const { password: _, ...userWithoutPassword } = user;
-      
+
       res.json({
         user: userWithoutPassword,
         token,
@@ -119,9 +133,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const token = generateToken(user.id);
-      
+
       const { password: _, ...userWithoutPassword } = user;
-      
+
       res.json({
         user: userWithoutPassword,
         token,
@@ -143,12 +157,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = schema.parse(req.body);
 
       const user = await storage.getUserByEmail(email);
-      if (!user || !user.isStoreOwner) {
+      if (!user || !user.isInventoryOwner) {
         return res.status(401).json({ error: "Invalid inventory credentials" });
       }
 
       if (user.isBlocked) {
-        return res.status(403).json({ error: "Inventory account has been blocked" });
+        return res
+          .status(403)
+          .json({ error: "Inventory account has been blocked" });
       }
 
       const validPassword = await comparePasswords(password, user.password);
@@ -157,9 +173,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const token = generateToken(user.id);
-      
+
       const { password: _, ...userWithoutPassword } = user;
-      
+
       res.json({
         user: userWithoutPassword,
         token,
@@ -195,310 +211,383 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const users = await storage.getAllUsers();
-      res.json(users.map(u => {
-        const { password: _, ...userWithoutPassword } = u;
-        return userWithoutPassword;
-      }));
+      res.json(
+        users.map((u) => {
+          const { password: _, ...userWithoutPassword } = u;
+          return userWithoutPassword;
+        }),
+      );
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch users" });
     }
   });
 
-  app.post("/api/admin/stores", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
+  app.post(
+    "/api/admin/inventories",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+
+        const schema = insertInventorySchema;
+        const validatedData = schema.parse(req.body);
+
+        const existingStore = await storage.getStoreByEmail(
+          validatedData.email,
+        );
+        if (existingStore) {
+          return res
+            .status(400)
+            .json({ error: "Inventory email already exists" });
+        }
+
+        const store = await storage.createStore(validatedData);
+
+        const owner = await storage.getUserById(validatedData.ownerId);
+        if (owner) {
+          await storage.updateUser(validatedData.ownerId, {
+            isInventoryOwner: true,
+            inventoryId: store.id,
+          } as any);
+        }
+
+        res.status(201).json(store);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ error: error.errors });
+        }
+        res.status(500).json({ error: "Failed to create inventory" });
       }
+    },
+  );
 
-      const schema = insertStoreSchema;
-      const validatedData = schema.parse(req.body);
+  app.delete(
+    "/api/admin/inventories/:id",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
 
-      const existingStore = await storage.getStoreByEmail(validatedData.email);
-      if (existingStore) {
-        return res.status(400).json({ error: "Inventory email already exists" });
+        const success = await storage.deleteStore(req.params.id);
+        if (!success) {
+          return res.status(404).json({ error: "Inventory not found" });
+        }
+
+        res.status(204).send();
+      } catch (error) {
+        res.status(500).json({ error: "Failed to delete inventory" });
       }
+    },
+  );
 
-      const store = await storage.createStore(validatedData);
-      
-      const owner = await storage.getUserById(validatedData.ownerId);
-      if (owner) {
-        await storage.updateUser(validatedData.ownerId, {
-          isStoreOwner: true,
-          storeId: store.id,
-        } as any);
+  app.post(
+    "/api/admin/users/:id/block",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+
+        await storage.blockUser(req.params.id);
+        res.json({ message: "User blocked" });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to block user" });
       }
+    },
+  );
 
-      res.status(201).json(store);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+  app.post(
+    "/api/admin/users/:id/unblock",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+
+        await storage.unblockUser(req.params.id);
+        res.json({ message: "User unblocked" });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to unblock user" });
       }
-      res.status(500).json({ error: "Failed to create inventory" });
-    }
-  });
+    },
+  );
 
-  app.delete("/api/admin/stores/:id", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
+  app.get(
+    "/api/admin/orders",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+
+        const orders = await storage.getAllOrders();
+        res.json(orders);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch orders" });
       }
+    },
+  );
 
-      const success = await storage.deleteStore(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "Inventory not found" });
+  app.get(
+    "/api/admin/all-products",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+
+        const products = await storage.getAllProducts();
+        res.json(products);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch products" });
       }
-
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete inventory" });
-    }
-  });
-
-  app.post("/api/admin/users/:id/block", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
-      }
-
-      await storage.blockUser(req.params.id);
-      res.json({ message: "User blocked" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to block user" });
-    }
-  });
-
-  app.post("/api/admin/users/:id/unblock", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
-      }
-
-      await storage.unblockUser(req.params.id);
-      res.json({ message: "User unblocked" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to unblock user" });
-    }
-  });
-
-  app.get("/api/admin/orders", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
-      }
-
-      const orders = await storage.getAllOrders();
-      res.json(orders);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch orders" });
-    }
-  });
-
-  app.get("/api/admin/all-products", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
-      }
-
-      const products = await storage.getAllProducts();
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch products" });
-    }
-  });
+    },
+  );
 
   // Inventory endpoints
-  app.get("/api/inventory/products", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Inventory access required" });
+  app.get(
+    "/api/inventory/products",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
+
+        const products = await storage.getStoreProducts(user.inventoryId);
+        res.json(products);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch products" });
       }
+    },
+  );
 
-      const products = await storage.getStoreProducts(user.storeId);
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch products" });
-    }
-  });
+  app.post(
+    "/api/inventory/products",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
 
-  app.post("/api/inventory/products", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Inventory access required" });
+        const schema = insertProductSchema;
+        const validatedData = schema.parse(req.body);
+
+        // Generate unique tracking ID (format: PROD-TIMESTAMP-RANDOM)
+        const timestamp = Date.now().toString(36).toUpperCase();
+        const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const trackingId = `PROD-${timestamp}-${random}`;
+
+        const product = await storage.createProduct({
+          ...validatedData,
+          trackingId,
+          inventoryId: user.inventoryId,
+        });
+
+        res.status(201).json(product);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ error: error.errors });
+        }
+        res.status(500).json({ error: "Failed to create product" });
       }
+    },
+  );
 
-      const schema = insertProductSchema;
-      const validatedData = schema.parse(req.body);
+  app.patch(
+    "/api/inventory/products/:id",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
 
-      // Generate unique tracking ID (format: PROD-TIMESTAMP-RANDOM)
-      const timestamp = Date.now().toString(36).toUpperCase();
-      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const trackingId = `PROD-${timestamp}-${random}`;
+        const product = await storage.getProduct(req.params.id);
+        if (!product || product.inventoryId !== user.inventoryId) {
+          return res
+            .status(404)
+            .json({ error: "Product not found or unauthorized" });
+        }
 
-      const product = await storage.createProduct({
-        ...validatedData,
-        trackingId,
-        storeId: user.storeId,
-      });
-
-      res.status(201).json(product);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+        const updatedProduct = await storage.updateProduct(
+          req.params.id,
+          req.body,
+        );
+        res.json(updatedProduct);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to update product" });
       }
-      res.status(500).json({ error: "Failed to create product" });
-    }
-  });
+    },
+  );
 
-  app.patch("/api/inventory/products/:id", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Inventory access required" });
+  app.delete(
+    "/api/inventory/products/:id",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
+
+        const product = await storage.getProduct(req.params.id);
+        if (!product || product.inventoryId !== user.inventoryId) {
+          return res
+            .status(404)
+            .json({ error: "Product not found or unauthorized" });
+        }
+
+        const success = await storage.deleteProduct(req.params.id);
+        if (!success) {
+          return res.status(404).json({ error: "Product not found" });
+        }
+
+        res.status(204).send();
+      } catch (error) {
+        res.status(500).json({ error: "Failed to delete product" });
       }
+    },
+  );
 
-      const product = await storage.getProduct(req.params.id);
-      if (!product || product.storeId !== user.storeId) {
-        return res.status(404).json({ error: "Product not found or unauthorized" });
+  app.get(
+    "/api/inventory/orders",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
+
+        const orders = await storage.getStoreOrders(user.inventoryId);
+        res.json(orders);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch orders" });
       }
+    },
+  );
 
-      const updatedProduct = await storage.updateProduct(req.params.id, req.body);
-      res.json(updatedProduct);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update product" });
-    }
-  });
+  app.patch(
+    "/api/inventory/orders/:id/status",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
 
-  app.delete("/api/inventory/products/:id", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Inventory access required" });
-      }
+        const { status, returnNotes, refundStatus } = req.body;
+        if (!["pending", "shipped", "delivered"].includes(status)) {
+          return res.status(400).json({ error: "Invalid status" });
+        }
 
-      const product = await storage.getProduct(req.params.id);
-      if (!product || product.storeId !== user.storeId) {
-        return res.status(404).json({ error: "Product not found or unauthorized" });
-      }
+        const order = await storage.getOrder(req.params.id);
+        if (!order || order.inventoryId !== user.inventoryId) {
+          return res
+            .status(404)
+            .json({ error: "Order not found or unauthorized" });
+        }
 
-      const success = await storage.deleteProduct(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "Product not found" });
-      }
+        const oldStatus = order.status;
+        const updates: any = { status };
+        if (returnNotes !== undefined) updates.returnNotes = returnNotes;
+        if (refundStatus !== undefined) updates.refundStatus = refundStatus;
 
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete product" });
-    }
-  });
+        const updatedOrder = await db
+          .update(orders)
+          .set(updates)
+          .where(eq(orders.id, req.params.id))
+          .returning();
 
-  app.get("/api/inventory/orders", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Inventory access required" });
-      }
-
-      const orders = await storage.getStoreOrders(user.storeId);
-      res.json(orders);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch orders" });
-    }
-  });
-
-  app.patch("/api/inventory/orders/:id/status", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Inventory access required" });
-      }
-
-      const { status, returnNotes, refundStatus } = req.body;
-      if (!['pending', 'shipped', 'delivered'].includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
-      }
-
-      const order = await storage.getOrder(req.params.id);
-      if (!order || order.storeId !== user.storeId) {
-        return res.status(404).json({ error: "Order not found or unauthorized" });
-      }
-
-      const oldStatus = order.status;
-      const updates: any = { status };
-      if (returnNotes !== undefined) updates.returnNotes = returnNotes;
-      if (refundStatus !== undefined) updates.refundStatus = refundStatus;
-
-      const updatedOrder = await db
-        .update(orders)
-        .set(updates)
-        .where(eq(orders.id, req.params.id))
-        .returning();
-
-      if (status === 'shipped' && oldStatus !== 'shipped') {
-        const items = JSON.parse(order.items);
-        for (const item of items) {
-          const product = await storage.getProduct(item.productId);
-          if (product) {
-            const newStock = Math.max(0, product.inStock - item.quantity);
-            await storage.updateProduct(item.productId, { inStock: newStock });
+        if (status === "shipped" && oldStatus !== "shipped") {
+          const items = JSON.parse(order.items);
+          for (const item of items) {
+            const product = await storage.getProduct(item.productId);
+            if (product) {
+              const newStock = Math.max(0, product.inStock - item.quantity);
+              await storage.updateProduct(item.productId, {
+                inStock: newStock,
+              });
+            }
           }
         }
+
+        res.json(updatedOrder[0]);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to update order status" });
       }
+    },
+  );
 
-      res.json(updatedOrder[0]);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update order status" });
-    }
-  });
+  app.patch(
+    "/api/inventory/orders/:id/refund",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
 
-  app.patch("/api/inventory/orders/:id/refund", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Inventory access required" });
+        const { refundStatus, returnNotes } = req.body;
+        if (
+          !["none", "requested", "approved", "rejected"].includes(refundStatus)
+        ) {
+          return res.status(400).json({ error: "Invalid refund status" });
+        }
+
+        const order = await storage.getOrder(req.params.id);
+        if (!order || order.inventoryId !== user.inventoryId) {
+          return res
+            .status(404)
+            .json({ error: "Order not found or unauthorized" });
+        }
+
+        const updatedOrder = await db
+          .update(orders)
+          .set({ refundStatus, returnNotes })
+          .where(eq(orders.id, req.params.id))
+          .returning();
+
+        res.json(updatedOrder[0]);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to process refund" });
       }
-
-      const { refundStatus, returnNotes } = req.body;
-      if (!['none', 'requested', 'approved', 'rejected'].includes(refundStatus)) {
-        return res.status(400).json({ error: "Invalid refund status" });
-      }
-
-      const order = await storage.getOrder(req.params.id);
-      if (!order || order.storeId !== user.storeId) {
-        return res.status(404).json({ error: "Order not found or unauthorized" });
-      }
-
-      const updatedOrder = await db
-        .update(orders)
-        .set({ refundStatus, returnNotes })
-        .where(eq(orders.id, req.params.id))
-        .returning();
-
-      res.json(updatedOrder[0]);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to process refund" });
-    }
-  });
+    },
+  );
 
   // Product endpoints
   app.get("/api/products", async (req, res) => {
     try {
       const { search, fabric, occasion, minPrice, maxPrice } = req.query;
-      
+
       const filters: any = {};
-      if (typeof search === 'string') filters.search = search;
-      if (typeof fabric === 'string') filters.fabric = fabric;
-      if (typeof occasion === 'string') filters.occasion = occasion;
-      if (typeof minPrice === 'string') filters.minPrice = parseFloat(minPrice);
-      if (typeof maxPrice === 'string') filters.maxPrice = parseFloat(maxPrice);
-      
+      if (typeof search === "string") filters.search = search;
+      if (typeof fabric === "string") filters.fabric = fabric;
+      if (typeof occasion === "string") filters.occasion = occasion;
+      if (typeof minPrice === "string") filters.minPrice = parseFloat(minPrice);
+      if (typeof maxPrice === "string") filters.maxPrice = parseFloat(maxPrice);
+
       const products = await storage.getAllProducts(filters);
       res.json(products);
     } catch (error) {
@@ -522,15 +611,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/cart/:sessionId", async (req, res) => {
     try {
       const cartItems = await storage.getCartItems(req.params.sessionId);
-      
+
       const cartItemsWithProducts = await Promise.all(
         cartItems.map(async (item) => {
           const product = await storage.getProduct(item.productId);
           return { ...item, product };
-        })
+        }),
       );
 
-      res.json(cartItemsWithProducts.filter(item => item.product));
+      res.json(cartItemsWithProducts.filter((item) => item.product));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch cart items" });
     }
@@ -539,7 +628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cart", async (req, res) => {
     try {
       const validatedData = insertCartItemSchema.parse(req.body);
-      
+
       const product = await storage.getProduct(validatedData.productId);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
@@ -562,13 +651,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/cart/:id", async (req, res) => {
     try {
       const { quantity } = req.body;
-      
-      if (typeof quantity !== 'number' || quantity < 1) {
+
+      if (typeof quantity !== "number" || quantity < 1) {
         return res.status(400).json({ error: "Invalid quantity" });
       }
 
-      const updatedItem = await storage.updateCartItemQuantity(req.params.id, quantity);
-      
+      const updatedItem = await storage.updateCartItemQuantity(
+        req.params.id,
+        quantity,
+      );
+
       if (!updatedItem) {
         return res.status(404).json({ error: "Cart item not found" });
       }
@@ -582,7 +674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/cart/:id", async (req, res) => {
     try {
       const success = await storage.removeFromCart(req.params.id);
-      
+
       if (!success) {
         return res.status(404).json({ error: "Cart item not found" });
       }
@@ -603,45 +695,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/orders", optionalAuthMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const validatedData = insertOrderSchema.parse(req.body);
-      const orderItems = JSON.parse(validatedData.items);
-      const sessionId = orderItems.length > 0 ? orderItems[0].sessionId : null;
-      
-      // Get storeId from first product in order
-      let storeId: string | undefined = undefined;
-      if (orderItems.length > 0) {
-        const firstProduct = await storage.getProduct(orderItems[0].productId);
-        if (firstProduct) {
-          storeId = firstProduct.storeId;
+  app.post(
+    "/api/orders",
+    optionalAuthMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const validatedData = insertOrderSchema.parse(req.body);
+        const orderItems = JSON.parse(validatedData.items);
+        const sessionId =
+          orderItems.length > 0 ? orderItems[0].sessionId : null;
+
+        // Get inventoryId from first product in order
+        let inventoryId: string | undefined = undefined;
+        if (orderItems.length > 0) {
+          const firstProduct = await storage.getProduct(
+            orderItems[0].productId,
+          );
+          if (firstProduct) {
+            inventoryId = firstProduct.inventoryId;
+          }
         }
-      }
 
-      const orderData = {
-        ...validatedData,
-        userId: req.userId || null,
-        storeId: storeId || null,
-      };
-      const order = await storage.createOrder(orderData);
-      
-      if (sessionId) {
-        await storage.clearCart(sessionId);
-      }
+        const orderData = {
+          ...validatedData,
+          userId: req.userId || null,
+          inventoryId: inventoryId || null,
+        };
+        const order = await storage.createOrder(orderData);
 
-      res.status(201).json(order);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+        if (sessionId) {
+          await storage.clearCart(sessionId);
+        }
+
+        res.status(201).json(order);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ error: error.errors });
+        }
+        res.status(500).json({ error: "Failed to create order" });
       }
-      res.status(500).json({ error: "Failed to create order" });
-    }
-  });
+    },
+  );
 
   app.get("/api/orders/:id", async (req, res) => {
     try {
       const order = await storage.getOrder(req.params.id);
-      
+
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
       }
@@ -678,26 +777,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/wishlist/:productId", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const success = await storage.removeFromWishlist(req.userId!, req.params.productId);
-      if (!success) {
-        return res.status(404).json({ error: "Wishlist item not found" });
+  app.delete(
+    "/api/wishlist/:productId",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const success = await storage.removeFromWishlist(
+          req.userId!,
+          req.params.productId,
+        );
+        if (!success) {
+          return res.status(404).json({ error: "Wishlist item not found" });
+        }
+        res.status(204).send();
+      } catch (error) {
+        res.status(500).json({ error: "Failed to remove from wishlist" });
       }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to remove from wishlist" });
-    }
-  });
+    },
+  );
 
-  app.get("/api/wishlist/check/:productId", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const isInWishlist = await storage.isInWishlist(req.userId!, req.params.productId);
-      res.json({ isInWishlist });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to check wishlist" });
-    }
-  });
+  app.get(
+    "/api/wishlist/check/:productId",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const isInWishlist = await storage.isInWishlist(
+          req.userId!,
+          req.params.productId,
+        );
+        res.json({ isInWishlist });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to check wishlist" });
+      }
+    },
+  );
 
   const httpServer = createServer(app);
   return httpServer;

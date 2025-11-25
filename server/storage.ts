@@ -38,26 +38,32 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   blockUser(id: string): Promise<void>;
   unblockUser(id: string): Promise<void>;
-  
+
   // Stores
   createStore(store: InsertStore): Promise<Store>;
   getStoreByEmail(email: string): Promise<Store | undefined>;
   getStoreById(id: string): Promise<Store | undefined>;
   getAllStores(): Promise<Store[]>;
   deleteStore(id: string): Promise<boolean>;
-  
+
   // Products
   getAllProducts(filters?: ProductFilters): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
-  updateProduct(id: string, updates: Partial<Product>): Promise<Product | undefined>;
+  updateProduct(
+    id: string,
+    updates: Partial<Product>,
+  ): Promise<Product | undefined>;
   deleteProduct(id: string): Promise<boolean>;
-  getStoreProducts(storeId: string): Promise<Product[]>;
+  getStoreProducts(inventoryId: string): Promise<Product[]>;
 
   // Cart
   getCartItems(sessionId: string): Promise<CartItem[]>;
   addToCart(item: InsertCartItem): Promise<CartItem>;
-  updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined>;
+  updateCartItemQuantity(
+    id: string,
+    quantity: number,
+  ): Promise<CartItem | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(sessionId: string): Promise<void>;
 
@@ -66,9 +72,9 @@ export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
   getUserOrders(userId: string): Promise<Order[]>;
   getAllOrders(): Promise<Order[]>;
-  getStoreOrders(storeId: string): Promise<Order[]>;
+  getStoreOrders(inventoryId: string): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
-  
+
   // Wishlist
   getUserWishlist(userId: string): Promise<WishlistItem[]>;
   addToWishlist(item: InsertWishlistItem): Promise<WishlistItem>;
@@ -78,10 +84,7 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
@@ -99,7 +102,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users);
   }
 
-  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+  async updateUser(
+    id: string,
+    updates: Partial<User>,
+  ): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set(updates)
@@ -117,17 +123,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStore(insertStore: InsertStore): Promise<Store> {
-    const [store] = await db.insert(stores).values(insertStore).returning();
+    const [store] = await db
+      .insert(stores)
+      .values(insertStore)
+      .returning();
     return store;
   }
 
   async getStoreByEmail(email: string): Promise<Store | undefined> {
-    const [store] = await db.select().from(stores).where(eq(stores.email, email));
+    const [store] = await db
+      .select()
+      .from(stores)
+      .where(eq(stores.email, email));
     return store || undefined;
   }
 
   async getStoreById(id: string): Promise<Store | undefined> {
-    const [store] = await db.select().from(stores).where(eq(stores.id, id));
+    const [store] = await db
+      .select()
+      .from(stores)
+      .where(eq(stores.id, id));
     return store || undefined;
   }
 
@@ -136,7 +151,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteStore(id: string): Promise<boolean> {
-    const result = await db.delete(stores).where(eq(stores.id, id)).returning();
+    const result = await db
+      .delete(stores)
+      .where(eq(stores.id, id))
+      .returning();
     return result.length > 0;
   }
 
@@ -151,16 +169,16 @@ export class DatabaseStorage implements IStorage {
           ilike(products.description, searchPattern),
           ilike(products.category, searchPattern),
           ilike(products.fabric, searchPattern),
-          ilike(products.color, searchPattern)
-        )
+          ilike(products.color, searchPattern),
+        ),
       );
     }
 
-    if (filters?.fabric && filters.fabric !== 'All') {
+    if (filters?.fabric && filters.fabric !== "All") {
       conditions.push(eq(products.fabric, filters.fabric));
     }
 
-    if (filters?.occasion && filters.occasion !== 'All') {
+    if (filters?.occasion && filters.occasion !== "All") {
       conditions.push(eq(products.occasion, filters.occasion));
     }
 
@@ -169,13 +187,17 @@ export class DatabaseStorage implements IStorage {
         conditions.push(
           and(
             gte(sql`CAST(${products.price} AS DECIMAL)`, filters.minPrice),
-            lte(sql`CAST(${products.price} AS DECIMAL)`, filters.maxPrice)
-          )
+            lte(sql`CAST(${products.price} AS DECIMAL)`, filters.maxPrice),
+          ),
         );
       } else if (filters.minPrice !== undefined) {
-        conditions.push(gte(sql`CAST(${products.price} AS DECIMAL)`, filters.minPrice));
+        conditions.push(
+          gte(sql`CAST(${products.price} AS DECIMAL)`, filters.minPrice),
+        );
       } else if (filters.maxPrice !== undefined) {
-        conditions.push(lte(sql`CAST(${products.price} AS DECIMAL)`, filters.maxPrice));
+        conditions.push(
+          lte(sql`CAST(${products.price} AS DECIMAL)`, filters.maxPrice),
+        );
       }
     }
 
@@ -190,7 +212,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id));
     return product || undefined;
   }
 
@@ -202,7 +227,10 @@ export class DatabaseStorage implements IStorage {
     return product;
   }
 
-  async updateProduct(id: string, updates: Partial<Product>): Promise<Product | undefined> {
+  async updateProduct(
+    id: string,
+    updates: Partial<Product>,
+  ): Promise<Product | undefined> {
     const [product] = await db
       .update(products)
       .set(updates)
@@ -212,12 +240,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    const result = await db.delete(products).where(eq(products.id, id)).returning();
+    const result = await db
+      .delete(products)
+      .where(eq(products.id, id))
+      .returning();
     return result.length > 0;
   }
 
-  async getStoreProducts(storeId: string): Promise<Product[]> {
-    return await db.select().from(products).where(eq(products.storeId, storeId));
+  async getStoreProducts(inventoryId: string): Promise<Product[]> {
+    return await db
+      .select()
+      .from(products)
+      .where(eq(products.inventoryId, inventoryId));
   }
 
   async getCartItems(sessionId: string): Promise<CartItem[]> {
@@ -234,8 +268,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(cartItems.productId, insertItem.productId),
-          eq(cartItems.sessionId, insertItem.sessionId)
-        )
+          eq(cartItems.sessionId, insertItem.sessionId),
+        ),
       );
 
     if (existingItem) {
@@ -254,7 +288,10 @@ export class DatabaseStorage implements IStorage {
     return cartItem;
   }
 
-  async updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined> {
+  async updateCartItemQuantity(
+    id: string,
+    quantity: number,
+  ): Promise<CartItem | undefined> {
     const [updatedItem] = await db
       .update(cartItems)
       .set({ quantity })
@@ -272,16 +309,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async clearCart(sessionId: string): Promise<void> {
-    await db
-      .delete(cartItems)
-      .where(eq(cartItems.sessionId, sessionId));
+    await db.delete(cartItems).where(eq(cartItems.sessionId, sessionId));
   }
 
   async createOrder(insertOrder: InsertOrder): Promise<Order> {
-    const [order] = await db
-      .insert(orders)
-      .values(insertOrder)
-      .returning();
+    const [order] = await db.insert(orders).values(insertOrder).returning();
     return order;
   }
 
@@ -302,15 +334,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(orders).orderBy(desc(orders.createdAt));
   }
 
-  async getStoreOrders(storeId: string): Promise<Order[]> {
+  async getStoreOrders(inventoryId: string): Promise<Order[]> {
     return await db
       .select()
       .from(orders)
-      .where(eq(orders.storeId, storeId))
+      .where(eq(orders.inventoryId, inventoryId))
       .orderBy(desc(orders.createdAt));
   }
 
-  async updateOrderStatus(id: string, status: string): Promise<Order | undefined> {
+  async updateOrderStatus(
+    id: string,
+    status: string,
+  ): Promise<Order | undefined> {
     const [order] = await db
       .update(orders)
       .set({ status })
@@ -334,8 +369,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(wishlistItems.userId, item.userId),
-          eq(wishlistItems.productId, item.productId)
-        )
+          eq(wishlistItems.productId, item.productId),
+        ),
       );
 
     if (existing.length > 0) {
@@ -349,14 +384,17 @@ export class DatabaseStorage implements IStorage {
     return wishlistItem;
   }
 
-  async removeFromWishlist(userId: string, productId: string): Promise<boolean> {
+  async removeFromWishlist(
+    userId: string,
+    productId: string,
+  ): Promise<boolean> {
     const result = await db
       .delete(wishlistItems)
       .where(
         and(
           eq(wishlistItems.userId, userId),
-          eq(wishlistItems.productId, productId)
-        )
+          eq(wishlistItems.productId, productId),
+        ),
       )
       .returning();
     return result.length > 0;
@@ -369,8 +407,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(wishlistItems.userId, userId),
-          eq(wishlistItems.productId, productId)
-        )
+          eq(wishlistItems.productId, productId),
+        ),
       );
     return !!item;
   }
@@ -384,9 +422,11 @@ export class DatabaseStorage implements IStorage {
     const seedData: InsertProduct[] = [
       {
         name: "Royal Burgundy Silk Saree",
-        description: "Exquisite handwoven silk saree with intricate golden zari work. Perfect for weddings and special occasions.",
+        description:
+          "Exquisite handwoven silk saree with intricate golden zari work. Perfect for weddings and special occasions.",
         price: "12500.00",
-        imageUrl: "https://placehold.co/600x800/8b0000/ffffff?text=Burgundy+Silk+Saree",
+        imageUrl:
+          "https://placehold.co/600x800/8b0000/ffffff?text=Burgundy+Silk+Saree",
         images: [
           "https://placehold.co/600x800/8b0000/ffffff?text=Burgundy+Silk+Saree",
           "https://placehold.co/600x800/8b0000/ffffff?text=Model+View",
@@ -400,9 +440,11 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Emerald Kanjivaram Saree",
-        description: "Traditional Kanjivaram silk saree in rich emerald green with temple border design and contrasting pallu.",
+        description:
+          "Traditional Kanjivaram silk saree in rich emerald green with temple border design and contrasting pallu.",
         price: "18000.00",
-        imageUrl: "https://placehold.co/600x800/059669/ffffff?text=Emerald+Kanjivaram",
+        imageUrl:
+          "https://placehold.co/600x800/059669/ffffff?text=Emerald+Kanjivaram",
         images: [
           "https://placehold.co/600x800/059669/ffffff?text=Emerald+Kanjivaram",
           "https://placehold.co/600x800/059669/ffffff?text=Detail+View",
@@ -415,12 +457,14 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Royal Burgundy Heritage Silk",
-        description: "Luxurious pure silk saree in deep burgundy with intricate golden zari border work and traditional paisley motifs. Perfect for weddings and grand celebrations.",
+        description:
+          "Luxurious pure silk saree in deep burgundy with intricate golden zari border work and traditional paisley motifs. Perfect for weddings and grand celebrations.",
         price: "18500.00",
         fabric: "Silk",
         color: "Burgundy",
         occasion: "Wedding",
-        imageUrl: "https://placehold.co/600x800/8b0000/ffffff?text=Heritage+Silk",
+        imageUrl:
+          "https://placehold.co/600x800/8b0000/ffffff?text=Heritage+Silk",
         images: [
           "https://placehold.co/600x800/8b0000/ffffff?text=Heritage+Silk",
           "https://placehold.co/600x800/8b0000/ffffff?text=Full+View",
@@ -431,12 +475,14 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Banarasi Blue Elegance",
-        description: "Traditional Banarasi silk saree in royal blue with silver zari weaving and intricate floral patterns. A timeless piece of Indian craftsmanship.",
+        description:
+          "Traditional Banarasi silk saree in royal blue with silver zari weaving and intricate floral patterns. A timeless piece of Indian craftsmanship.",
         price: "22000.00",
         fabric: "Banarasi",
         color: "Blue",
         occasion: "Wedding",
-        imageUrl: "https://placehold.co/600x800/1e40af/ffffff?text=Royal+Blue+Banarasi",
+        imageUrl:
+          "https://placehold.co/600x800/1e40af/ffffff?text=Royal+Blue+Banarasi",
         images: [
           "https://placehold.co/600x800/1e40af/ffffff?text=Royal+Blue+Banarasi",
           "https://placehold.co/600x800/1e40af/ffffff?text=Zari+Detail",
@@ -446,12 +492,14 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Emerald Kanjivaram Heritage",
-        description: "Authentic Kanjivaram silk saree in rich emerald green with heavy gold zari border and traditional temple motifs. A South Indian masterpiece.",
+        description:
+          "Authentic Kanjivaram silk saree in rich emerald green with heavy gold zari border and traditional temple motifs. A South Indian masterpiece.",
         price: "28000.00",
         fabric: "Kanjivaram",
         color: "Green",
         occasion: "Wedding",
-        imageUrl: "https://placehold.co/600x800/059669/ffffff?text=Kanjivaram+Heritage",
+        imageUrl:
+          "https://placehold.co/600x800/059669/ffffff?text=Kanjivaram+Heritage",
         images: [
           "https://placehold.co/600x800/059669/ffffff?text=Kanjivaram+Heritage",
           "https://placehold.co/600x800/059669/ffffff?text=Temple+Motif",
@@ -461,12 +509,14 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Blush Pink Cotton Silk",
-        description: "Lightweight cotton silk saree in soft pink with delicate floral embroidery. Perfect for summer festivities and casual elegance.",
+        description:
+          "Lightweight cotton silk saree in soft pink with delicate floral embroidery. Perfect for summer festivities and casual elegance.",
         price: "4500.00",
         fabric: "Cotton Silk",
         color: "Pink",
         occasion: "Festive",
-        imageUrl: "https://placehold.co/600x800/fbbf24/ffffff?text=Blush+Pink+Cotton",
+        imageUrl:
+          "https://placehold.co/600x800/fbbf24/ffffff?text=Blush+Pink+Cotton",
         images: [
           "https://placehold.co/600x800/fbbf24/ffffff?text=Blush+Pink+Cotton",
           "https://placehold.co/600x800/fbbf24/ffffff?text=Embroidery+Detail",
@@ -476,12 +526,14 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Peacock Blue Designer Saree",
-        description: "Stunning pure silk saree in peacock blue with golden peacock motif embroidery. Vibrant colors perfect for festive celebrations.",
+        description:
+          "Stunning pure silk saree in peacock blue with golden peacock motif embroidery. Vibrant colors perfect for festive celebrations.",
         price: "16500.00",
         fabric: "Silk",
         color: "Blue",
         occasion: "Festive",
-        imageUrl: "https://placehold.co/600x800/0891b2/ffffff?text=Peacock+Blue+Designer",
+        imageUrl:
+          "https://placehold.co/600x800/0891b2/ffffff?text=Peacock+Blue+Designer",
         images: [
           "https://placehold.co/600x800/0891b2/ffffff?text=Peacock+Blue+Designer",
           "https://placehold.co/600x800/0891b2/ffffff?text=Peacock+Motif",
@@ -491,12 +543,14 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Champagne Sequin Saree",
-        description: "Contemporary designer saree in champagne beige with intricate pearl and sequin work. Modern Indo-western fusion for elegant parties.",
+        description:
+          "Contemporary designer saree in champagne beige with intricate pearl and sequin work. Modern Indo-western fusion for elegant parties.",
         price: "12000.00",
         fabric: "Silk",
         color: "Beige",
         occasion: "Party",
-        imageUrl: "https://placehold.co/600x800/d4af37/ffffff?text=Champagne+Sequin",
+        imageUrl:
+          "https://placehold.co/600x800/d4af37/ffffff?text=Champagne+Sequin",
         images: [
           "https://placehold.co/600x800/d4af37/ffffff?text=Champagne+Sequin",
           "https://placehold.co/600x800/d4af37/ffffff?text=Sequin+Detail",
@@ -506,12 +560,14 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Classic Black Banarasi",
-        description: "Sophisticated black and gold Banarasi silk saree with heavy zari border and traditional Mughal patterns. Timeless elegance for formal occasions.",
+        description:
+          "Sophisticated black and gold Banarasi silk saree with heavy zari border and traditional Mughal patterns. Timeless elegance for formal occasions.",
         price: "24000.00",
         fabric: "Banarasi",
         color: "Black",
         occasion: "Wedding",
-        imageUrl: "https://placehold.co/600x800/000000/ffd700?text=Classic+Black+Banarasi",
+        imageUrl:
+          "https://placehold.co/600x800/000000/ffd700?text=Classic+Black+Banarasi",
         images: [
           "https://placehold.co/600x800/000000/ffd700?text=Classic+Black+Banarasi",
           "https://placehold.co/600x800/000000/ffd700?text=Zari+Border",
@@ -521,12 +577,14 @@ export class DatabaseStorage implements IStorage {
       },
       {
         name: "Turquoise Chiffon Party Wear",
-        description: "Light and flowing chiffon saree in vibrant turquoise with silver sequin work. Perfect for contemporary party celebrations.",
+        description:
+          "Light and flowing chiffon saree in vibrant turquoise with silver sequin work. Perfect for contemporary party celebrations.",
         price: "6500.00",
         fabric: "Chiffon",
         color: "Turquoise",
         occasion: "Party",
-        imageUrl: "https://placehold.co/600x800/14b8a6/ffffff?text=Turquoise+Chiffon",
+        imageUrl:
+          "https://placehold.co/600x800/14b8a6/ffffff?text=Turquoise+Chiffon",
         images: [
           "https://placehold.co/600x800/14b8a6/ffffff?text=Turquoise+Chiffon",
           "https://placehold.co/600x800/14b8a6/ffffff?text=Sequin+Work",
