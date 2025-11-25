@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface User {
@@ -23,21 +29,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("token"),
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadUser = async () => {
-      const storedToken = localStorage.getItem("token");
-      if (storedToken) {
+      const InventoryToken = localStorage.getItem("token");
+      if (InventoryToken) {
         try {
           const userData = await apiRequest("GET", "/api/auth/me", undefined, {
             headers: {
-              Authorization: `Bearer ${storedToken}`,
+              Authorization: `Bearer ${InventoryToken}`,
             },
           });
           setUser(userData);
-          setToken(storedToken);
+          setToken(InventoryToken);
         } catch (error) {
           localStorage.removeItem("token");
           setToken(null);
@@ -54,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    
+
     setUser(response.user);
     setToken(response.token);
     localStorage.setItem("token", response.token);
@@ -66,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       name,
     });
-    
+
     setUser(response.user);
     setToken(response.token);
     localStorage.setItem("token", response.token);
@@ -79,7 +87,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading, setUser, setToken }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        register,
+        logout,
+        isLoading,
+        setUser,
+        setToken,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
