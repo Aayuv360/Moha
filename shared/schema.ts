@@ -25,6 +25,7 @@ export const stores = pgTable("stores", {
 
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trackingId: varchar("tracking_id").notNull().unique(),
   name: text("name").notNull(),
   description: text("description").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
@@ -73,7 +74,7 @@ export const wishlistItems = pgTable("wishlist_items", {
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, isAdmin: true, isStoreOwner: true, isBlocked: true });
 export const insertStoreSchema = createInsertSchema(stores).omit({ id: true, createdAt: true });
-export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, trackingId: true, createdAt: true });
 export const insertCartItemSchema = createInsertSchema(cartItems).omit({ id: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, status: true });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems).omit({ id: true, createdAt: true });

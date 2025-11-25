@@ -340,6 +340,7 @@ export default function StoreDashboard() {
                     <div key={product.id} className="p-3 border rounded flex justify-between items-start">
                       <div className="flex-1">
                         <p className="font-medium" data-testid={`text-product-${product.id}`}>{product.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono mt-1" data-testid={`text-tracking-${product.id}`}>Tracking ID: {product.trackingId}</p>
                         <p className="text-sm text-muted-foreground">₹{product.price}</p>
                         <div className="flex gap-2 mt-2">
                           <Badge variant="secondary">{product.fabric}</Badge>

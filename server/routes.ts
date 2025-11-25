@@ -337,8 +337,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const schema = insertProductSchema;
       const validatedData = schema.parse(req.body);
 
+      // Generate unique tracking ID (format: PROD-TIMESTAMP-RANDOM)
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const trackingId = `PROD-${timestamp}-${random}`;
+
       const product = await storage.createProduct({
         ...validatedData,
+        trackingId,
         storeId: user.storeId,
       });
 
