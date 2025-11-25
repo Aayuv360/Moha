@@ -12,6 +12,10 @@ interface User {
   email: string;
   name: string;
   isAdmin: boolean;
+  isInventoryOwner: boolean;
+  inventoryId: string | null;
+  isBlocked: boolean;
+  createdAt: Date;
 }
 
 interface AuthContextType {

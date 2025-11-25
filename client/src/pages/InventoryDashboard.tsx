@@ -21,7 +21,7 @@ export default function InventoryDashboard() {
   const [ordersSubTab, setOrdersSubTab] = useState<"active" | "completed">(
     "active",
   );
-  const [categoryTab, setCategoryTab] = useState<string>("");
+
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(
