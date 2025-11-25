@@ -442,17 +442,20 @@ export default function StoreDashboard() {
               </Card>
             ) : (
               <div className="space-y-6">
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {categories.map((category) => (
-                    <Button
-                      key={category}
-                      variant={categoryTab === category ? "default" : "outline"}
-                      onClick={() => setCategoryTab(category)}
-                      data-testid={`button-category-${category}`}
-                    >
-                      {category}
-                    </Button>
-                  ))}
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium">Category:</label>
+                  <Select value={categoryTab} onValueChange={setCategoryTab}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category} data-testid={`option-category-${category}`}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {categoryProducts.length === 0 ? (
