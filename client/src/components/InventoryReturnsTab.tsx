@@ -28,8 +28,8 @@ export function InventoryReturnsTab({ returns }: InventoryReturnsTabProps) {
         { status },
       );
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/returns"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/inventory/returns"] });
       toast({ title: "Return status updated successfully" });
     },
     onError: () => {
