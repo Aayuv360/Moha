@@ -18,7 +18,7 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function StoreLogin() {
+export default function InventoryLogin() {
   const [, setLocation] = useLocation();
   const { user, setUser, setToken } = useAuth();
   const { toast } = useToast();
@@ -26,7 +26,7 @@ export default function StoreLogin() {
 
   useEffect(() => {
     if (user?.isStoreOwner) {
-      setLocation("/store/dashboard");
+      setLocation("/inventory/dashboard");
     }
   }, [user, setLocation]);
 
@@ -41,19 +41,19 @@ export default function StoreLogin() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/store-login", data);
+      const response = await apiRequest("POST", "/api/auth/inventory-login", data);
       setUser(response.user);
       setToken(response.token);
       localStorage.setItem("token", response.token);
-      setLocation("/store/dashboard");
+      setLocation("/inventory/dashboard");
       toast({
         title: "Login successful",
-        description: "Welcome to store panel",
+        description: "Welcome to inventory panel",
       });
     } catch (error: any) {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid store credentials",
+        description: error.message || "Invalid inventory credentials",
         variant: "destructive",
       });
     } finally {
@@ -65,8 +65,8 @@ export default function StoreLogin() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Store Login</CardTitle>
-          <CardDescription>Enter your store credentials</CardDescription>
+          <CardTitle>Inventory Login</CardTitle>
+          <CardDescription>Enter your inventory credentials</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
