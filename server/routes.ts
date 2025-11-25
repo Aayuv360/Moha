@@ -20,8 +20,8 @@ import {
   type AuthRequest,
 } from "./auth";
 
-const adminAuthMiddleware = (req: any, res: any, next: any) => {
-  authMiddleware(req, res, () => {
+const adminAuthMiddleware = async (req: any, res: any, next: any) => {
+  await authMiddleware(req, res, () => {
     if (req.isAdmin) {
       next();
     } else {
@@ -30,8 +30,8 @@ const adminAuthMiddleware = (req: any, res: any, next: any) => {
   });
 };
 
-const inventoryAuthMiddleware = (req: any, res: any, next: any) => {
-  authMiddleware(req, res, () => {
+const inventoryAuthMiddleware = async (req: any, res: any, next: any) => {
+  await authMiddleware(req, res, () => {
     if (req.isInventoryOwner) {
       next();
     } else {

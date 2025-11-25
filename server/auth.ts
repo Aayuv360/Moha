@@ -35,7 +35,7 @@ export async function comparePasswords(password: string, hash: string): Promise<
   return await bcrypt.compare(password, hash);
 }
 
-export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -50,20 +50,6 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   }
 
   req.userId = decoded.userId;
-  
-  // Fetch user to get admin and inventory owner status
-  try {
-    const { storage } = require("./storage");
-    const user = await storage.getUserById(decoded.userId);
-    if (user) {
-      req.isAdmin = user.isAdmin;
-      req.isInventoryOwner = user.isInventoryOwner;
-      req.inventoryId = user.inventoryId;
-    }
-  } catch (error) {
-    // Continue even if user fetch fails
-  }
-  
   next();
 }
 
