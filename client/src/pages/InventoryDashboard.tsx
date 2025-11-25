@@ -266,7 +266,7 @@ export default function InventoryDashboard() {
             <Store className="h-6 w-6" />
             <h1 className="text-2xl font-bold">Inventory Dashboard</h1>
           </div>
-          <Button variant="outline" onClick={handleLogout} data-testid="button-store-logout">
+          <Button variant="outline" onClick={handleLogout} data-testid="button-inventory-logout">
             <LogOut className="h-4 w-4 mr-2" />
             Logout
           </Button>
@@ -941,13 +941,13 @@ export default function InventoryDashboard() {
               <div className="space-y-6 max-w-2xl">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Store Settings</CardTitle>
+                    <CardTitle>Inventory Settings</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="p-4 bg-muted rounded-lg">
-                      <h3 className="font-semibold mb-2">Store Information</h3>
+                      <h3 className="font-semibold mb-2">Inventory Information</h3>
                       <div className="space-y-2 text-sm">
-                        <p><span className="text-muted-foreground">Store Name:</span> <span className="font-medium">{user?.name}</span></p>
+                        <p><span className="text-muted-foreground">Inventory Name:</span> <span className="font-medium">{user?.name}</span></p>
                         <p><span className="text-muted-foreground">Email:</span> <span className="font-medium">{user?.email}</span></p>
                         <p><span className="text-muted-foreground">Total Products:</span> <span className="font-medium">{products.length}</span></p>
                         <p><span className="text-muted-foreground">Total Orders:</span> <span className="font-medium">{orders.length}</span></p>

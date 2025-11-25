@@ -82,7 +82,7 @@ export default function InventoryLogin() {
                         type="email"
                         placeholder="store@example.com"
                         {...field}
-                        data-testid="input-store-email"
+                        data-testid="input-inventory-email"
                       />
                     </FormControl>
                     <FormMessage />
@@ -100,7 +100,7 @@ export default function InventoryLogin() {
                         type="password"
                         placeholder="••••••"
                         {...field}
-                        data-testid="input-store-password"
+                        data-testid="input-inventory-password"
                       />
                     </FormControl>
                     <FormMessage />
@@ -111,7 +111,7 @@ export default function InventoryLogin() {
                 type="submit"
                 className="w-full"
                 disabled={isLoading}
-                data-testid="button-store-login"
+                data-testid="button-inventory-login"
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
