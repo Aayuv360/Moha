@@ -17,8 +17,11 @@ export default function InventoryDashboard() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<
-    "dashboard" | "products" | "orders" | "returns" | "settings"
+    "dashboard" | "products" | "orders" | "settings"
   >("dashboard");
+  const [ordersManagementTab, setOrdersManagementTab] = useState<"orders" | "returns">(
+    "orders",
+  );
   const [ordersSubTab, setOrdersSubTab] = useState<"pending" | "shipped" | "delivered">(
     "pending",
   );
@@ -116,15 +119,6 @@ export default function InventoryDashboard() {
               Orders
             </Button>
             <Button
-              variant={tab === "returns" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setTab("returns")}
-              data-testid="button-tab-returns"
-            >
-              <RotateCw className="h-4 w-4 mr-2" />
-              Returns
-            </Button>
-            <Button
               variant={tab === "settings" ? "default" : "ghost"}
               className="w-full justify-start"
               onClick={() => setTab("settings")}
@@ -165,11 +159,10 @@ export default function InventoryDashboard() {
                 orders={orders}
                 ordersSubTab={ordersSubTab}
                 setOrdersSubTab={setOrdersSubTab}
+                ordersManagementTab={ordersManagementTab}
+                setOrdersManagementTab={setOrdersManagementTab}
+                inventoryReturns={inventoryReturns}
               />
-            )}
-
-            {tab === "returns" && (
-              <InventoryReturnsTab returns={inventoryReturns} />
             )}
 
             {tab === "settings" && (
