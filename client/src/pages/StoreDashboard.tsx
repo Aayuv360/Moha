@@ -39,6 +39,7 @@ export default function StoreDashboard() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<"products" | "orders">("products");
+  const [categoryTab, setCategoryTab] = useState<string>("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -205,6 +206,23 @@ export default function StoreDashboard() {
     logout();
     setLocation("/");
   };
+
+  // Get unique categories sorted
+  const categories = Array.from(
+    new Set(products.map((p: any) => p.category || "Uncategorized"))
+  ).sort();
+
+  // Set default category on products load
+  useEffect(() => {
+    if (categories.length > 0 && !categoryTab) {
+      setCategoryTab(categories[0]);
+    }
+  }, [categories, categoryTab]);
+
+  // Get products for selected category
+  const categoryProducts = products.filter(
+    (p: any) => (p.category || "Uncategorized") === categoryTab
+  );
 
   if (!user?.isStoreOwner) {
     return null;
@@ -424,121 +442,138 @@ export default function StoreDashboard() {
               </Card>
             ) : (
               <div className="space-y-6">
-                {Array.from(
-                  products.reduce((acc: Map<string, any[]>, product: any) => {
-                    const cat = product.category || "Uncategorized";
-                    if (!acc.has(cat)) acc.set(cat, []);
-                    acc.get(cat)!.push(product);
-                    return acc;
-                  }, new Map())
-                )
-                  .sort((a, b) => a[0].localeCompare(b[0]))
-                  .map(([category, categoryProducts]) => (
-                    <Card key={category}>
-                      <CardHeader>
-                        <CardTitle className="text-base">{category}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {categoryProducts.map((product: any) => (
-                            <div key={product.id} className="p-3 border rounded">
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex-1">
-                                  <p className="font-medium" data-testid={`text-product-${product.id}`}>{product.name}</p>
-                                  <p className="text-xs text-muted-foreground font-mono mt-1" data-testid={`text-tracking-${product.id}`}>Tracking ID: {product.trackingId}</p>
-                                  <p className="text-sm text-muted-foreground">₹{product.price}</p>
-                                </div>
-                                <div className="flex gap-1">
-                                  <Dialog open={showEditDialog && editingProduct?.id === product.id} onOpenChange={setShowEditDialog}>
-                                    <DialogTrigger asChild>
-                                      <Button
-                                        size="icon"
-                                        variant="outline"
-                                        onClick={() => handleEditProduct(product)}
-                                        data-testid={`button-edit-product-${product.id}`}
-                                      >
-                                        <Edit2 className="h-4 w-4" />
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-h-96 overflow-y-auto">
-                                      <DialogHeader>
-                                        <DialogTitle>Edit Product</DialogTitle>
-                                      </DialogHeader>
-                                      <Form {...editForm}>
-                                        <form onSubmit={editForm.handleSubmit((data) => updateProductMutation.mutate(data))} className="space-y-3">
-                                          <FormField
-                                            control={editForm.control}
-                                            name="name"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel className="text-xs">Name</FormLabel>
-                                                <FormControl>
-                                                  <Input {...field} className="text-sm" />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={editForm.control}
-                                            name="price"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel className="text-xs">Price</FormLabel>
-                                                <FormControl>
-                                                  <Input type="number" {...field} className="text-sm" />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <FormField
-                                            control={editForm.control}
-                                            name="inStock"
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel className="text-xs">Stock</FormLabel>
-                                                <FormControl>
-                                                  <Input type="number" {...field} className="text-sm" />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                          <Button type="submit" className="w-full" disabled={updateProductMutation.isPending} size="sm">
-                                            Update Product
-                                          </Button>
-                                        </form>
-                                      </Form>
-                                    </DialogContent>
-                                  </Dialog>
-                                  <Button
-                                    size="icon"
-                                    variant="destructive"
-                                    onClick={() => deleteProductMutation.mutate(product.id)}
-                                    data-testid={`button-delete-product-${product.id}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                              <div className="flex gap-2 flex-wrap">
-                                <Badge variant="secondary">{product.fabric}</Badge>
-                                <Badge variant="secondary">{product.occasion}</Badge>
-                                {product.inStock <= 5 && (
-                                  <Badge variant="destructive" className="flex items-center gap-1">
-                                    <AlertCircle className="h-3 w-3" />
-                                    Low Stock: {product.inStock}
-                                  </Badge>
-                                )}
-                                {product.inStock > 5 && <Badge>Stock: {product.inStock}</Badge>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {categories.map((category) => (
+                    <Button
+                      key={category}
+                      variant={categoryTab === category ? "default" : "outline"}
+                      onClick={() => setCategoryTab(category)}
+                      data-testid={`button-category-${category}`}
+                    >
+                      {category}
+                    </Button>
                   ))}
+                </div>
+
+                {categoryProducts.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-8 text-center">
+                      <p className="text-muted-foreground">No products in this category</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categoryProducts.map((product: any) => (
+                      <Card key={product.id} className="overflow-hidden hover-elevate transition-all">
+                        <div className="aspect-square bg-muted overflow-hidden">
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect fill='%23e5e7eb' width='400' height='400'/%3E%3C/svg%3E";
+                            }}
+                          />
+                        </div>
+                        <CardContent className="pt-4">
+                          <p className="font-semibold text-lg truncate" data-testid={`text-product-${product.id}`}>{product.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono mt-1" data-testid={`text-tracking-${product.id}`}>ID: {product.trackingId}</p>
+                          <p className="text-lg font-bold text-primary mt-2">₹{product.price}</p>
+                          
+                          <div className="flex gap-1 flex-wrap mt-2 mb-3">
+                            <Badge variant="secondary" className="text-xs">{product.fabric}</Badge>
+                            <Badge variant="secondary" className="text-xs">{product.occasion}</Badge>
+                            {product.inStock <= 5 ? (
+                              <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {product.inStock}
+                              </Badge>
+                            ) : (
+                              <Badge className="text-xs">{product.inStock}</Badge>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => handleEditProduct(product)}
+                              data-testid={`button-edit-product-${product.id}`}
+                            >
+                              <Edit2 className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => deleteProductMutation.mutate(product.id)}
+                              data-testid={`button-delete-product-${product.id}`}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {showEditDialog && editingProduct && (
+                  <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+                    <DialogContent className="max-h-96 overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Edit Product</DialogTitle>
+                      </DialogHeader>
+                      <Form {...editForm}>
+                        <form onSubmit={editForm.handleSubmit((data) => updateProductMutation.mutate(data))} className="space-y-3">
+                          <FormField
+                            control={editForm.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Name</FormLabel>
+                                <FormControl>
+                                  <Input {...field} className="text-sm" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={editForm.control}
+                            name="price"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Price</FormLabel>
+                                <FormControl>
+                                  <Input type="number" {...field} className="text-sm" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={editForm.control}
+                            name="inStock"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Stock</FormLabel>
+                                <FormControl>
+                                  <Input type="number" {...field} className="text-sm" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button type="submit" className="w-full" disabled={updateProductMutation.isPending} size="sm">
+                            Update Product
+                          </Button>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
             )}
           </div>
