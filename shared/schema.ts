@@ -83,6 +83,8 @@ export const orders = pgTable("orders", {
   refundStatus: text("refund_status").default("none"),
   inventoryId: varchar("inventory_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  shippedAt: timestamp("shipped_at"),
+  deliveredAt: timestamp("delivered_at"),
 });
 
 export const wishlistItems = pgTable("wishlist_items", {
@@ -107,6 +109,7 @@ export const returns = pgTable("returns", {
   refundAmount: decimal("refund_amount", { precision: 10, scale: 2 }).notNull(),
   inventoryId: varchar("inventory_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  approvedAt: timestamp("approved_at"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
