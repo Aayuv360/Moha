@@ -27,15 +27,12 @@ import type { Product } from "@shared/schema";
 const productSchema = z.object({
   name: z.string().min(1, "Product name required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  price: z.string().transform((v) => v.toString()),
+  price: z.coerce.number().min(0, "Price must be valid"),
   fabric: z.string().min(1, "Fabric required"),
   color: z.string().min(1, "Color required"),
   occasion: z.string().min(1, "Occasion required"),
   category: z.string().min(1, "Category required"),
-  inStock: z
-    .string()
-    .transform((v) => parseInt(v))
-    .pipe(z.number().min(0)),
+  inStock: z.coerce.number().min(0, "Stock must be 0 or more"),
   imageUrl: z.string().url("Valid image URL required"),
   multipleImages: z.string().optional().default(""),
   videoUrl: z.string().url("Valid video URL").optional().or(z.literal("")),
@@ -57,12 +54,12 @@ export function ProductForm({ editingProduct, onSuccess }: ProductFormProps) {
       ? {
           name: editingProduct.name,
           description: editingProduct.description,
-          price: editingProduct.price.toString(),
+          price: parseFloat(editingProduct.price.toString()),
           fabric: editingProduct.fabric,
           color: editingProduct.color,
           occasion: editingProduct.occasion,
           category: editingProduct.category,
-          inStock: editingProduct.inStock.toString(),
+          inStock: editingProduct.inStock,
           imageUrl: editingProduct.imageUrl,
           multipleImages: Array.isArray(editingProduct.images)
             ? editingProduct.images.join(", ")
@@ -72,12 +69,12 @@ export function ProductForm({ editingProduct, onSuccess }: ProductFormProps) {
       : {
           name: "",
           description: "",
-          price: "",
+          price: 0,
           fabric: "Silk",
           color: "",
           occasion: "Wedding",
           category: "",
-          inStock: "1",
+          inStock: 1,
           imageUrl: "",
           multipleImages: "",
           videoUrl: "",
@@ -165,11 +162,11 @@ export function ProductForm({ editingProduct, onSuccess }: ProductFormProps) {
     },
   });
 
-  const onSubmit = (data: ProductFormData) => {
+  const onSubmit = async (data: ProductFormData) => {
     if (editingProduct) {
-      updateProductMutation.mutate(data);
+      updateProductMutation.mutate(data as any);
     } else {
-      addProductMutation.mutate(data);
+      addProductMutation.mutate(data as any);
     }
   };
 
@@ -219,8 +216,10 @@ export function ProductForm({ editingProduct, onSuccess }: ProductFormProps) {
               <FormControl>
                 <Input
                   type="number"
+                  step="0.01"
                   placeholder="9999"
                   {...field}
+                  value={field.value || ""}
                   data-testid="input-product-price"
                 />
               </FormControl>
@@ -307,6 +306,7 @@ export function ProductForm({ editingProduct, onSuccess }: ProductFormProps) {
                   type="number"
                   placeholder="0"
                   {...field}
+                  value={field.value || ""}
                   data-testid="input-product-stock"
                 />
               </FormControl>

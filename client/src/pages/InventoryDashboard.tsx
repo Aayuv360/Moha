@@ -163,32 +163,6 @@ export default function InventoryDashboard() {
           </div>
         </main>
       </div>
-
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body {
-            margin: 0;
-            padding: 0;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .min-h-screen {
-            min-height: auto !important;
-          }
-          aside {
-            display: none !important;
-          }
-          header {
-            display: none !important;
-          }
-          main {
-            max-width: 100% !important;
-            padding: 0 !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
