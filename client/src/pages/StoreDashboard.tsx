@@ -543,6 +543,8 @@ export default function StoreDashboard() {
                   ))}
               </div>
             )}
+          </div>
+        )}
 
         {tab === "orders" && (
           <div className="space-y-6">
