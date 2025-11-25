@@ -16,6 +16,7 @@ interface User {
   inventoryId: string | null;
   isBlocked: boolean;
   createdAt: Date;
+  password?: string; // Optional since it's never sent to frontend
 }
 
 interface AuthContextType {

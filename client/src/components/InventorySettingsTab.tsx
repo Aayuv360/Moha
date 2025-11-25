@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Order, Product, User } from "@shared/schema";
+import type { Order, Product } from "@shared/schema";
 
 interface SettingsTabProps {
-  user: User | null;
+  user: { name: string; email: string } | null;
   products: Product[];
   orders: Order[];
   totalRevenue: number;
