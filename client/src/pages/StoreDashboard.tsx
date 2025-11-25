@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, Order } from "@shared/schema";
-import { Store, LogOut, Plus, Trash2, Clock, Truck, CheckCircle, Edit2, AlertCircle, RotateCcw, BarChart3, Settings, Trash, Download, MapPin, Phone, Mail, Printer, ChevronDown, RotateCw, AlertTriangle } from "lucide-react";
+import { Store, LogOut, Plus, Trash2, Clock, Truck, CheckCircle, Edit2, AlertCircle, RotateCcw, BarChart3, Settings, Trash, Download, MapPin, Phone, Mail, Printer, ChevronDown, RotateCw, AlertTriangle, Image } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,20 +34,18 @@ const productSchema = z.object({
 
 type ProductForm = z.infer<typeof productSchema>;
 
-export default function StoreDashboard() {
+export default function InventoryDashboard() {
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<"dashboard" | "products" | "orders" | "settings">("dashboard");
+  const [ordersSubTab, setOrdersSubTab] = useState<"active" | "completed">("active");
   const [categoryTab, setCategoryTab] = useState<string>("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showProductDialog, setShowProductDialog] = useState(false);
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [refundNotes, setRefundNotes] = useState<{ [key: string]: string }>({});
-  const [printOrderId, setPrintOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.isStoreOwner) {
@@ -238,13 +236,10 @@ export default function StoreDashboard() {
     .sort((a, b) => b.inStock - a.inStock)
     .slice(0, 5);
 
-  const filteredOrders = orders
-    .filter(order => {
-      if (filterStatus !== "all" && order.status !== filterStatus) return false;
-      if (searchQuery && !order.id.includes(searchQuery) && !order.customerName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // Filter orders by status
+  const activeOrders = orders.filter(o => o.status !== 'delivered');
+  const completedOrders = orders.filter(o => o.status === 'delivered');
+  const displayOrders = ordersSubTab === 'active' ? activeOrders : completedOrders;
 
   const handleBulkDelete = async () => {
     if (selectedProducts.size === 0) {
@@ -269,7 +264,7 @@ export default function StoreDashboard() {
         <div className="max-w-full px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Store className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">Store Dashboard</h1>
+            <h1 className="text-2xl font-bold">Inventory Dashboard</h1>
           </div>
           <Button variant="outline" onClick={handleLogout} data-testid="button-store-logout">
             <LogOut className="h-4 w-4 mr-2" />
@@ -727,12 +722,35 @@ export default function StoreDashboard() {
 
             {tab === "orders" && (
               <div className="space-y-6">
+                {/* Orders Sub-Tabs */}
+                <div className="flex gap-2 border-b">
+                  <Button
+                    variant={ordersSubTab === "active" ? "default" : "ghost"}
+                    className="rounded-b-none"
+                    onClick={() => setOrdersSubTab("active")}
+                    data-testid="button-orders-active"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Active Orders ({activeOrders.length})
+                  </Button>
+                  <Button
+                    variant={ordersSubTab === "completed" ? "default" : "ghost"}
+                    className="rounded-b-none"
+                    onClick={() => setOrdersSubTab("completed")}
+                    data-testid="button-orders-completed"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Completed Orders ({completedOrders.length})
+                  </Button>
+                </div>
+
+                {/* Order Status Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        Pending Orders
+                        Pending
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -743,7 +761,7 @@ export default function StoreDashboard() {
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                         <Truck className="h-4 w-4" />
-                        Shipped Orders
+                        Shipped
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -754,7 +772,7 @@ export default function StoreDashboard() {
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                         <CheckCircle className="h-4 w-4" />
-                        Delivered Orders
+                        Delivered
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -763,55 +781,32 @@ export default function StoreDashboard() {
                   </Card>
                 </div>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Search & Filter</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Input
-                      placeholder="Search by Order ID or Customer Name"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      data-testid="input-search-orders"
-                    />
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger data-testid="select-filter-status">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </CardContent>
-                </Card>
-
-                <div className="space-y-3">
-                  {filteredOrders.length === 0 ? (
+                {/* Orders with Items Display */}
+                <div className="space-y-4">
+                  {displayOrders.length === 0 ? (
                     <Card>
                       <CardContent className="pt-8 text-center">
-                        <p className="text-muted-foreground">No orders found</p>
+                        <p className="text-muted-foreground">{ordersSubTab === 'active' ? 'No active orders' : 'No completed orders'}</p>
                       </CardContent>
                     </Card>
                   ) : (
-                    filteredOrders.map((order: any) => {
+                    displayOrders.map((order: any) => {
                       const items = order.items ? (typeof order.items === 'string' ? JSON.parse(order.items) : order.items) : [];
-                      const isExpanded = expandedOrder === order.id;
                       const hasReturn = order.status && order.returnNotes;
 
                       return (
-                        <Card key={order.id} className="overflow-hidden">
-                          <div
-                            className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                            data-testid={`card-order-${order.id}`}
-                          >
-                            <div className="flex items-center justify-between">
+                        <Card key={order.id} className="overflow-hidden" data-testid={`card-order-${order.id}`}>
+                          {/* Order Header */}
+                          <div className="p-4 border-b bg-muted/30">
+                            <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <p className="font-semibold">Order {order.id.substring(0, 8)}</p>
+                                <div className="flex items-center gap-3 mb-2">
+                                  <div>
+                                    <p className="font-semibold text-lg">Order {order.id.substring(0, 8)}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Customer: <span className="font-medium">{order.customerName}</span></p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
                                   <Badge variant={order.status === 'delivered' ? 'default' : order.status === 'shipped' ? 'secondary' : 'outline'} data-testid={`badge-status-${order.id}`}>
                                     {order.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
                                     {order.status === 'shipped' && <Truck className="h-3 w-3 mr-1" />}
@@ -825,171 +820,115 @@ export default function StoreDashboard() {
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="w-full bg-muted rounded-full h-2 mb-2">
-                                  <div className={`h-full rounded-full transition-all ${order.status === 'delivered' ? 'bg-green-500 w-full' : order.status === 'shipped' ? 'bg-blue-500 w-2/3' : 'bg-yellow-500 w-1/3'}`} />
-                                </div>
                               </div>
                               <div className="text-right min-w-fit">
-                                <p className="font-bold text-lg">₹{parseFloat(order.totalAmount.toString()).toLocaleString('en-IN')}</p>
-                                <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                <p className="font-bold text-2xl text-primary">₹{parseFloat(order.totalAmount.toString()).toLocaleString('en-IN')}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                               </div>
                             </div>
                           </div>
 
-                          {isExpanded && (
-                            <div className="border-t bg-muted/30 p-4 space-y-4 print:p-8">
-                              {/* Customer & Contact Info */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="p-3 bg-background rounded border">
-                                  <p className="text-xs font-semibold text-muted-foreground mb-3">Customer Information</p>
-                                  <div className="space-y-2">
-                                    <div>
-                                      <p className="text-xs text-muted-foreground">Name</p>
-                                      <p className="text-sm font-medium">{order.customerName}</p>
+                          {/* Order Items Grid */}
+                          <div className="p-4 bg-background">
+                            {items.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-4">No items found</p>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {items.map((item: any, idx: number) => (
+                                  <div key={idx} className="border rounded-lg overflow-hidden bg-card hover:shadow-sm transition-shadow">
+                                    {/* Item Image */}
+                                    <div className="aspect-square bg-muted overflow-hidden">
+                                      <img
+                                        src={item.imageUrl || item.image}
+                                        alt={item.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3C/svg%3E";
+                                        }}
+                                      />
                                     </div>
-                                    <div>
-                                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> Email</p>
-                                      <p className="text-sm font-medium break-all">{order.email}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</p>
-                                      <p className="text-sm font-medium">{order.phone}</p>
-                                    </div>
-                                  </div>
-                                </div>
+                                    
+                                    {/* Item Details */}
+                                    <div className="p-3 space-y-2">
+                                      <div>
+                                        <p className="text-sm font-semibold truncate">{item.name}</p>
+                                        <p className="text-xs text-muted-foreground">×{item.quantity}</p>
+                                      </div>
 
-                                <div className="p-3 bg-background rounded border">
-                                  <p className="text-xs font-semibold text-muted-foreground mb-3">Order Information</p>
-                                  <div className="space-y-2">
-                                    <div>
-                                      <p className="text-xs text-muted-foreground">Order ID</p>
-                                      <p className="text-sm font-mono font-medium">{order.id.substring(0, 12)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-muted-foreground">Order Date</p>
-                                      <p className="text-sm font-medium">{new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString()}</p>
+                                      {/* Attributes */}
+                                      <div className="flex flex-wrap gap-1">
+                                        {item.color && <Badge variant="secondary" className="text-xs h-5">{item.color}</Badge>}
+                                        {item.fabric && <Badge variant="secondary" className="text-xs h-5">{item.fabric}</Badge>}
+                                        {item.occasion && <Badge variant="secondary" className="text-xs h-5">{item.occasion}</Badge>}
+                                      </div>
+
+                                      {/* Pricing */}
+                                      <div className="border-t pt-2">
+                                        <div className="flex justify-between items-center mb-1">
+                                          <span className="text-xs text-muted-foreground">Price</span>
+                                          <span className="text-sm font-medium">₹{item.price ? parseFloat(item.price.toString()).toLocaleString('en-IN') : 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-xs font-semibold">Subtotal</span>
+                                          <span className="text-sm font-bold text-primary">₹{item.price ? (parseFloat(item.price.toString()) * item.quantity).toLocaleString('en-IN') : 'N/A'}</span>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Order Details Footer */}
+                          <div className="p-4 border-t bg-muted/20 space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Customer Info */}
+                              <div className="text-sm">
+                                <p className="text-muted-foreground text-xs mb-1">Contact</p>
+                                <p className="font-medium">{order.customerName}</p>
+                                <p className="text-xs text-muted-foreground">{order.email}</p>
+                                <p className="text-xs text-muted-foreground">{order.phone}</p>
                               </div>
 
                               {/* Shipping Address */}
-                              <div className="p-3 bg-background rounded border">
-                                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1"><MapPin className="h-3 w-3" /> Shipping Address</p>
-                                <p className="text-sm font-medium">{order.address}</p>
-                                <p className="text-sm text-muted-foreground">{order.city}, {order.state} - {order.pincode}</p>
-                                <div className="flex gap-2 mt-3">
-                                  <Button size="sm" variant="outline" className="flex-1 text-xs print:hidden" onClick={() => setPrintOrderId(order.id)} data-testid={`button-print-order-${order.id}`}>
-                                    <Printer className="h-3 w-3 mr-1" />
-                                    Print Order
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="text-xs print:hidden" onClick={() => window.print()} data-testid={`button-print-address-${order.id}`}>
-                                    <Printer className="h-3 w-3 mr-1" />
-                                    Print Address
-                                  </Button>
-                                </div>
+                              <div className="text-sm">
+                                <p className="text-muted-foreground text-xs mb-1 flex items-center gap-1"><MapPin className="h-3 w-3" /> Shipping Address</p>
+                                <p className="font-medium line-clamp-2">{order.address}</p>
+                                <p className="text-xs text-muted-foreground">{order.city}, {order.state} - {order.pincode}</p>
                               </div>
+                            </div>
 
-                              {/* Order Items & Breakdown */}
-                              <div className="p-3 bg-background rounded border">
-                                <p className="text-xs font-semibold text-muted-foreground mb-3">Order Items ({items.length})</p>
-                                <div className="space-y-3 max-h-96 overflow-y-auto">
-                                  {items.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">No items found</p>
-                                  ) : (
-                                    <>
-                                      {items.map((item: any, idx: number) => (
-                                        <div key={idx} className="flex gap-3 pb-3 border-b last:border-b-0">
-                                          {/* Product Image */}
-                                          <div className="flex-shrink-0">
-                                            <div className="w-16 h-16 bg-muted rounded overflow-hidden border">
-                                              <img
-                                                src={item.imageUrl || item.image}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3C/svg%3E";
-                                                }}
-                                              />
-                                            </div>
-                                          </div>
-
-                                          {/* Product Details */}
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold truncate">{item.name}</p>
-                                            <div className="flex gap-2 flex-wrap mt-1">
-                                              {item.color && <Badge variant="secondary" className="text-xs h-5">{item.color}</Badge>}
-                                              {item.fabric && <Badge variant="secondary" className="text-xs h-5">{item.fabric}</Badge>}
-                                              {item.occasion && <Badge variant="secondary" className="text-xs h-5">{item.occasion}</Badge>}
-                                            </div>
-                                            <div className="flex items-center justify-between mt-2">
-                                              <div className="text-xs text-muted-foreground">
-                                                <span className="font-semibold">Qty:</span> {item.quantity}
-                                              </div>
-                                              <div className="text-right">
-                                                <p className="text-xs text-muted-foreground">
-                                                  ₹{item.price ? parseFloat(item.price.toString()).toLocaleString('en-IN') : 'N/A'} each
-                                                </p>
-                                                <p className="text-sm font-bold">
-                                                  ₹{item.price ? (parseFloat(item.price.toString()) * item.quantity).toLocaleString('en-IN') : 'N/A'}
-                                                </p>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                      <div className="mt-3 pt-2 border-t-2 flex justify-between">
-                                        <p className="text-sm font-semibold">Total Amount</p>
-                                        <p className="text-lg font-bold text-primary">₹{parseFloat(order.totalAmount.toString()).toLocaleString('en-IN')}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Return & Refund Section */}
-                              {hasReturn && (
-                                <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
-                                  <p className="text-xs font-semibold text-red-900 dark:text-red-100 mb-3 flex items-center gap-1"><RotateCw className="h-3 w-3" /> Return & Refund Information</p>
-                                  <div className="space-y-2 mb-3 text-sm text-red-800 dark:text-red-200">
-                                    <div>
-                                      <p className="text-xs font-semibold text-red-700 dark:text-red-300">Reason for Return</p>
-                                      <p className="font-medium">{order.returnNotes}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-red-700 dark:text-red-300">Refund Status</p>
-                                      <p className="font-medium">{order.refundStatus || 'pending'}</p>
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2 print:hidden">
-                                    <Button size="sm" variant="outline" className="text-xs flex-1" data-testid={`button-approve-refund-${order.id}`}>
-                                      <CheckCircle className="h-3 w-3 mr-1" />
-                                      Approve Refund
-                                    </Button>
-                                    <Button size="sm" variant="destructive" className="text-xs flex-1" data-testid={`button-reject-refund-${order.id}`}>
-                                      <AlertTriangle className="h-3 w-3 mr-1" />
-                                      Reject
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Update Order Status */}
-                              <div className="border-t pt-3 space-y-2 print:hidden">
-                                <label className="text-xs font-semibold text-muted-foreground block">Update Order Status</label>
+                            {/* Actions */}
+                            <div className="flex gap-2 print:hidden pt-2 border-t">
+                              <Button size="sm" variant="outline" className="text-xs flex-1" onClick={() => window.print()} data-testid={`button-print-order-${order.id}`}>
+                                <Printer className="h-3 w-3 mr-1" />
+                                Print Order
+                              </Button>
+                              
+                              {ordersSubTab === 'active' && (
                                 <select
                                   value={order.status}
                                   onChange={(e) => updateOrderStatusMutation.mutate({ orderId: order.id, status: e.target.value })}
-                                  className="w-full text-sm border rounded px-3 py-2 bg-background"
+                                  className="text-xs border rounded px-2 py-1 bg-background flex-1"
                                   data-testid={`select-order-status-${order.id}`}
                                 >
-                                  <option value="pending">📋 Pending - Waiting for processing</option>
-                                  <option value="shipped">🚚 Shipped - On the way</option>
-                                  <option value="delivered">✓ Delivered - Order completed</option>
+                                  <option value="pending">📋 Pending</option>
+                                  <option value="shipped">🚚 Shipped</option>
+                                  <option value="delivered">✓ Delivered</option>
                                 </select>
-                              </div>
+                              )}
                             </div>
-                          )}
+
+                            {/* Return Info */}
+                            {hasReturn && (
+                              <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800 text-sm">
+                                <p className="text-red-900 dark:text-red-100 font-semibold text-xs mb-1 flex items-center gap-1"><RotateCw className="h-3 w-3" /> Return Request</p>
+                                <p className="text-red-800 dark:text-red-200"><span className="font-semibold">Reason:</span> {order.returnNotes}</p>
+                                <p className="text-red-800 dark:text-red-200 text-xs mt-1"><span className="font-semibold">Status:</span> {order.refundStatus || 'pending'}</p>
+                              </div>
+                            )}
+                          </div>
                         </Card>
                       );
                     })
@@ -1046,9 +985,6 @@ export default function StoreDashboard() {
           }
           .print\\:hidden {
             display: none !important;
-          }
-          .print\\:p-8 {
-            padding: 2rem !important;
           }
           .min-h-screen {
             min-height: auto !important;
