@@ -74,6 +74,7 @@ export interface IStorage {
   getAllOrders(): Promise<Order[]>;
   getInventoryOrders(inventoryId: string): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
+  updateOrder(id: string, updates: Partial<Order>): Promise<Order | undefined>;
 
   // Wishlist
   getUserWishlist(userId: string): Promise<WishlistItem[]>;
@@ -349,6 +350,18 @@ export class DatabaseStorage implements IStorage {
     const [order] = await db
       .update(orders)
       .set({ status })
+      .where(eq(orders.id, id))
+      .returning();
+    return order || undefined;
+  }
+
+  async updateOrder(
+    id: string,
+    updates: Partial<Order>,
+  ): Promise<Order | undefined> {
+    const [order] = await db
+      .update(orders)
+      .set(updates)
       .where(eq(orders.id, id))
       .returning();
     return order || undefined;

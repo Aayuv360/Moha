@@ -513,11 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (returnNotes !== undefined) updates.returnNotes = returnNotes;
         if (refundStatus !== undefined) updates.refundStatus = refundStatus;
 
-        const updatedOrder = await db
-          .update(orders)
-          .set(updates)
-          .where(eq(orders.id, req.params.id))
-          .returning();
+        const updatedOrder = await storage.updateOrderStatus(req.params.id, status);
 
         if (status === "shipped" && oldStatus !== "shipped") {
           const items = JSON.parse(order.items);
@@ -532,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        res.json(updatedOrder[0]);
+        res.json(updatedOrder);
       } catch (error) {
         res.status(500).json({ error: "Failed to update order status" });
       }
@@ -563,13 +559,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ error: "Order not found or unauthorized" });
         }
 
-        const updatedOrder = await db
-          .update(orders)
-          .set({ refundStatus, returnNotes })
-          .where(eq(orders.id, req.params.id))
-          .returning();
+        const updatedOrder = await storage.updateOrder(req.params.id, {
+          refundStatus,
+          returnNotes,
+        });
 
-        res.json(updatedOrder[0]);
+        res.json(updatedOrder);
       } catch (error) {
         res.status(500).json({ error: "Failed to process refund" });
       }
