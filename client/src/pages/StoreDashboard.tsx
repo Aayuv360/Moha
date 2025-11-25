@@ -886,45 +886,100 @@ export default function StoreDashboard() {
 
                           {isExpanded && (
                             <div className="border-t bg-muted/30 p-4 space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
+                              {/* Customer & Contact Info */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="p-3 bg-background rounded border">
-                                  <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Mail className="h-3 w-3" /> Contact</p>
-                                  <p className="text-sm font-medium truncate">{order.email}</p>
-                                  <p className="text-sm flex items-center gap-1"><Phone className="h-3 w-3" /> {order.phone}</p>
+                                  <p className="text-xs font-semibold text-muted-foreground mb-3">Customer Information</p>
+                                  <div className="space-y-2">
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Name</p>
+                                      <p className="text-sm font-medium">{order.customerName}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> Email</p>
+                                      <p className="text-sm font-medium break-all">{order.email}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</p>
+                                      <p className="text-sm font-medium">{order.phone}</p>
+                                    </div>
+                                  </div>
                                 </div>
+
                                 <div className="p-3 bg-background rounded border">
-                                  <p className="text-xs font-semibold text-muted-foreground mb-2">{items.length} Item{items.length !== 1 ? 's' : ''}</p>
-                                  <div className="space-y-1 max-h-20 overflow-y-auto">
-                                    {items.map((item: any, idx: number) => (
-                                      <p key={idx} className="text-sm text-muted-foreground truncate">
-                                        x{item.quantity} {item.name?.substring(0, 20)}
-                                      </p>
-                                    ))}
+                                  <p className="text-xs font-semibold text-muted-foreground mb-3">Order Information</p>
+                                  <div className="space-y-2">
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Order ID</p>
+                                      <p className="text-sm font-mono font-medium">{order.id.substring(0, 12)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Order Date</p>
+                                      <p className="text-sm font-medium">{new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString()}</p>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
 
+                              {/* Shipping Address */}
                               <div className="p-3 bg-background rounded border">
                                 <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1"><MapPin className="h-3 w-3" /> Shipping Address</p>
                                 <p className="text-sm font-medium">{order.address}</p>
                                 <p className="text-sm text-muted-foreground">{order.city}, {order.state} - {order.pincode}</p>
-                                <Button size="sm" variant="outline" className="mt-2 w-full text-xs" onClick={() => window.print()} data-testid={`button-print-address-${order.id}`}>
+                                <Button size="sm" variant="outline" className="mt-3 w-full text-xs" onClick={() => window.print()} data-testid={`button-print-address-${order.id}`}>
                                   <Printer className="h-3 w-3 mr-1" />
-                                  Print Address
+                                  Print Address Label
                                 </Button>
                               </div>
 
+                              {/* Order Items & Breakdown */}
+                              <div className="p-3 bg-background rounded border">
+                                <p className="text-xs font-semibold text-muted-foreground mb-3">Order Items ({items.length})</p>
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {items.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">No items found</p>
+                                  ) : (
+                                    <>
+                                      {items.map((item: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between items-start pb-2 border-b last:border-b-0">
+                                          <div className="flex-1">
+                                            <p className="text-sm font-medium">{item.name}</p>
+                                            <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                          </div>
+                                          <p className="text-sm font-semibold text-right ml-2">
+                                            ₹{item.price ? (parseFloat(item.price.toString()) * item.quantity).toLocaleString('en-IN') : 'N/A'}
+                                          </p>
+                                        </div>
+                                      ))}
+                                      <div className="mt-3 pt-2 border-t-2 flex justify-between">
+                                        <p className="text-sm font-semibold">Total Amount</p>
+                                        <p className="text-lg font-bold text-primary">₹{parseFloat(order.totalAmount.toString()).toLocaleString('en-IN')}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Return & Refund Section */}
                               {hasReturn && (
                                 <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
-                                  <p className="text-xs font-semibold text-red-900 dark:text-red-100 mb-2 flex items-center gap-1"><RotateCw className="h-3 w-3" /> Return Information</p>
-                                  <p className="text-sm text-red-800 dark:text-red-200 mb-2"><strong>Reason:</strong> {order.returnNotes}</p>
-                                  <p className="text-sm text-red-800 dark:text-red-200 mb-3"><strong>Status:</strong> {order.refundStatus || 'pending'}</p>
+                                  <p className="text-xs font-semibold text-red-900 dark:text-red-100 mb-3 flex items-center gap-1"><RotateCw className="h-3 w-3" /> Return & Refund Information</p>
+                                  <div className="space-y-2 mb-3 text-sm text-red-800 dark:text-red-200">
+                                    <div>
+                                      <p className="text-xs font-semibold text-red-700 dark:text-red-300">Reason for Return</p>
+                                      <p className="font-medium">{order.returnNotes}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-red-700 dark:text-red-300">Refund Status</p>
+                                      <p className="font-medium">{order.refundStatus || 'pending'}</p>
+                                    </div>
+                                  </div>
                                   <div className="flex gap-2">
-                                    <Button size="sm" variant="outline" className="text-xs" data-testid={`button-approve-refund-${order.id}`}>
+                                    <Button size="sm" variant="outline" className="text-xs flex-1" data-testid={`button-approve-refund-${order.id}`}>
                                       <CheckCircle className="h-3 w-3 mr-1" />
                                       Approve Refund
                                     </Button>
-                                    <Button size="sm" variant="destructive" className="text-xs" data-testid={`button-reject-refund-${order.id}`}>
+                                    <Button size="sm" variant="destructive" className="text-xs flex-1" data-testid={`button-reject-refund-${order.id}`}>
                                       <AlertTriangle className="h-3 w-3 mr-1" />
                                       Reject
                                     </Button>
@@ -932,6 +987,7 @@ export default function StoreDashboard() {
                                 </div>
                               )}
 
+                              {/* Update Order Status */}
                               <div className="border-t pt-3 space-y-2">
                                 <label className="text-xs font-semibold text-muted-foreground block">Update Order Status</label>
                                 <select
@@ -940,9 +996,9 @@ export default function StoreDashboard() {
                                   className="w-full text-sm border rounded px-3 py-2 bg-background"
                                   data-testid={`select-order-status-${order.id}`}
                                 >
-                                  <option value="pending">📋 Pending</option>
-                                  <option value="shipped">🚚 Shipped</option>
-                                  <option value="delivered">✓ Delivered</option>
+                                  <option value="pending">📋 Pending - Waiting for processing</option>
+                                  <option value="shipped">🚚 Shipped - On the way</option>
+                                  <option value="delivered">✓ Delivered - Order completed</option>
                                 </select>
                               </div>
                             </div>
