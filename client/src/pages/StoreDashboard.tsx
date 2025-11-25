@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, Order } from "@shared/schema";
-import { Store, LogOut, Plus, Trash2 } from "lucide-react";
+import { Store, LogOut, Plus, Trash2, Clock, Truck, CheckCircle } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +26,8 @@ const productSchema = z.object({
   category: z.string().min(1, "Category required"),
   inStock: z.string().transform(v => parseInt(v)).pipe(z.number().min(0)),
   imageUrl: z.string().url("Valid image URL required"),
+  multipleImages: z.string().optional().default(""),
+  videoUrl: z.string().url("Valid video URL").optional().or(z.literal("")),
 });
 
 type ProductForm = z.infer<typeof productSchema>;
@@ -54,9 +56,22 @@ export default function StoreDashboard() {
 
   const addProductMutation = useMutation({
     mutationFn: async (data: ProductForm) => {
+      const images = data.multipleImages
+        ? data.multipleImages.split(',').map(url => url.trim()).filter(url => url)
+        : [];
+      
       return await apiRequest("POST", "/api/store/products", {
-        ...data,
+        name: data.name,
+        description: data.description,
         price: data.price.toString(),
+        fabric: data.fabric,
+        color: data.color,
+        occasion: data.occasion,
+        category: data.category,
+        inStock: data.inStock,
+        imageUrl: data.imageUrl,
+        images: images,
+        videoUrl: data.videoUrl || null,
       });
     },
     onSuccess: () => {
@@ -107,6 +122,8 @@ export default function StoreDashboard() {
       category: "",
       inStock: "1",
       imageUrl: "",
+      multipleImages: "",
+      videoUrl: "",
     },
   });
 
@@ -270,9 +287,35 @@ export default function StoreDashboard() {
                       name="imageUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Image URL</FormLabel>
+                          <FormLabel>Primary Image URL</FormLabel>
                           <FormControl>
                             <Input type="url" placeholder="https://..." {...field} data-testid="input-product-image" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="multipleImages"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Additional Images (comma-separated URLs)</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="https://image1.jpg, https://image2.jpg, https://image3.jpg" {...field} data-testid="input-product-images" className="resize-none" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="videoUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Product Video URL (optional)</FormLabel>
+                          <FormControl>
+                            <Input type="url" placeholder="https://video.mp4" {...field} data-testid="input-product-video" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -321,39 +364,106 @@ export default function StoreDashboard() {
         )}
 
         {tab === "orders" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Store Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {orders.map((order: any) => (
-                  <div key={order.id} className="p-3 border rounded">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-medium" data-testid={`text-order-${order.id}`}>{order.customerName}</p>
-                        <p className="text-sm text-muted-foreground">{order.email}</p>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Pending Orders
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{orders.filter((o: any) => o.status === 'pending').length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    Shipped Orders
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{orders.filter((o: any) => o.status === 'shipped').length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Delivered Orders
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{orders.filter((o: any) => o.status === 'delivered').length}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Order Management & Tracking</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {orders.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No orders yet</p>
+                  ) : (
+                    orders.map((order: any) => (
+                      <div key={order.id} className="p-4 border rounded-lg hover-elevate transition-all">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <p className="font-semibold" data-testid={`text-order-${order.id}`}>{order.customerName}</p>
+                            <p className="text-sm text-muted-foreground">{order.email}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Order ID: {order.id.substring(0, 8)}...</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-lg">₹{order.totalAmount}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+
+                        <div className="mb-3 flex gap-2 items-center">
+                          <div className="flex-1">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-xs font-medium">Order Status:</span>
+                              <Badge 
+                                variant={order.status === 'delivered' ? 'default' : order.status === 'shipped' ? 'secondary' : 'outline'}
+                                data-testid={`badge-status-${order.id}`}
+                              >
+                                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                              </Badge>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  order.status === 'delivered' ? 'bg-green-500 w-full' :
+                                  order.status === 'shipped' ? 'bg-blue-500 w-2/3' :
+                                  'bg-yellow-500 w-1/3'
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <select
+                          value={order.status}
+                          onChange={(e) => updateOrderStatusMutation.mutate({ orderId: order.id, status: e.target.value })}
+                          className="w-full text-sm border rounded px-3 py-2 bg-background"
+                          data-testid={`select-order-status-${order.id}`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                        </select>
                       </div>
-                      <span className="font-semibold">₹{order.totalAmount}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <Badge variant="outline">{order.status}</Badge>
-                      <select
-                        value={order.status}
-                        onChange={(e) => updateOrderStatusMutation.mutate({ orderId: order.id, status: e.target.value })}
-                        className="text-sm border rounded px-2 py-1"
-                        data-testid={`select-order-status-${order.id}`}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </main>
     </div>

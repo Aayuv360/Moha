@@ -30,6 +30,7 @@ export const products = pgTable("products", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   imageUrl: text("image_url").notNull(),
   images: text("images", { mode: "json" }).$type<string[]>(),
+  videoUrl: text("video_url"),
   fabric: text("fabric").notNull(),
   color: text("color").notNull(),
   occasion: text("occasion").notNull(),
