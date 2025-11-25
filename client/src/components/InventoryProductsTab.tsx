@@ -12,26 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ProductForm } from "./ProductForm";
-import { z } from "zod";
-
-const productSchema = z.object({
-  name: z.string().min(1, "Product name required"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  price: z.string().transform((v) => v.toString()),
-  fabric: z.string().min(1, "Fabric required"),
-  color: z.string().min(1, "Color required"),
-  occasion: z.string().min(1, "Occasion required"),
-  category: z.string().min(1, "Category required"),
-  inStock: z
-    .string()
-    .transform((v) => parseInt(v))
-    .pipe(z.number().min(0)),
-  imageUrl: z.string().url("Valid image URL required"),
-  multipleImages: z.string().optional().default(""),
-  videoUrl: z.string().url("Valid video URL").optional().or(z.literal("")),
-});
-
-type ProductFormData = z.infer<typeof productSchema>;
 
 interface ProductsTabProps {
   products: Product[];
@@ -98,6 +78,13 @@ export function ProductsTab({
     setShowProductDialog(true);
   };
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setShowProductDialog(open);
+    if (!open) {
+      setEditingProduct(null);
+    }
+  };
+
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setShowProductDialog(true);
@@ -121,7 +108,7 @@ export function ProductsTab({
               Delete {selectedProducts.size}
             </Button>
           )}
-          <Dialog open={showProductDialog} onOpenChange={setShowProductDialog}>
+          <Dialog open={showProductDialog} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button onClick={handleAddProduct} data-testid="button-add-product-modal">
                 <Plus className="h-4 w-4 mr-2" />
