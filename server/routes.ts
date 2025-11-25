@@ -563,14 +563,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", optionalAuthMiddleware, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertOrderSchema.parse(req.body);
+      const orderItems = JSON.parse(validatedData.items);
+      const sessionId = orderItems.length > 0 ? orderItems[0].sessionId : null;
+      
+      // Get storeId from first product in order
+      let storeId: string | undefined = undefined;
+      if (orderItems.length > 0) {
+        const firstProduct = await storage.getProduct(orderItems[0].productId);
+        if (firstProduct) {
+          storeId = firstProduct.storeId;
+        }
+      }
+
       const orderData = {
         ...validatedData,
         userId: req.userId || null,
+        storeId: storeId || null,
       };
       const order = await storage.createOrder(orderData);
-      
-      const orderItems = JSON.parse(validatedData.items);
-      const sessionId = orderItems.length > 0 ? orderItems[0].sessionId : null;
       
       if (sessionId) {
         await storage.clearCart(sessionId);
