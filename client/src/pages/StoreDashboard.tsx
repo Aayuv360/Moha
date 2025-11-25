@@ -49,17 +49,17 @@ export default function InventoryDashboard() {
 
   useEffect(() => {
     if (!user?.isStoreOwner) {
-      setLocation("/store/login");
+      setLocation("/inventory/login");
     }
   }, [user, setLocation]);
 
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ['/api/store/products'],
+    queryKey: ['/api/inventory/products'],
     enabled: !!user?.isStoreOwner,
   });
 
   const { data: orders = [] } = useQuery<Order[]>({
-    queryKey: ['/api/store/orders'],
+    queryKey: ['/api/inventory/orders'],
     enabled: !!user?.isStoreOwner,
   });
 
@@ -69,7 +69,7 @@ export default function InventoryDashboard() {
         ? data.multipleImages.split(',').map(url => url.trim()).filter(url => url)
         : [];
       
-      return await apiRequest("POST", "/api/store/products", {
+      return await apiRequest("POST", "/api/inventory/products", {
         name: data.name,
         description: data.description,
         price: data.price.toString(),
@@ -84,7 +84,7 @@ export default function InventoryDashboard() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/store/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory/products'] });
       form.reset();
       setShowProductDialog(false);
       toast({ title: "Product added successfully" });

@@ -15,12 +15,12 @@ const adminAuthMiddleware = (req: any, res: any, next: any) => {
   });
 };
 
-const storeAuthMiddleware = (req: any, res: any, next: any) => {
+const inventoryAuthMiddleware = (req: any, res: any, next: any) => {
   authMiddleware(req, res, () => {
     if (req.isStoreOwner) {
       next();
     } else {
-      res.status(403).json({ error: "Store owner access required" });
+      res.status(403).json({ error: "Inventory owner access required" });
     }
   });
 };
@@ -134,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/store-login", async (req, res) => {
+  app.post("/api/auth/inventory-login", async (req, res) => {
     try {
       const schema = z.object({
         email: z.string().email(),
@@ -144,16 +144,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = await storage.getUserByEmail(email);
       if (!user || !user.isStoreOwner) {
-        return res.status(401).json({ error: "Invalid store credentials" });
+        return res.status(401).json({ error: "Invalid inventory credentials" });
       }
 
       if (user.isBlocked) {
-        return res.status(403).json({ error: "Store account has been blocked" });
+        return res.status(403).json({ error: "Inventory account has been blocked" });
       }
 
       const validPassword = await comparePasswords(password, user.password);
       if (!validPassword) {
-        return res.status(401).json({ error: "Invalid store credentials" });
+        return res.status(401).json({ error: "Invalid inventory credentials" });
       }
 
       const token = generateToken(user.id);
@@ -312,12 +312,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Store endpoints
-  app.get("/api/store/products", authMiddleware, async (req: AuthRequest, res) => {
+  // Inventory endpoints
+  app.get("/api/inventory/products", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
       if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Store access required" });
+        return res.status(403).json({ error: "Inventory access required" });
       }
 
       const products = await storage.getStoreProducts(user.storeId);
@@ -327,11 +327,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/store/products", authMiddleware, async (req: AuthRequest, res) => {
+  app.post("/api/inventory/products", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
       if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Store access required" });
+        return res.status(403).json({ error: "Inventory access required" });
       }
 
       const schema = insertProductSchema;
@@ -357,11 +357,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/store/products/:id", authMiddleware, async (req: AuthRequest, res) => {
+  app.patch("/api/inventory/products/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
       if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Store access required" });
+        return res.status(403).json({ error: "Inventory access required" });
       }
 
       const product = await storage.getProduct(req.params.id);
@@ -376,11 +376,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/store/products/:id", authMiddleware, async (req: AuthRequest, res) => {
+  app.delete("/api/inventory/products/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
       if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Store access required" });
+        return res.status(403).json({ error: "Inventory access required" });
       }
 
       const product = await storage.getProduct(req.params.id);
@@ -399,11 +399,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/store/orders", authMiddleware, async (req: AuthRequest, res) => {
+  app.get("/api/inventory/orders", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
       if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Store access required" });
+        return res.status(403).json({ error: "Inventory access required" });
       }
 
       const orders = await storage.getStoreOrders(user.storeId);
@@ -413,11 +413,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/store/orders/:id/status", authMiddleware, async (req: AuthRequest, res) => {
+  app.patch("/api/inventory/orders/:id/status", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
       if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Store access required" });
+        return res.status(403).json({ error: "Inventory access required" });
       }
 
       const { status, returnNotes, refundStatus } = req.body;
@@ -458,11 +458,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/store/orders/:id/refund", authMiddleware, async (req: AuthRequest, res) => {
+  app.patch("/api/inventory/orders/:id/refund", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
       if (!user?.isStoreOwner || !user.storeId) {
-        return res.status(403).json({ error: "Store access required" });
+        return res.status(403).json({ error: "Inventory access required" });
       }
 
       const { refundStatus, returnNotes } = req.body;
