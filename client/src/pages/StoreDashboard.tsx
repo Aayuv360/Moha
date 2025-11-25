@@ -416,12 +416,10 @@ export default function StoreDashboard() {
               <Card>
                 <CardContent className="pt-12 text-center">
                   <p className="text-muted-foreground mb-4">No products yet</p>
-                  <DialogTrigger asChild>
-                    <Button data-testid="button-add-first-product">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Product
-                    </Button>
-                  </DialogTrigger>
+                  <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-first-product">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your First Product
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
