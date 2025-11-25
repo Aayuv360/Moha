@@ -247,7 +247,15 @@ export default function StoreDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <Button
+            variant={tab === "dashboard" ? "default" : "outline"}
+            onClick={() => setTab("dashboard")}
+            data-testid="button-tab-dashboard"
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Dashboard
+          </Button>
           <Button
             variant={tab === "products" ? "default" : "outline"}
             onClick={() => setTab("products")}
@@ -262,7 +270,112 @@ export default function StoreDashboard() {
           >
             Orders
           </Button>
+          <Button
+            variant={tab === "settings" ? "default" : "outline"}
+            onClick={() => setTab("settings")}
+            data-testid="button-tab-settings"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
         </div>
+
+        {tab === "dashboard" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Sales</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{totalSales}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Orders received</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">₹{totalRevenue.toLocaleString('en-IN')}</div>
+                  <p className="text-xs text-muted-foreground mt-1">From all orders</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Products</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{products.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Listed products</p>
+                </CardContent>
+              </Card>
+              <Card className={lowStockProducts > 0 ? "border-destructive" : ""}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Low Stock Alert</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-3xl font-bold ${lowStockProducts > 0 ? "text-destructive" : ""}`}>{lowStockProducts}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Products ≤ 5 units</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Top 5 Products by Stock</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {topProducts.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">No products yet</p>
+                  ) : (
+                    topProducts.map((product, idx) => (
+                      <div key={product.id} className="flex items-center justify-between p-3 border rounded">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="text-sm font-semibold text-muted-foreground">#{idx + 1}</div>
+                          <img src={product.imageUrl} alt={product.name} className="w-10 h-10 rounded object-cover" onError={(e) => { e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3C/svg%3E"; }} />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm truncate">{product.name}</p>
+                            <p className="text-xs text-muted-foreground">{product.category}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">₹{product.price}</p>
+                          <Badge variant={product.inStock <= 5 ? "destructive" : "default"} className="text-xs mt-1">
+                            Stock: {product.inStock}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Order Status Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 border rounded">
+                    <div className="text-2xl font-bold text-yellow-600">{orders.filter((o: any) => o.status === 'pending').length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Pending</p>
+                  </div>
+                  <div className="text-center p-4 border rounded">
+                    <div className="text-2xl font-bold text-blue-600">{orders.filter((o: any) => o.status === 'shipped').length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Shipped</p>
+                  </div>
+                  <div className="text-center p-4 border rounded">
+                    <div className="text-2xl font-bold text-green-600">{orders.filter((o: any) => o.status === 'delivered').length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Delivered</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {tab === "products" && (
           <div className="space-y-6">
@@ -469,6 +582,23 @@ export default function StoreDashboard() {
                   ))}
                 </div>
 
+                {selectedProducts.size > 0 && (
+                  <Card className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+                    <CardContent className="pt-4 flex items-center justify-between">
+                      <p className="text-sm font-medium">{selectedProducts.size} product(s) selected</p>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleBulkDelete}
+                        data-testid="button-bulk-delete"
+                      >
+                        <Trash className="h-3 w-3 mr-2" />
+                        Delete Selected
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {categoryProducts.length === 0 ? (
                   <Card>
                     <CardContent className="pt-8 text-center">
@@ -478,16 +608,33 @@ export default function StoreDashboard() {
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {categoryProducts.map((product: any) => (
-                      <Card key={product.id} className="overflow-hidden hover-elevate transition-all">
-                        <div className="aspect-video bg-muted overflow-hidden">
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect fill='%23e5e7eb' width='400' height='400'/%3E%3C/svg%3E";
+                      <Card key={product.id} className={`overflow-hidden hover-elevate transition-all ${selectedProducts.has(product.id) ? "ring-2 ring-primary" : ""}`}>
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.has(product.id)}
+                            onChange={(e) => {
+                              const newSet = new Set(selectedProducts);
+                              if (e.target.checked) {
+                                newSet.add(product.id);
+                              } else {
+                                newSet.delete(product.id);
+                              }
+                              setSelectedProducts(newSet);
                             }}
+                            className="absolute top-2 left-2 z-10 w-4 h-4 cursor-pointer"
+                            data-testid={`checkbox-product-${product.id}`}
                           />
+                          <div className="aspect-video bg-muted overflow-hidden">
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect fill='%23e5e7eb' width='400' height='400'/%3E%3C/svg%3E";
+                              }}
+                            />
+                          </div>
                         </div>
                         <CardContent className="pt-2 pb-2">
                           <p className="font-semibold text-sm truncate" data-testid={`text-product-${product.id}`}>{product.name}</p>
@@ -634,12 +781,33 @@ export default function StoreDashboard() {
               <CardHeader>
                 <CardTitle>Order Management & Tracking</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2 flex-wrap">
+                  <Input
+                    placeholder="Search by Order ID or Customer name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1 min-w-64"
+                    data-testid="input-search-orders"
+                  />
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-40" data-testid="select-filter-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {orders.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No orders yet</p>
+                  {filteredOrders.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No orders found</p>
                   ) : (
-                    orders.map((order: any) => (
+                    filteredOrders.map((order: any) => (
                       <div key={order.id} className="p-4 border rounded-lg hover-elevate transition-all">
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1">
@@ -689,6 +857,64 @@ export default function StoreDashboard() {
                       </div>
                     ))
                   )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {tab === "settings" && (
+          <div className="space-y-6 max-w-2xl">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-4 bg-muted rounded-lg">
+                  <h3 className="font-semibold mb-2">Store Information</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="text-muted-foreground">Store Name:</span> <span className="font-medium">{user?.name}</span></p>
+                    <p><span className="text-muted-foreground">Email:</span> <span className="font-medium">{user?.email}</span></p>
+                    <p><span className="text-muted-foreground">Total Products:</span> <span className="font-medium">{products.length}</span></p>
+                    <p><span className="text-muted-foreground">Total Orders:</span> <span className="font-medium">{orders.length}</span></p>
+                    <p><span className="text-muted-foreground">Total Revenue:</span> <span className="font-medium">₹{totalRevenue.toLocaleString('en-IN')}</span></p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3">Inventory Summary</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 border rounded">
+                      <p className="text-xs text-muted-foreground mb-1">Total Stock</p>
+                      <p className="text-2xl font-bold">{products.reduce((sum, p) => sum + p.inStock, 0)}</p>
+                    </div>
+                    <div className="p-3 border rounded bg-red-50 dark:bg-red-950">
+                      <p className="text-xs text-muted-foreground mb-1">Low Stock (≤5)</p>
+                      <p className="text-2xl font-bold text-red-600">{lowStockProducts}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3">Quick Actions</h3>
+                  <div className="space-y-2">
+                    <Button className="w-full justify-start" variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Orders (CSV)
+                    </Button>
+                    <Button className="w-full justify-start" variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Products (CSV)
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3 text-destructive">Danger Zone</h3>
+                  <Button variant="destructive" className="w-full justify-start">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
                 </div>
               </CardContent>
             </Card>
