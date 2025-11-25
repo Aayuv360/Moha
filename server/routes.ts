@@ -17,6 +17,7 @@ import {
   comparePasswords,
   authMiddleware,
   optionalAuthMiddleware,
+  verifyToken,
   type AuthRequest,
 } from "./auth";
 
@@ -28,7 +29,6 @@ const adminAuthMiddleware = async (req: any, res: any, next: any) => {
   
   try {
     const token = authHeader.substring(7);
-    const { verifyToken } = require("./auth");
     const decoded = verifyToken(token);
     if (!decoded) {
       return res.status(401).json({ error: "Invalid or expired token" });
@@ -42,6 +42,7 @@ const adminAuthMiddleware = async (req: any, res: any, next: any) => {
       res.status(403).json({ error: "Admin access required" });
     }
   } catch (error) {
+    console.error("Admin auth error:", error);
     res.status(401).json({ error: "Authentication failed" });
   }
 };
@@ -54,7 +55,6 @@ const inventoryAuthMiddleware = async (req: any, res: any, next: any) => {
   
   try {
     const token = authHeader.substring(7);
-    const { verifyToken } = require("./auth");
     const decoded = verifyToken(token);
     if (!decoded) {
       return res.status(401).json({ error: "Invalid or expired token" });
@@ -69,6 +69,7 @@ const inventoryAuthMiddleware = async (req: any, res: any, next: any) => {
       res.status(403).json({ error: "Inventory owner access required" });
     }
   } catch (error) {
+    console.error("Inventory auth error:", error);
     res.status(401).json({ error: "Authentication failed" });
   }
 };
