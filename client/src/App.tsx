@@ -15,8 +15,8 @@ import Orders from "@/pages/Orders";
 import Wishlist from "@/pages/Wishlist";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
-import StoreLogin from "@/pages/StoreLogin";
-import StoreDashboard from "@/pages/StoreDashboard";
+import InventoryLogin from "@/pages/InventoryLogin";
+import InventoryDashboard from "@/pages/InventoryDashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,8 +33,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/store/login" component={StoreLogin} />
-      <Route path="/store/dashboard" component={StoreDashboard} />
+      <Route path="/inventory/login" component={InventoryLogin} />
+      <Route path="/inventory/dashboard" component={InventoryDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
