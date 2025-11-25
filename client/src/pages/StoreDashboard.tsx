@@ -41,6 +41,7 @@ export default function StoreDashboard() {
   const [tab, setTab] = useState<"products" | "orders">("products");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   useEffect(() => {
@@ -243,14 +244,22 @@ export default function StoreDashboard() {
         </div>
 
         {tab === "products" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Add Product</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit((data) => addProductMutation.mutate(data))} className="space-y-4">
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Your Products ({products.length})</h2>
+              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                <DialogTrigger asChild>
+                  <Button data-testid="button-add-product-modal">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-96 overflow-y-auto max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Add New Product</DialogTitle>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit((data) => addProductMutation.mutate(data))} className="space-y-4">
                     <FormField
                       control={form.control}
                       name="name"
@@ -395,120 +404,145 @@ export default function StoreDashboard() {
                       )}
                     />
                     <Button type="submit" className="w-full" disabled={addProductMutation.isPending} data-testid="button-add-product">
-                      <Plus className="h-4 w-4 mr-2" />
                       Add Product
                     </Button>
                   </form>
                 </Form>
-              </CardContent>
-            </Card>
+              </DialogContent>
+            </Dialog>
+            </div>
 
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Your Products ({products.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {products.map((product: any) => (
-                    <div key={product.id} className="p-3 border rounded">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
-                          <p className="font-medium" data-testid={`text-product-${product.id}`}>{product.name}</p>
-                          <p className="text-xs text-muted-foreground font-mono mt-1" data-testid={`text-tracking-${product.id}`}>Tracking ID: {product.trackingId}</p>
-                          <p className="text-sm text-muted-foreground">₹{product.price}</p>
-                        </div>
-                        <div className="flex gap-1">
-                          <Dialog open={showEditDialog && editingProduct?.id === product.id} onOpenChange={setShowEditDialog}>
-                            <DialogTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() => handleEditProduct(product)}
-                                data-testid={`button-edit-product-${product.id}`}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-96 overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>Edit Product</DialogTitle>
-                              </DialogHeader>
-                              <Form {...editForm}>
-                                <form onSubmit={editForm.handleSubmit((data) => updateProductMutation.mutate(data))} className="space-y-3">
-                                  <FormField
-                                    control={editForm.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-xs">Name</FormLabel>
-                                        <FormControl>
-                                          <Input {...field} className="text-sm" />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <FormField
-                                    control={editForm.control}
-                                    name="price"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-xs">Price</FormLabel>
-                                        <FormControl>
-                                          <Input type="number" {...field} className="text-sm" />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <FormField
-                                    control={editForm.control}
-                                    name="inStock"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-xs">Stock</FormLabel>
-                                        <FormControl>
-                                          <Input type="number" {...field} className="text-sm" />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <Button type="submit" className="w-full" disabled={updateProductMutation.isPending} size="sm">
-                                    Update Product
+            {products.length === 0 ? (
+              <Card>
+                <CardContent className="pt-12 text-center">
+                  <p className="text-muted-foreground mb-4">No products yet</p>
+                  <DialogTrigger asChild>
+                    <Button data-testid="button-add-first-product">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Product
+                    </Button>
+                  </DialogTrigger>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {Array.from(
+                  products.reduce((acc: Map<string, any[]>, product: any) => {
+                    const cat = product.category || "Uncategorized";
+                    if (!acc.has(cat)) acc.set(cat, []);
+                    acc.get(cat)!.push(product);
+                    return acc;
+                  }, new Map())
+                )
+                  .sort((a, b) => a[0].localeCompare(b[0]))
+                  .map(([category, categoryProducts]) => (
+                    <Card key={category}>
+                      <CardHeader>
+                        <CardTitle className="text-base">{category}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {categoryProducts.map((product: any) => (
+                            <div key={product.id} className="p-3 border rounded">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <p className="font-medium" data-testid={`text-product-${product.id}`}>{product.name}</p>
+                                  <p className="text-xs text-muted-foreground font-mono mt-1" data-testid={`text-tracking-${product.id}`}>Tracking ID: {product.trackingId}</p>
+                                  <p className="text-sm text-muted-foreground">₹{product.price}</p>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Dialog open={showEditDialog && editingProduct?.id === product.id} onOpenChange={setShowEditDialog}>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        size="icon"
+                                        variant="outline"
+                                        onClick={() => handleEditProduct(product)}
+                                        data-testid={`button-edit-product-${product.id}`}
+                                      >
+                                        <Edit2 className="h-4 w-4" />
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="max-h-96 overflow-y-auto">
+                                      <DialogHeader>
+                                        <DialogTitle>Edit Product</DialogTitle>
+                                      </DialogHeader>
+                                      <Form {...editForm}>
+                                        <form onSubmit={editForm.handleSubmit((data) => updateProductMutation.mutate(data))} className="space-y-3">
+                                          <FormField
+                                            control={editForm.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel className="text-xs">Name</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} className="text-sm" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={editForm.control}
+                                            name="price"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel className="text-xs">Price</FormLabel>
+                                                <FormControl>
+                                                  <Input type="number" {...field} className="text-sm" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={editForm.control}
+                                            name="inStock"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel className="text-xs">Stock</FormLabel>
+                                                <FormControl>
+                                                  <Input type="number" {...field} className="text-sm" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <Button type="submit" className="w-full" disabled={updateProductMutation.isPending} size="sm">
+                                            Update Product
+                                          </Button>
+                                        </form>
+                                      </Form>
+                                    </DialogContent>
+                                  </Dialog>
+                                  <Button
+                                    size="icon"
+                                    variant="destructive"
+                                    onClick={() => deleteProductMutation.mutate(product.id)}
+                                    data-testid={`button-delete-product-${product.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
-                                </form>
-                              </Form>
-                            </DialogContent>
-                          </Dialog>
-                          <Button
-                            size="icon"
-                            variant="destructive"
-                            onClick={() => deleteProductMutation.mutate(product.id)}
-                            data-testid={`button-delete-product-${product.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 flex-wrap">
+                                <Badge variant="secondary">{product.fabric}</Badge>
+                                <Badge variant="secondary">{product.occasion}</Badge>
+                                {product.inStock <= 5 && (
+                                  <Badge variant="destructive" className="flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Low Stock: {product.inStock}
+                                  </Badge>
+                                )}
+                                {product.inStock > 5 && <Badge>Stock: {product.inStock}</Badge>}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
-                        <Badge variant="secondary">{product.fabric}</Badge>
-                        <Badge variant="secondary">{product.occasion}</Badge>
-                        {product.inStock <= 5 && (
-                          <Badge variant="destructive" className="flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Low Stock: {product.inStock}
-                          </Badge>
-                        )}
-                        {product.inStock > 5 && <Badge>Stock: {product.inStock}</Badge>}
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </div>
+            )}
 
         {tab === "orders" && (
           <div className="space-y-6">
