@@ -227,6 +227,35 @@ export default function StoreDashboard() {
     (p: any) => (p.category || "Uncategorized") === categoryTab
   );
 
+  // Analytics calculations
+  const totalSales = orders.length;
+  const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.totalAmount.toString()), 0);
+  const lowStockProducts = products.filter(p => p.inStock <= 5).length;
+  const topProducts = products
+    .sort((a, b) => b.inStock - a.inStock)
+    .slice(0, 5);
+
+  const filteredOrders = orders
+    .filter(order => {
+      if (filterStatus !== "all" && order.status !== filterStatus) return false;
+      if (searchQuery && !order.id.includes(searchQuery) && !order.customerName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.size === 0) {
+      toast({ title: "No products selected", variant: "destructive" });
+      return;
+    }
+    if (window.confirm(`Delete ${selectedProducts.size} products?`)) {
+      for (const productId of selectedProducts) {
+        await deleteProductMutation.mutateAsync(productId);
+      }
+      setSelectedProducts(new Set());
+    }
+  };
+
   if (!user?.isStoreOwner) {
     return null;
   }
