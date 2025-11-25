@@ -18,8 +18,8 @@ export default function InventoryDashboard() {
   const [tab, setTab] = useState<
     "dashboard" | "products" | "orders" | "settings"
   >("dashboard");
-  const [ordersSubTab, setOrdersSubTab] = useState<"active" | "completed">(
-    "active",
+  const [ordersSubTab, setOrdersSubTab] = useState<"pending" | "shipped" | "delivered">(
+    "pending",
   );
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);

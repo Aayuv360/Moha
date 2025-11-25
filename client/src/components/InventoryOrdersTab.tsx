@@ -17,8 +17,8 @@ import {
 
 interface OrdersTabProps {
   orders: Order[];
-  ordersSubTab: "active" | "completed";
-  setOrdersSubTab: (tab: "active" | "completed") => void;
+  ordersSubTab: "pending" | "shipped" | "delivered";
+  setOrdersSubTab: (tab: "pending" | "shipped" | "delivered") => void;
 }
 
 export function OrdersTab({
@@ -51,27 +51,39 @@ export function OrdersTab({
     },
   });
 
-  const activeOrders = orders.filter((o) => o.status !== "delivered");
-  const completedOrders = orders.filter((o) => o.status === "delivered");
+  const pendingOrders = orders.filter((o) => o.status === "pending");
+  const shippedOrders = orders.filter((o) => o.status === "shipped");
+  const deliveredOrders = orders.filter((o) => o.status === "delivered");
   const displayOrders =
-    ordersSubTab === "active" ? activeOrders : completedOrders;
+    ordersSubTab === "pending"
+      ? pendingOrders
+      : ordersSubTab === "shipped"
+        ? shippedOrders
+        : deliveredOrders;
 
   return (
     <div className="space-y-6">
       <div className="flex gap-2">
         <Button
-          variant={ordersSubTab === "active" ? "default" : "outline"}
-          onClick={() => setOrdersSubTab("active")}
-          data-testid="button-tab-active-orders"
+          variant={ordersSubTab === "pending" ? "default" : "outline"}
+          onClick={() => setOrdersSubTab("pending")}
+          data-testid="button-tab-pending-orders"
         >
-          Active Orders ({activeOrders.length})
+          Pending Orders ({pendingOrders.length})
         </Button>
         <Button
-          variant={ordersSubTab === "completed" ? "default" : "outline"}
-          onClick={() => setOrdersSubTab("completed")}
-          data-testid="button-tab-completed-orders"
+          variant={ordersSubTab === "shipped" ? "default" : "outline"}
+          onClick={() => setOrdersSubTab("shipped")}
+          data-testid="button-tab-shipped-orders"
         >
-          Completed Orders ({completedOrders.length})
+          Shipped Orders ({shippedOrders.length})
+        </Button>
+        <Button
+          variant={ordersSubTab === "delivered" ? "default" : "outline"}
+          onClick={() => setOrdersSubTab("delivered")}
+          data-testid="button-tab-delivered-orders"
+        >
+          Delivered Orders ({deliveredOrders.length})
         </Button>
       </div>
 
@@ -127,6 +139,18 @@ export function OrdersTab({
                 {ordersSubTab === "active"
                   ? "No active orders"
                   : "No completed orders"}
+              </p>
+            </CardContent>
+          </Card>
+        ) : displayOrders.length === 0 ? (
+          <Card>
+            <CardContent className="pt-8 text-center">
+              <p className="text-muted-foreground">
+                {ordersSubTab === "pending"
+                  ? "No pending orders"
+                  : ordersSubTab === "shipped"
+                    ? "No shipped orders"
+                    : "No delivered orders"}
               </p>
             </CardContent>
           </Card>
