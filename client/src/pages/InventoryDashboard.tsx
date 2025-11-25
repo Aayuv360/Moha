@@ -56,11 +56,22 @@ export default function InventoryDashboard() {
   };
 
   const totalSales = orders.length;
+  const approvedReturns = inventoryReturns.filter((r) => r.status === "approved");
+  const refundedAmount = approvedReturns.reduce(
+    (sum, ret) => sum + parseFloat(ret.refundAmount.toString()),
+    0,
+  );
   const totalRevenue = orders.reduce(
     (sum, order) => sum + parseFloat(order.totalAmount.toString()),
     0,
-  );
+  ) - refundedAmount;
+  const netRevenue = totalRevenue;
+  const totalReturns = approvedReturns.length;
   const lowStockProducts = products.filter((p) => p.inStock <= 5).length;
+  const totalInventoryValue = products.reduce(
+    (sum, prod) => sum + (parseFloat(prod.price.toString()) * prod.inStock),
+    0,
+  );
 
   if (!user?.isInventoryOwner) {
     return null;
@@ -132,10 +143,13 @@ export default function InventoryDashboard() {
             {tab === "dashboard" && (
               <DashboardTab
                 totalSales={totalSales}
-                totalRevenue={totalRevenue}
+                totalRevenue={netRevenue}
                 products={products}
                 orders={orders}
                 lowStockProducts={lowStockProducts}
+                totalReturns={totalReturns}
+                refundedAmount={refundedAmount}
+                totalInventoryValue={totalInventoryValue}
               />
             )}
 
