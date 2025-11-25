@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Order } from "@shared/schema";
+import { InventoryReturnsTab } from "./InventoryReturnsTab";
+import type { Order, Return } from "@shared/schema";
 import {
   Clock,
   Truck,
@@ -19,14 +20,16 @@ import {
 
 interface OrdersTabProps {
   orders: Order[];
-  ordersSubTab: "pending" | "shipped" | "delivered";
-  setOrdersSubTab: (tab: "pending" | "shipped" | "delivered") => void;
+  ordersSubTab: "pending" | "shipped" | "delivered" | "returns";
+  setOrdersSubTab: (tab: "pending" | "shipped" | "delivered" | "returns") => void;
+  inventoryReturns?: Return[];
 }
 
 export function OrdersTab({
   orders,
   ordersSubTab,
   setOrdersSubTab,
+  inventoryReturns = [],
 }: OrdersTabProps) {
   const { toast } = useToast();
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
@@ -136,6 +139,14 @@ export function OrdersTab({
         >
           Delivered Orders ({deliveredOrders.length})
         </Button>
+        <Button
+          variant={ordersSubTab === "returns" ? "default" : "outline"}
+          onClick={() => setOrdersSubTab("returns")}
+          data-testid="button-tab-returns-orders"
+        >
+          <RotateCw className="h-4 w-4 mr-2" />
+          Returns ({inventoryReturns.length})
+        </Button>
       </div>
 
       {/* Order Status Cards */}
@@ -234,8 +245,12 @@ export function OrdersTab({
         </Card>
       )}
 
-      {/* Orders List */}
-      <div className="space-y-4">
+      {/* Returns Tab Content */}
+      {ordersSubTab === "returns" ? (
+        <InventoryReturnsTab returns={inventoryReturns} />
+      ) : (
+        /* Orders List */
+        <div className="space-y-4">
         {displayOrders.length === 0 ? (
           <Card>
             <CardContent className="pt-8 text-center">
@@ -492,7 +507,8 @@ export function OrdersTab({
             );
           })
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

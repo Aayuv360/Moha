@@ -19,10 +19,7 @@ export default function InventoryDashboard() {
   const [tab, setTab] = useState<
     "dashboard" | "products" | "orders" | "settings"
   >("dashboard");
-  const [ordersManagementTab, setOrdersManagementTab] = useState<"orders" | "returns">(
-    "orders",
-  );
-  const [ordersSubTab, setOrdersSubTab] = useState<"pending" | "shipped" | "delivered">(
+  const [ordersSubTab, setOrdersSubTab] = useState<"pending" | "shipped" | "delivered" | "returns">(
     "pending",
   );
 
@@ -159,8 +156,6 @@ export default function InventoryDashboard() {
                 orders={orders}
                 ordersSubTab={ordersSubTab}
                 setOrdersSubTab={setOrdersSubTab}
-                ordersManagementTab={ordersManagementTab}
-                setOrdersManagementTab={setOrdersManagementTab}
                 inventoryReturns={inventoryReturns}
               />
             )}
