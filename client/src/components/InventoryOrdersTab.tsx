@@ -60,7 +60,6 @@ export function OrdersTab({
       : ordersSubTab === "shipped"
         ? shippedOrders
         : deliveredOrders;
-
   return (
     <div className="space-y-6">
       <div className="flex gap-2">
@@ -248,10 +247,18 @@ export function OrdersTab({
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">ITEM DETAILS</th>
-                          <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">QUANTITY</th>
-                          <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">UNIT PRICE</th>
-                          <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">SUBTOTAL</th>
+                          <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">
+                            ITEM DETAILS
+                          </th>
+                          <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">
+                            QUANTITY
+                          </th>
+                          <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">
+                            UNIT PRICE
+                          </th>
+                          <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">
+                            SUBTOTAL
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -274,12 +281,18 @@ export function OrdersTab({
                                   <p className="font-medium">{item.name}</p>
                                   <div className="flex flex-wrap gap-1 mt-1">
                                     {item.color && (
-                                      <Badge variant="secondary" className="text-xs h-5">
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs h-5"
+                                      >
                                         {item.color}
                                       </Badge>
                                     )}
                                     {item.fabric && (
-                                      <Badge variant="secondary" className="text-xs h-5">
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs h-5"
+                                      >
                                         {item.fabric}
                                       </Badge>
                                     )}
@@ -293,7 +306,9 @@ export function OrdersTab({
                             <td className="py-3 px-2 text-right font-medium">
                               ₹
                               {item.price
-                                ? parseFloat(item.price.toString()).toLocaleString("en-IN")
+                                ? parseFloat(
+                                    item.price.toString(),
+                                  ).toLocaleString("en-IN")
                                 : "N/A"}
                             </td>
                             <td className="py-3 px-2 text-right font-bold text-primary">
