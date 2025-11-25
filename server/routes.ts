@@ -7,7 +7,7 @@ import {
   insertUserSchema,
   insertWishlistItemSchema,
   insertProductSchema,
-  insertInventorySchema,
+  insertStoreSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import {
@@ -31,7 +31,7 @@ const adminAuthMiddleware = (req: any, res: any, next: any) => {
 
 const inventoryAuthMiddleware = (req: any, res: any, next: any) => {
   authMiddleware(req, res, () => {
-    if (req.isInventoryOwner) {
+    if (req.isStoreOwner) {
       next();
     } else {
       res.status(403).json({ error: "Inventory owner access required" });
@@ -223,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post(
-    "/api/admin/inventories",
+    "/api/admin/stores",
     authMiddleware,
     async (req: AuthRequest, res) => {
       try {
@@ -232,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ error: "Admin access required" });
         }
 
-        const schema = insertInventorySchema;
+        const schema = insertStoreSchema;
         const validatedData = schema.parse(req.body);
 
         const existingStore = await storage.getStoreByEmail(
@@ -249,8 +249,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const owner = await storage.getUserById(validatedData.ownerId);
         if (owner) {
           await storage.updateUser(validatedData.ownerId, {
-            isInventoryOwner: true,
-            inventoryId: store.id,
+            isStoreOwner: true,
+            storeId: store.id,
           } as any);
         }
 
