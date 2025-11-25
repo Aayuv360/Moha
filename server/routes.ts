@@ -786,10 +786,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.status(201).json(order);
       } catch (error) {
+        console.error("Order creation error:", error);
         if (error instanceof z.ZodError) {
           return res.status(400).json({ error: error.errors });
         }
-        res.status(500).json({ error: "Failed to create order" });
+        res.status(500).json({ error: "Failed to create order", details: String(error) });
       }
     },
   );
