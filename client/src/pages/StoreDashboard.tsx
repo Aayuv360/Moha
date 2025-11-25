@@ -935,20 +935,49 @@ export default function StoreDashboard() {
                               {/* Order Items & Breakdown */}
                               <div className="p-3 bg-background rounded border">
                                 <p className="text-xs font-semibold text-muted-foreground mb-3">Order Items ({items.length})</p>
-                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                <div className="space-y-3 max-h-96 overflow-y-auto">
                                   {items.length === 0 ? (
                                     <p className="text-sm text-muted-foreground">No items found</p>
                                   ) : (
                                     <>
                                       {items.map((item: any, idx: number) => (
-                                        <div key={idx} className="flex justify-between items-start pb-2 border-b last:border-b-0">
-                                          <div className="flex-1">
-                                            <p className="text-sm font-medium">{item.name}</p>
-                                            <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                        <div key={idx} className="flex gap-3 pb-3 border-b last:border-b-0">
+                                          {/* Product Image */}
+                                          <div className="flex-shrink-0">
+                                            <div className="w-16 h-16 bg-muted rounded overflow-hidden border">
+                                              <img
+                                                src={item.imageUrl || item.image}
+                                                alt={item.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3C/svg%3E";
+                                                }}
+                                              />
+                                            </div>
                                           </div>
-                                          <p className="text-sm font-semibold text-right ml-2">
-                                            ₹{item.price ? (parseFloat(item.price.toString()) * item.quantity).toLocaleString('en-IN') : 'N/A'}
-                                          </p>
+
+                                          {/* Product Details */}
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold truncate">{item.name}</p>
+                                            <div className="flex gap-2 flex-wrap mt-1">
+                                              {item.color && <Badge variant="secondary" className="text-xs h-5">{item.color}</Badge>}
+                                              {item.fabric && <Badge variant="secondary" className="text-xs h-5">{item.fabric}</Badge>}
+                                              {item.occasion && <Badge variant="secondary" className="text-xs h-5">{item.occasion}</Badge>}
+                                            </div>
+                                            <div className="flex items-center justify-between mt-2">
+                                              <div className="text-xs text-muted-foreground">
+                                                <span className="font-semibold">Qty:</span> {item.quantity}
+                                              </div>
+                                              <div className="text-right">
+                                                <p className="text-xs text-muted-foreground">
+                                                  ₹{item.price ? parseFloat(item.price.toString()).toLocaleString('en-IN') : 'N/A'} each
+                                                </p>
+                                                <p className="text-sm font-bold">
+                                                  ₹{item.price ? (parseFloat(item.price.toString()) * item.quantity).toLocaleString('en-IN') : 'N/A'}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
                                         </div>
                                       ))}
                                       <div className="mt-3 pt-2 border-t-2 flex justify-between">
