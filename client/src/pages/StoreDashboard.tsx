@@ -462,10 +462,10 @@ export default function StoreDashboard() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {categoryProducts.map((product: any) => (
                       <Card key={product.id} className="overflow-hidden hover-elevate transition-all">
-                        <div className="aspect-square bg-muted overflow-hidden">
+                        <div className="aspect-video bg-muted overflow-hidden">
                           <img
                             src={product.imageUrl}
                             alt={product.name}
@@ -475,38 +475,37 @@ export default function StoreDashboard() {
                             }}
                           />
                         </div>
-                        <CardContent className="pt-4">
-                          <p className="font-semibold text-lg truncate" data-testid={`text-product-${product.id}`}>{product.name}</p>
-                          <p className="text-xs text-muted-foreground font-mono mt-1" data-testid={`text-tracking-${product.id}`}>ID: {product.trackingId}</p>
-                          <p className="text-lg font-bold text-primary mt-2">₹{product.price}</p>
+                        <CardContent className="pt-2 pb-2">
+                          <p className="font-semibold text-sm truncate" data-testid={`text-product-${product.id}`}>{product.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono truncate" data-testid={`text-tracking-${product.id}`}>ID: {product.trackingId.substring(0, 12)}</p>
+                          <p className="text-sm font-bold text-primary mt-1">₹{product.price}</p>
                           
-                          <div className="flex gap-1 flex-wrap mt-2 mb-3">
-                            <Badge variant="secondary" className="text-xs">{product.fabric}</Badge>
-                            <Badge variant="secondary" className="text-xs">{product.occasion}</Badge>
+                          <div className="flex gap-1 flex-wrap mt-1 mb-2">
+                            <Badge variant="secondary" className="text-xs h-5">{product.fabric}</Badge>
                             {product.inStock <= 5 ? (
-                              <Badge variant="destructive" className="text-xs flex items-center gap-1">
-                                <AlertCircle className="h-3 w-3" />
+                              <Badge variant="destructive" className="text-xs h-5 flex items-center gap-0.5">
+                                <AlertCircle className="h-2.5 w-2.5" />
                                 {product.inStock}
                               </Badge>
                             ) : (
-                              <Badge className="text-xs">{product.inStock}</Badge>
+                              <Badge className="text-xs h-5">{product.inStock}</Badge>
                             )}
                           </div>
 
-                          <div className="flex gap-2">
+                          <div className="flex gap-1">
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex-1"
+                              className="flex-1 h-7 text-xs"
                               onClick={() => handleEditProduct(product)}
                               data-testid={`button-edit-product-${product.id}`}
                             >
-                              <Edit2 className="h-3 w-3 mr-1" />
-                              Edit
+                              <Edit2 className="h-3 w-3" />
                             </Button>
                             <Button
                               size="sm"
                               variant="destructive"
+                              className="h-7"
                               onClick={() => deleteProductMutation.mutate(product.id)}
                               data-testid={`button-delete-product-${product.id}`}
                             >
