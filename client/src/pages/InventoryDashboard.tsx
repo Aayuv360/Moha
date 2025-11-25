@@ -4,19 +4,20 @@ import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Store, LogOut, BarChart3, Settings } from "lucide-react";
-import type { Product, Order } from "@shared/schema";
+import { Store, LogOut, BarChart3, Settings, RotateCw } from "lucide-react";
+import type { Product, Order, Return } from "@shared/schema";
 import { DashboardTab } from "@/components/InventoryDashboardTab";
 import { ProductsTab } from "@/components/InventoryProductsTab";
 import { OrdersTab } from "@/components/InventoryOrdersTab";
 import { SettingsTab } from "@/components/InventorySettingsTab";
+import { InventoryReturnsTab } from "@/components/InventoryReturnsTab";
 
 export default function InventoryDashboard() {
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<
-    "dashboard" | "products" | "orders" | "settings"
+    "dashboard" | "products" | "orders" | "returns" | "settings"
   >("dashboard");
   const [ordersSubTab, setOrdersSubTab] = useState<"pending" | "shipped" | "delivered">(
     "pending",
@@ -41,6 +42,11 @@ export default function InventoryDashboard() {
 
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: ["/api/inventory/orders"],
+    enabled: !!user?.isInventoryOwner,
+  });
+
+  const { data: inventoryReturns = [] } = useQuery<Return[]>({
+    queryKey: ["/api/inventory/returns"],
     enabled: !!user?.isInventoryOwner,
   });
 
@@ -110,6 +116,15 @@ export default function InventoryDashboard() {
               Orders
             </Button>
             <Button
+              variant={tab === "returns" ? "default" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setTab("returns")}
+              data-testid="button-tab-returns"
+            >
+              <RotateCw className="h-4 w-4 mr-2" />
+              Returns
+            </Button>
+            <Button
               variant={tab === "settings" ? "default" : "ghost"}
               className="w-full justify-start"
               onClick={() => setTab("settings")}
@@ -151,6 +166,10 @@ export default function InventoryDashboard() {
                 ordersSubTab={ordersSubTab}
                 setOrdersSubTab={setOrdersSubTab}
               />
+            )}
+
+            {tab === "returns" && (
+              <InventoryReturnsTab returns={inventoryReturns} />
             )}
 
             {tab === "settings" && (

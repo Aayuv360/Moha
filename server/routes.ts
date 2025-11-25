@@ -8,6 +8,7 @@ import {
   insertWishlistItemSchema,
   insertProductSchema,
   insertInventorySchema,
+  insertReturnSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import {
@@ -825,6 +826,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ isInWishlist });
       } catch (error) {
         res.status(500).json({ error: "Failed to check wishlist" });
+      }
+    },
+  );
+
+  // Returns endpoints
+  app.post("/api/returns", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertReturnSchema.parse({
+        orderId: req.body.orderId,
+        userId: req.userId!,
+        productId: req.body.productId,
+        quantity: req.body.quantity,
+        reason: req.body.reason,
+        refundAmount: req.body.refundAmount,
+        status: "requested",
+        inventoryId: req.body.inventoryId,
+      });
+      const returnRecord = await storage.createReturn(validatedData);
+      res.status(201).json(returnRecord);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create return request" });
+    }
+  });
+
+  app.get("/api/returns", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const userReturns = await storage.getUserReturns(req.userId!);
+      res.json(userReturns);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch returns" });
+    }
+  });
+
+  app.get(
+    "/api/inventory/returns",
+    inventoryAuthMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const inventoryReturns = await storage.getInventoryReturns(req.inventoryId!);
+        res.json(inventoryReturns);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch inventory returns" });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/inventory/returns/:id/status",
+    inventoryAuthMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const { status } = z.object({ status: z.string() }).parse(req.body);
+        const returnRecord = await storage.getReturn(req.params.id);
+
+        if (!returnRecord) {
+          return res.status(404).json({ error: "Return not found" });
+        }
+
+        const updatedReturn = await storage.updateReturnStatus(req.params.id, status);
+
+        // If approving, increase stock
+        if (status === "approved" && returnRecord.productId) {
+          const product = await storage.getProduct(returnRecord.productId);
+          if (product) {
+            const newStock = product.inStock + returnRecord.quantity;
+            await storage.updateProduct(returnRecord.productId, {
+              inStock: newStock,
+            });
+          }
+        }
+
+        res.json(updatedReturn);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ error: error.errors });
+        }
+        res.status(500).json({ error: "Failed to update return status" });
       }
     },
   );

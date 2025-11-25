@@ -11,12 +11,15 @@ import {
   type InsertWishlistItem,
   type Inventory,
   type InsertInventory,
+  type Return,
+  type InsertReturn,
   products,
   cartItems,
   orders,
   users,
   wishlistItems,
   inventories,
+  returns,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, ilike, sql, gte, lte } from "drizzle-orm";
@@ -81,6 +84,13 @@ export interface IStorage {
   addToWishlist(item: InsertWishlistItem): Promise<WishlistItem>;
   removeFromWishlist(userId: string, productId: string): Promise<boolean>;
   isInWishlist(userId: string, productId: string): Promise<boolean>;
+
+  // Returns
+  createReturn(returnData: InsertReturn): Promise<Return>;
+  getUserReturns(userId: string): Promise<Return[]>;
+  getInventoryReturns(inventoryId: string): Promise<Return[]>;
+  getReturn(id: string): Promise<Return | undefined>;
+  updateReturnStatus(id: string, status: string): Promise<Return | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -424,6 +434,47 @@ export class DatabaseStorage implements IStorage {
         ),
       );
     return !!item;
+  }
+
+  async createReturn(returnData: InsertReturn): Promise<Return> {
+    const [returnRecord] = await db
+      .insert(returns)
+      .values(returnData)
+      .returning();
+    return returnRecord;
+  }
+
+  async getUserReturns(userId: string): Promise<Return[]> {
+    return await db
+      .select()
+      .from(returns)
+      .where(eq(returns.userId, userId))
+      .orderBy(desc(returns.createdAt));
+  }
+
+  async getInventoryReturns(inventoryId: string): Promise<Return[]> {
+    return await db
+      .select()
+      .from(returns)
+      .where(eq(returns.inventoryId, inventoryId))
+      .orderBy(desc(returns.createdAt));
+  }
+
+  async getReturn(id: string): Promise<Return | undefined> {
+    const [returnRecord] = await db
+      .select()
+      .from(returns)
+      .where(eq(returns.id, id));
+    return returnRecord || undefined;
+  }
+
+  async updateReturnStatus(id: string, status: string): Promise<Return | undefined> {
+    const [returnRecord] = await db
+      .update(returns)
+      .set({ status })
+      .where(eq(returns.id, id))
+      .returning();
+    return returnRecord || undefined;
   }
 
   async seedProducts(): Promise<void> {
