@@ -42,6 +42,7 @@ export default function Orders() {
   const { user, token, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [tab, setTab] = useState<"orders" | "returns">("orders");
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null);
   const [returnReason, setReturnReason] = useState("");
@@ -99,14 +100,35 @@ export default function Orders() {
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-serif font-light mb-2">
-            Order History
+            {tab === "orders" ? "Order History" : "Return Requests"}
           </h1>
           <p className="text-muted-foreground">
-            View and track your past purchases
+            {tab === "orders"
+              ? "View and track your past purchases"
+              : "Manage your return requests"}
           </p>
         </div>
 
-        {isLoading ? (
+        <div className="flex gap-2 mb-6 border-b">
+          <Button
+            variant={tab === "orders" ? "default" : "ghost"}
+            onClick={() => setTab("orders")}
+            data-testid="button-tab-orders"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-foreground"
+          >
+            My Orders
+          </Button>
+          <Button
+            variant={tab === "returns" ? "default" : "ghost"}
+            onClick={() => setTab("returns")}
+            data-testid="button-tab-returns"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-foreground"
+          >
+            My Returns ({userReturns.length})
+          </Button>
+        </div>
+
+        {tab === "orders" && (isLoading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading your orders...</p>
           </div>
@@ -233,6 +255,107 @@ export default function Orders() {
                 </Card>
               );
             })}
+          </div>
+        ))}
+
+        {tab === "returns" && (
+          <div>
+            {userReturns.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <RotateCw className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h2 className="text-xl font-medium mb-2">No return requests yet</h2>
+                  <p className="text-muted-foreground mb-6 text-center">
+                    You can request returns from delivered orders
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {userReturns.map((returnRecord) => {
+                  const returnStatusColors: Record<string, string> = {
+                    requested: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+                    approved: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+                    rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
+                  };
+
+                  return (
+                    <Card key={returnRecord.id} data-testid={`return-card-${returnRecord.id}`}>
+                      <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div>
+                            <CardTitle className="text-lg font-medium">
+                              Return #{returnRecord.id.substring(0, 8)}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Order: #{returnRecord.orderId.substring(0, 8)}
+                            </p>
+                          </div>
+                          <Badge className={returnStatusColors[returnRecord.status] || returnStatusColors.requested}>
+                            {returnRecord.status.charAt(0).toUpperCase() +
+                              returnRecord.status.slice(1)}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3 text-sm">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-muted-foreground">Quantity</p>
+                              <p className="font-medium">{returnRecord.quantity}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Refund Amount</p>
+                              <p className="font-medium">
+                                ₹{parseFloat(returnRecord.refundAmount.toString()).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-muted-foreground">Reason</p>
+                            <p className="font-medium">{returnRecord.reason}</p>
+                          </div>
+
+                          <div>
+                            <p className="text-muted-foreground">Requested on</p>
+                            <p className="font-medium">
+                              {format(new Date(returnRecord.createdAt), "PPP")}
+                            </p>
+                          </div>
+
+                          {returnRecord.status === "approved" && (
+                            <div className="bg-green-50 dark:bg-green-950 p-3 rounded">
+                              <p className="text-sm text-green-800 dark:text-green-100">
+                                Your return has been approved. Refund of ₹
+                                {parseFloat(returnRecord.refundAmount.toString()).toLocaleString()} will be
+                                processed.
+                              </p>
+                            </div>
+                          )}
+
+                          {returnRecord.status === "rejected" && (
+                            <div className="bg-red-50 dark:bg-red-950 p-3 rounded">
+                              <p className="text-sm text-red-800 dark:text-red-100">
+                                Your return request has been rejected. Contact support for more details.
+                              </p>
+                            </div>
+                          )}
+
+                          {returnRecord.status === "requested" && (
+                            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded">
+                              <p className="text-sm text-blue-800 dark:text-blue-100">
+                                Your return request is being reviewed. We'll update you soon.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
