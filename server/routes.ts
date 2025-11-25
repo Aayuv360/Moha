@@ -21,23 +21,56 @@ import {
 } from "./auth";
 
 const adminAuthMiddleware = async (req: any, res: any, next: any) => {
-  await authMiddleware(req, res, () => {
-    if (req.isAdmin) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+  
+  try {
+    const token = authHeader.substring(7);
+    const { verifyToken } = require("./auth");
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+    
+    req.userId = decoded.userId;
+    const user = await storage.getUserById(decoded.userId);
+    if (user && user.isAdmin) {
       next();
     } else {
       res.status(403).json({ error: "Admin access required" });
     }
-  });
+  } catch (error) {
+    res.status(401).json({ error: "Authentication failed" });
+  }
 };
 
 const inventoryAuthMiddleware = async (req: any, res: any, next: any) => {
-  await authMiddleware(req, res, () => {
-    if (req.isInventoryOwner) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+  
+  try {
+    const token = authHeader.substring(7);
+    const { verifyToken } = require("./auth");
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+    
+    req.userId = decoded.userId;
+    const user = await storage.getUserById(decoded.userId);
+    if (user && user.isInventoryOwner) {
+      req.inventoryId = user.inventoryId;
       next();
     } else {
       res.status(403).json({ error: "Inventory owner access required" });
     }
-  });
+  } catch (error) {
+    res.status(401).json({ error: "Authentication failed" });
+  }
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -514,7 +547,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (returnNotes !== undefined) updates.returnNotes = returnNotes;
         if (refundStatus !== undefined) updates.refundStatus = refundStatus;
 
-        const updatedOrder = await storage.updateOrderStatus(req.params.id, status);
+        const updatedOrder = await storage.updateOrderStatus(
+          req.params.id,
+          status,
+        );
 
         res.json(updatedOrder);
       } catch (error) {
@@ -867,7 +903,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     inventoryAuthMiddleware,
     async (req: AuthRequest, res) => {
       try {
-        const inventoryReturns = await storage.getInventoryReturns(req.inventoryId!);
+        const inventoryReturns = await storage.getInventoryReturns(
+          req.inventoryId!,
+        );
         res.json(inventoryReturns);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch inventory returns" });
@@ -887,7 +925,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: "Return not found" });
         }
 
-        const updatedReturn = await storage.updateReturnStatus(req.params.id, status);
+        const updatedReturn = await storage.updateReturnStatus(
+          req.params.id,
+          status,
+        );
 
         // If approving, increase stock
         if (status === "approved" && returnRecord.productId) {
