@@ -721,9 +721,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: AuthRequest, res) => {
       try {
         const validatedData = insertOrderSchema.parse(req.body);
-        const orderItems = JSON.parse(validatedData.items);
+        const orderItems = typeof validatedData.items === "string" 
+          ? JSON.parse(validatedData.items) 
+          : validatedData.items;
         const sessionId =
-          orderItems.length > 0 ? orderItems[0].sessionId : null;
+          orderItems && orderItems.length > 0 ? orderItems[0].sessionId : null;
 
         // Enrich items with product details
         const enrichedItems = await Promise.all(
@@ -767,10 +769,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Reduce stock immediately when order is created (pending status)
         for (const item of enrichedItems) {
-          if (item.productId) {
+          if (item.productId && item.quantity) {
             const product = await storage.getProduct(item.productId);
             if (product) {
-              const newStock = Math.max(0, product.inStock - item.quantity);
+              const newStock = Math.max(0, product.inStock - (item.quantity || 1));
               await storage.updateProduct(item.productId, {
                 inStock: newStock,
               });
