@@ -422,17 +422,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ error: "Inventory access required" });
         }
 
-        const schema = insertProductSchema;
-        const validatedData = schema.parse(req.body);
-
         // Generate unique tracking ID (format: PROD-TIMESTAMP-RANDOM)
         const timestamp = Date.now().toString(36).toUpperCase();
         const random = Math.random().toString(36).substring(2, 8).toUpperCase();
         const trackingId = `PROD-${timestamp}-${random}`;
 
+        const schema = insertProductSchema.extend({
+          trackingId: z.string(),
+        });
+        const validatedData = schema.parse({ ...req.body, trackingId });
+
         const product = await storage.createProduct({
           ...validatedData,
-          trackingId,
           inventoryId: user.inventoryId,
         });
 

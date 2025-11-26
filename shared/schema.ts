@@ -136,7 +136,6 @@ export const insertInventorySchema = createInsertSchema(inventories).omit({
 });
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
-  trackingId: true,
   createdAt: true,
 });
 export const insertCartItemSchema = createInsertSchema(cartItems).omit({
