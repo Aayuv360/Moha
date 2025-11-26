@@ -23,18 +23,18 @@ interface ProductFilters {
 }
 
 function parseProductParams(location: string): ProductFilters {
-  const params = new URLSearchParams(location.split('?')[1] || '');
-  const search = params.get('search') || '';
-  const fabric = params.get('fabric') || 'All';
-  const occasion = params.get('occasion') || 'All';
-  const minPrice = params.get('minPrice');
-  const maxPrice = params.get('maxPrice');
-  
-  let priceRange = 'all';
+  const params = new URLSearchParams(location.split("?")[1] || "");
+  const search = params.get("search") || "";
+  const fabric = params.get("fabric") || "All";
+  const occasion = params.get("occasion") || "All";
+  const minPrice = params.get("minPrice");
+  const maxPrice = params.get("maxPrice");
+
+  let priceRange = "all";
   if (minPrice && maxPrice) {
     priceRange = `${minPrice}-${maxPrice}`;
   }
-  
+
   return { search, fabric, occasion, priceRange };
 }
 
@@ -46,34 +46,39 @@ export default function Products() {
   const filters = parseProductParams(location);
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: ['products', filters],
+    queryKey: ["products", filters],
     queryFn: async () => {
       const apiParams = new URLSearchParams();
-      if (filters.search) apiParams.append('search', filters.search);
-      if (filters.fabric !== 'All') apiParams.append('fabric', filters.fabric);
-      if (filters.occasion !== 'All') apiParams.append('occasion', filters.occasion);
-      
-      if (filters.priceRange !== 'all') {
-        const [min, max] = filters.priceRange.split('-');
-        apiParams.append('minPrice', min);
-        apiParams.append('maxPrice', max);
+      if (filters.search) apiParams.append("search", filters.search);
+      if (filters.fabric !== "All") apiParams.append("fabric", filters.fabric);
+      if (filters.occasion !== "All")
+        apiParams.append("occasion", filters.occasion);
+
+      if (filters.priceRange !== "all") {
+        const [min, max] = filters.priceRange.split("-");
+        apiParams.append("minPrice", min);
+        apiParams.append("maxPrice", max);
       }
-      
+
       const queryString = apiParams.toString();
-      const url = queryString ? `/api/products?${queryString}` : '/api/products';
+      const url = queryString
+        ? `/api/products?${queryString}`
+        : "/api/products";
       const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch products');
+      if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
   });
-
+  console.log(products);
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
-      return await apiRequest('POST', '/api/cart', item);
+      return await apiRequest("POST", "/api/cart", item);
     },
     onSuccess: () => {
       const sessionId = getOrCreateSessionId();
-      queryClient.invalidateQueries({ queryKey: [`/api/cart?sessionId=${sessionId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/cart?sessionId=${sessionId}`],
+      });
       toast({
         title: "Added to cart",
         description: "Item has been added to your cart successfully.",
@@ -88,11 +93,12 @@ export default function Products() {
     },
   });
 
-
   const handleAddToCart = (product: Product) => {
     const sessionId = getOrCreateSessionId();
-    
-    const button = document.querySelector(`[data-testid="button-add-to-cart-${product.id}"]`);
+
+    const button = document.querySelector(
+      `[data-testid="button-add-to-cart-${product.id}"]`,
+    );
     if (button) {
       gsap.to(button, {
         scale: 1.1,
@@ -110,27 +116,36 @@ export default function Products() {
     });
   };
 
-  const pushProductParams = (updates: Partial<Record<string, string | null>>) => {
-    const newParams = new URLSearchParams(location.split('?')[1] || '');
-    
+  const pushProductParams = (
+    updates: Partial<Record<string, string | null>>,
+  ) => {
+    const newParams = new URLSearchParams(location.split("?")[1] || "");
+
     Object.entries(updates).forEach(([key, value]) => {
-      if (value === null || value === '' || value === 'All' || value === 'all') {
+      if (
+        value === null ||
+        value === "" ||
+        value === "All" ||
+        value === "all"
+      ) {
         newParams.delete(key);
-        if (key === 'priceRange') {
-          newParams.delete('minPrice');
-          newParams.delete('maxPrice');
+        if (key === "priceRange") {
+          newParams.delete("minPrice");
+          newParams.delete("maxPrice");
         }
-      } else if (key === 'priceRange' && value !== 'all') {
-        const [min, max] = value.split('-');
-        newParams.set('minPrice', min);
-        newParams.set('maxPrice', max);
+      } else if (key === "priceRange" && value !== "all") {
+        const [min, max] = value.split("-");
+        newParams.set("minPrice", min);
+        newParams.set("maxPrice", max);
       } else {
         newParams.set(key, value);
       }
     });
-    
+
     const queryString = newParams.toString();
-    setLocation(queryString ? `/products?${queryString}` : '/products', { replace: false });
+    setLocation(queryString ? `/products?${queryString}` : "/products", {
+      replace: false,
+    });
   };
 
   const handleFilterChange = (key: string, value: string) => {
@@ -144,7 +159,7 @@ export default function Products() {
       priceRange: null,
     });
   };
-  
+
   const handleSearch = (query: string) => {
     pushProductParams({ search: query || null });
   };
@@ -159,9 +174,10 @@ export default function Products() {
             Our Collection
           </h1>
           <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl">
-            Explore our curated selection of handcrafted sarees, each piece a testament to India's rich textile heritage.
+            Explore our curated selection of handcrafted sarees, each piece a
+            testament to India's rich textile heritage.
           </p>
-          
+
           <div className="relative max-w-md w-full sm:w-auto">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -176,8 +192,11 @@ export default function Products() {
         </div>
 
         <div className="flex items-center justify-between mb-6 md:mb-8">
-          <p className="text-sm text-muted-foreground" data-testid="text-product-count">
-            {products.length} {products.length === 1 ? 'saree' : 'sarees'} found
+          <p
+            className="text-sm text-muted-foreground"
+            data-testid="text-product-count"
+          >
+            {products.length} {products.length === 1 ? "saree" : "sarees"} found
           </p>
           <Button
             variant="outline"
@@ -218,7 +237,9 @@ export default function Products() {
               <LoadingSpinner />
             ) : products.length === 0 ? (
               <EmptyState
-                icon={<ShoppingBag className="h-12 w-12 text-muted-foreground" />}
+                icon={
+                  <ShoppingBag className="h-12 w-12 text-muted-foreground" />
+                }
                 title="No sarees found"
                 description="Try adjusting your filters to see more results."
                 actionLabel="Clear Filters"

@@ -32,31 +32,36 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     queryKey: [`/api/wishlist/check/${product.id}`],
     enabled: !!token,
   });
-  
+
   const isInWishlist = wishlistData?.isInWishlist || false;
 
   const toggleWishlistMutation = useMutation({
     mutationFn: async () => {
       if (isInWishlist) {
-        return await apiRequest('DELETE', `/api/wishlist/${product.id}`);
+        return await apiRequest("DELETE", `/api/wishlist/${product.id}`);
       } else {
-        return await apiRequest('POST', '/api/wishlist', { productId: product.id });
+        return await apiRequest("POST", "/api/wishlist", {
+          productId: product.id,
+        });
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/wishlist'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/wishlist/check/${product.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/wishlist/check/${product.id}`],
+      });
       toast({
         title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
-        description: isInWishlist 
-          ? "Item has been removed from your wishlist" 
+        description: isInWishlist
+          ? "Item has been removed from your wishlist"
           : "Item has been added to your wishlist successfully.",
       });
     },
   });
-  const images = Array.isArray(product.images) && product.images.length > 0
-    ? product.images
-    : [product.imageUrl];
+  const images =
+    Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : [product.imageUrl];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -107,7 +112,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!user) {
       toast({
         title: "Login required",
@@ -159,10 +164,10 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
                 disabled={toggleWishlistMutation.isPending}
                 data-testid={`button-wishlist-${product.id}`}
               >
-                <Heart 
+                <Heart
                   className={`h-4 w-4 transition-all ${
                     isInWishlist ? "fill-red-500 text-red-500" : ""
-                  }`} 
+                  }`}
                 />
               </Button>
               {product.inStock === 0 && (
