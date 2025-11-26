@@ -10,7 +10,8 @@ import { useAuth } from "@/lib/auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Product } from "@shared/schema";
+import { getOrCreateSessionId } from "@/lib/session";
+import type { Product, CartItem } from "@shared/schema";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,6 +29,14 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { user, token } = useAuth();
   const { toast } = useToast();
+  const sessionId = getOrCreateSessionId();
+
+  const { data: cart = [] } = useQuery<CartItem[]>({
+    queryKey: [`/api/cart?sessionId=${sessionId}`],
+  });
+
+  const cartItem = cart.find(item => item.productId === product.id);
+  const cartQuantity = cartItem?.quantity || 0;
 
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
     queryKey: [`/api/wishlist/check/${product.id}`],
@@ -35,6 +44,32 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   });
 
   const isInWishlist = wishlistData?.isInWishlist || false;
+
+  const updateCartMutation = useMutation({
+    mutationFn: async (newQuantity: number) => {
+      if (!cartItem) return;
+      return await apiRequest("PATCH", `/api/cart/${cartItem.id}`, {
+        quantity: newQuantity,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/cart?sessionId=${sessionId}`],
+      });
+    },
+  });
+
+  const removeFromCartMutation = useMutation({
+    mutationFn: async () => {
+      if (!cartItem) return;
+      return await apiRequest("DELETE", `/api/cart/${cartItem.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/cart?sessionId=${sessionId}`],
+      });
+    },
+  });
 
   const toggleWishlistMutation = useMutation({
     mutationFn: async () => {
@@ -114,13 +149,19 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const handleIncreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setQuantity(q => q + 1);
+    if (cartQuantity < product.inStock) {
+      updateCartMutation.mutate(cartQuantity + 1);
+    }
   };
 
   const handleDecreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setQuantity(q => Math.max(1, q - 1));
+    if (cartQuantity > 1) {
+      updateCartMutation.mutate(cartQuantity - 1);
+    } else if (cartQuantity === 1) {
+      removeFromCartMutation.mutate();
+    }
   };
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
@@ -212,39 +253,73 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 border border-border rounded-md">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleDecreaseQuantity}
-                      disabled={product.inStock === 0}
-                      className="h-6 w-6 p-0"
-                      data-testid={`button-decrease-qty-${product.id}`}
-                    >
-                      −
-                    </Button>
-                    <span className="w-6 text-center text-sm font-medium">{quantity}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleIncreaseQuantity}
-                      disabled={product.inStock === 0}
-                      className="h-6 w-6 p-0"
-                      data-testid={`button-increase-qty-${product.id}`}
-                    >
-                      +
-                    </Button>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleAddToCart}
-                    disabled={product.inStock === 0}
-                    className="gap-2 flex-1"
-                    data-testid={`button-add-to-cart-${product.id}`}
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    Add
-                  </Button>
+                  {cartQuantity > 1 ? (
+                    <>
+                      <div className="flex items-center gap-1 border border-border rounded-md">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleDecreaseQuantity}
+                          disabled={updateCartMutation.isPending || removeFromCartMutation.isPending}
+                          className="h-6 w-6 p-0"
+                          data-testid={`button-decrease-qty-${product.id}`}
+                        >
+                          −
+                        </Button>
+                        <span className="w-6 text-center text-sm font-medium">
+                          {cartQuantity}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleIncreaseQuantity}
+                          disabled={cartQuantity >= product.inStock || updateCartMutation.isPending}
+                          className="h-6 w-6 p-0"
+                          data-testid={`button-increase-qty-${product.id}`}
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-1 border border-border rounded-md">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                          disabled={product.inStock === 0 || quantity <= 1}
+                          className="h-6 w-6 p-0"
+                          data-testid={`button-decrease-qty-selector-${product.id}`}
+                        >
+                          −
+                        </Button>
+                        <span className="w-6 text-center text-sm font-medium">
+                          {quantity}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setQuantity((q) => q + 1)}
+                          disabled={product.inStock === 0 || quantity >= product.inStock}
+                          className="h-6 w-6 p-0"
+                          data-testid={`button-increase-qty-selector-${product.id}`}
+                        >
+                          +
+                        </Button>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={handleAddToCart}
+                        disabled={product.inStock === 0}
+                        className="gap-2 flex-1"
+                        data-testid={`button-add-to-cart-${product.id}`}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        Add
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
