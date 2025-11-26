@@ -955,6 +955,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Store endpoints
+  app.get(
+    "/api/inventory/all-stores",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner) {
+          return res.status(403).json({ error: "Inventory owner access required" });
+        }
+
+        const inventories = await storage.getAllInventories();
+        res.json(inventories);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch stores" });
+      }
+    },
+  );
+
   // Store Product Inventory endpoints
   app.get(
     "/api/inventory/products/:productId/stores",

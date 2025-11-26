@@ -30,6 +30,11 @@ interface StoreInventory {
   channel: string;
 }
 
+interface Store {
+  id: string;
+  name: string;
+}
+
 interface ProductsTabProps {
   products: Product[];
   editingProduct: Product | null;
@@ -77,6 +82,10 @@ export function ProductsTab({
     onError: (error: any) => {
       toast({ title: "Failed to delete product", variant: "destructive" });
     },
+  });
+
+  const { data: allStores = [] } = useQuery<Store[]>({
+    queryKey: ["/api/inventory/all-stores"],
   });
 
   const { data: storeInventoryMap = {} } = useQuery({
@@ -438,11 +447,17 @@ export function ProductsTab({
                   <SelectValue placeholder="Select source store" />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedProductForMove && storeInventoryMap[selectedProductForMove.id]?.map((store: StoreInventory) => (
-                    <SelectItem key={store.storeId} value={store.storeId}>
-                      {store.storeName} ({store.quantity} available)
-                    </SelectItem>
-                  ))}
+                  {allStores.map((store: Store) => {
+                    const storeInv = selectedProductForMove && storeInventoryMap[selectedProductForMove.id]?.find(
+                      (si: StoreInventory) => si.storeId === store.id
+                    );
+                    const quantity = storeInv?.quantity || 0;
+                    return (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.name} ({quantity} available)
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -454,9 +469,9 @@ export function ProductsTab({
                   <SelectValue placeholder="Select destination store" />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedProductForMove && storeInventoryMap[selectedProductForMove.id]?.map((store: StoreInventory) => (
-                    <SelectItem key={store.storeId} value={store.storeId}>
-                      {store.storeName}
+                  {allStores.map((store: Store) => (
+                    <SelectItem key={store.id} value={store.id}>
+                      {store.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
