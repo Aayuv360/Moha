@@ -427,11 +427,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const random = Math.random().toString(36).substring(2, 8).toUpperCase();
         const trackingId = `PROD-${timestamp}-${random}`;
 
+        // Extract allocation data from payload
+        const { storeInventory, channel } = req.body;
+
         // Validate input with extended schema
         const schema = insertProductSchema.extend({
           trackingId: z.string(),
-          images: z.array(z.string().url()).optional(),
-          videoUrl: z.string().url().optional().or(z.literal("")),
+          images: z.array(z.string()).optional(),
+          videoUrl: z.string().nullable().optional(),
         });
 
         // Ensure images is an array and videoUrl is properly handled
@@ -449,12 +452,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           inventoryId: user.inventoryId,
         });
 
+        // If allocation data provided, allocate inventory immediately
+        if (storeInventory && Array.isArray(storeInventory) && storeInventory.length > 0) {
+          for (const allocation of storeInventory) {
+            await storage.updateStoreProductInventory(
+              product.id,
+              allocation.storeId,
+              allocation.quantity
+            );
+          }
+        }
+
         res.status(201).json(product);
       } catch (error) {
         if (error instanceof z.ZodError) {
           return res.status(400).json({ error: error.errors });
         }
-        res.status(500).json({ error: "Failed to create product" });
+        console.error("Product creation error:", error);
+        res.status(500).json({ error: "Failed to create product", details: String(error) });
       }
     },
   );

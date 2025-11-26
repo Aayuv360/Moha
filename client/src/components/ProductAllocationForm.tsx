@@ -205,6 +205,11 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
             .filter((url) => url && url.startsWith("http"))
         : [];
 
+      // Prepare allocation data
+      const storeInventory = Object.entries(shopStocks)
+        .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
+        .filter((x) => x !== null) as { storeId: string; quantity: number }[];
+
       return await apiRequest("POST", "/api/inventory/products", {
         name: data.name,
         description: data.description,
@@ -215,24 +220,11 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
         category: data.category,
         inStock: data.totalStock,
         imageUrl: data.imageUrl,
-        images: images.length > 0 ? images : undefined,
-        videoUrl: data.videoUrl && data.videoUrl.startsWith("http") ? data.videoUrl : undefined,
-      });
-    },
-  });
-
-  const allocateInventoryMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      const storeInventory = Object.entries(shopStocks)
-        .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
-        .filter((x) => x !== null) as { storeId: string; quantity: number }[];
-
-      if (storeInventory.length === 0 && channel !== "Online") {
-        throw new Error("No stores selected for allocation");
-      }
-
-      return await apiRequest("PATCH", `/api/inventory/products/${productId}/inventory`, {
-        storeInventory,
+        images: images.length > 0 ? images : [],
+        videoUrl: data.videoUrl && data.videoUrl.startsWith("http") ? data.videoUrl : null,
+        // Include allocation in payload
+        storeInventory: storeInventory,
+        channel: channel,
       });
     },
   });
@@ -248,8 +240,7 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
     }
 
     try {
-      const product = await createProductMutation.mutateAsync(data);
-      await allocateInventoryMutation.mutateAsync(product.id);
+      await createProductMutation.mutateAsync(data);
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/products"] });
       form.reset();
       setChannel("Both");
