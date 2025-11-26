@@ -317,25 +317,42 @@ export function ProductsTab({
                         <td className="px-4 py-3">
                           {storeInventoryMap[product.id] &&
                           storeInventoryMap[product.id].length > 0 ? (
-                            <div className="space-y-1 text-xs">
-                              {storeInventoryMap[product.id].map(
-                                (inv: StoreInventory) => (
-                                  <div
-                                    key={inv.storeId}
-                                    className="flex items-center gap-2"
-                                  >
-                                    {inv.channel === "online" ? (
-                                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                                        Online: {inv.quantity}
+                            <div className="space-y-2 text-xs">
+                              {storeInventoryMap[product.id].some(
+                                (inv: StoreInventory) => inv.channel === "online"
+                              ) && (
+                                <div>
+                                  <p className="font-semibold text-blue-700 mb-1">Online</p>
+                                  {storeInventoryMap[product.id]
+                                    .filter((inv: StoreInventory) => inv.channel === "online")
+                                    .map((inv: StoreInventory) => (
+                                      <span
+                                        key={inv.storeId}
+                                        className="px-2 py-1 bg-blue-100 text-blue-700 rounded inline-block"
+                                      >
+                                        {inv.quantity} units
                                       </span>
-                                    ) : (
-                                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
-                                        {storeMap[inv.storeId] || inv.storeName}
-                                        : {inv.quantity}
-                                      </span>
-                                    )}
+                                    ))}
+                                </div>
+                              )}
+                              {storeInventoryMap[product.id].some(
+                                (inv: StoreInventory) => inv.channel === "physical"
+                              ) && (
+                                <div>
+                                  <p className="font-semibold text-yellow-700 mb-1">Shops</p>
+                                  <div className="space-y-1">
+                                    {storeInventoryMap[product.id]
+                                      .filter((inv: StoreInventory) => inv.channel === "physical")
+                                      .map((inv: StoreInventory) => (
+                                        <div
+                                          key={inv.storeId}
+                                          className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded"
+                                        >
+                                          {storeMap[inv.storeId] || inv.storeName}: {inv.quantity}
+                                        </div>
+                                      ))}
                                   </div>
-                                ),
+                                </div>
                               )}
                             </div>
                           ) : (
