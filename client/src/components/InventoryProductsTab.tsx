@@ -92,10 +92,20 @@ export function ProductsTab({
     queryKey: ["/api/inventory/stores"],
     queryFn: async () => {
       const map: { [key: string]: StoreInventory[] } = {};
+      const token = localStorage.getItem('token');
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+      
       for (const product of products) {
-        const res = await fetch(`/api/inventory/products/${product.id}/stores`);
-        if (res.ok) {
-          map[product.id] = await res.json();
+        try {
+          const res = await fetch(`/api/inventory/products/${product.id}/stores`, {
+            headers,
+            credentials: "include",
+          });
+          if (res.ok) {
+            map[product.id] = await res.json();
+          }
+        } catch (error) {
+          console.error(`Failed to fetch stores for product ${product.id}:`, error);
         }
       }
       return map;
