@@ -405,7 +405,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const products = await storage.getInventoryProducts(user.inventoryId);
-        res.json(products);
+        
+        // Enrich products with allocation details
+        const productsWithAllocations = await Promise.all(
+          products.map(async (product) => {
+            const allocations = await storage.getProductInventoryByProduct(product.id);
+            const storeInventory = allocations.map((alloc) => ({
+              storeId: alloc.storeId,
+              quantity: alloc.quantity,
+              channel: alloc.channel,
+            }));
+            
+            return {
+              ...product,
+              storeInventory,
+            };
+          })
+        );
+        
+        res.json(productsWithAllocations);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products" });
       }
