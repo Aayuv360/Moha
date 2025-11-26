@@ -315,6 +315,46 @@ export function ProductsTab({
                           {product.inStock}
                         </td>
 
+                        <td className="px-4 py-3 text-sm">
+                          {storeInventoryMap[product.id] ? (
+                            <div className="space-y-1">
+                              {Array.from(
+                                new Set(
+                                  storeInventoryMap[product.id].map(
+                                    (inv) => inv.channel,
+                                  ),
+                                ),
+                              ).map((channel) => {
+                                const channelInventory = storeInventoryMap[
+                                  product.id
+                                ].filter((inv) => inv.channel === channel);
+                                const total = channelInventory.reduce(
+                                  (sum, inv) => sum + inv.quantity,
+                                  0,
+                                );
+                                return (
+                                  <div
+                                    key={channel}
+                                    className="flex justify-between gap-2"
+                                    data-testid={`text-allocation-${product.id}-${channel}`}
+                                  >
+                                    <span className="capitalize font-medium">
+                                      {channel}:
+                                    </span>
+                                    <span className="font-semibold">
+                                      {total}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">
+                              No allocation
+                            </span>
+                          )}
+                        </td>
+
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
                             <Button
