@@ -955,6 +955,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Store Product Inventory endpoints
+  app.get(
+    "/api/inventory/products/:productId/stores",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
+
+        const product = await storage.getProduct(req.params.productId);
+        if (!product || product.inventoryId !== user.inventoryId) {
+          return res.status(404).json({ error: "Product not found or unauthorized" });
+        }
+
+        const storeInventory = await storage.getProductInventoryByProduct(req.params.productId);
+        const inventories = await storage.getAllInventories();
+        
+        const result = inventories.map((inv) => {
+          const storeInv = storeInventory.find((si) => si.storeId === inv.id);
+          return {
+            storeId: inv.id,
+            storeName: inv.name,
+            quantity: storeInv?.quantity || 0,
+            channel: storeInv?.channel || "physical",
+          };
+        });
+
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch store inventory" });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/inventory/products/:productId/inventory",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
+
+        const product = await storage.getProduct(req.params.productId);
+        if (!product || product.inventoryId !== user.inventoryId) {
+          return res.status(404).json({ error: "Product not found or unauthorized" });
+        }
+
+        const { storeInventory } = z.object({
+          storeInventory: z.array(z.object({
+            storeId: z.string(),
+            quantity: z.number().min(0),
+          }))
+        }).parse(req.body);
+
+        const results = await Promise.all(
+          storeInventory.map((si) =>
+            storage.updateStoreProductInventory(req.params.productId, si.storeId, si.quantity)
+          )
+        );
+
+        res.json(results);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ error: error.errors });
+        }
+        res.status(500).json({ error: "Failed to update inventory" });
+      }
+    },
+  );
+
+  app.post(
+    "/api/inventory/products/:productId/move",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user?.isInventoryOwner || !user.inventoryId) {
+          return res.status(403).json({ error: "Inventory access required" });
+        }
+
+        const product = await storage.getProduct(req.params.productId);
+        if (!product || product.inventoryId !== user.inventoryId) {
+          return res.status(404).json({ error: "Product not found or unauthorized" });
+        }
+
+        const { fromStoreId, toStoreId, quantity } = z.object({
+          fromStoreId: z.string(),
+          toStoreId: z.string(),
+          quantity: z.number().min(1),
+        }).parse(req.body);
+
+        const success = await storage.moveProductInventory(
+          req.params.productId,
+          fromStoreId,
+          toStoreId,
+          quantity
+        );
+
+        if (!success) {
+          return res.status(400).json({ error: "Insufficient inventory in source store" });
+        }
+
+        res.json({ success: true });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ error: error.errors });
+        }
+        res.status(500).json({ error: "Failed to move inventory" });
+      }
+    },
+  );
+
   const httpServer = createServer(app);
   return httpServer;
 }

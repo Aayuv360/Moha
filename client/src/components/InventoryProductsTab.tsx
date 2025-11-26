@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plus, Trash2, Edit2, ArrowRightLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product } from "@shared/schema";
@@ -12,7 +14,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ProductForm } from "./ProductForm";
+
+interface StoreInventory {
+  storeId: string;
+  storeName: string;
+  quantity: number;
+  channel: string;
+}
 
 interface ProductsTabProps {
   products: Product[];
@@ -41,6 +57,10 @@ export function ProductsTab({
   const [selectedCategory, setSelectedCategory] = useState<string>(
     categories.length > 0 ? categories[0] : "Uncategorized"
   );
+  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [selectedProductForMove, setSelectedProductForMove] = useState<Product | null>(null);
+  const [moveData, setMoveData] = useState({ fromStoreId: "", toStoreId: "", quantity: 1 });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -56,6 +76,73 @@ export function ProductsTab({
     },
     onError: (error: any) => {
       toast({ title: "Failed to delete product", variant: "destructive" });
+    },
+  });
+
+  const { data: storeInventoryMap = {} } = useQuery({
+    queryKey: ["/api/inventory/stores"],
+    queryFn: async () => {
+      const map: { [key: string]: StoreInventory[] } = {};
+      for (const product of products) {
+        const res = await fetch(`/api/inventory/products/${product.id}/stores`);
+        if (res.ok) {
+          map[product.id] = await res.json();
+        }
+      }
+      return map;
+    },
+    enabled: products.length > 0,
+  });
+
+  const updateInventoryMutation = useMutation({
+    mutationFn: async ({
+      productId,
+      storeInventory,
+    }: {
+      productId: string;
+      storeInventory: { storeId: string; quantity: number }[];
+    }) => {
+      return await apiRequest("PATCH", `/api/inventory/products/${productId}/inventory`, {
+        storeInventory,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/stores"] });
+      toast({ title: "Inventory updated successfully" });
+      setExpandedProduct(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to update inventory", variant: "destructive" });
+    },
+  });
+
+  const moveInventoryMutation = useMutation({
+    mutationFn: async ({
+      productId,
+      fromStoreId,
+      toStoreId,
+      quantity,
+    }: {
+      productId: string;
+      fromStoreId: string;
+      toStoreId: string;
+      quantity: number;
+    }) => {
+      return await apiRequest("POST", `/api/inventory/products/${productId}/move`, {
+        fromStoreId,
+        toStoreId,
+        quantity,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/stores"] });
+      toast({ title: "Inventory moved successfully" });
+      setMoveDialogOpen(false);
+      setSelectedProductForMove(null);
+      setMoveData({ fromStoreId: "", toStoreId: "", quantity: 1 });
+    },
+    onError: () => {
+      toast({ title: "Failed to move inventory", variant: "destructive" });
     },
   });
 
@@ -93,6 +180,23 @@ export function ProductsTab({
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setShowProductDialog(true);
+  };
+
+  const handleMoveInventory = () => {
+    if (!selectedProductForMove || !moveData.fromStoreId || !moveData.toStoreId) {
+      toast({ title: "Please fill in all fields", variant: "destructive" });
+      return;
+    }
+    if (moveData.fromStoreId === moveData.toStoreId) {
+      toast({ title: "Source and destination must be different", variant: "destructive" });
+      return;
+    }
+    moveInventoryMutation.mutate({
+      productId: selectedProductForMove.id,
+      fromStoreId: moveData.fromStoreId,
+      toStoreId: moveData.toStoreId,
+      quantity: moveData.quantity,
+    });
   };
 
   const categoryProducts = products.filter(
@@ -222,7 +326,77 @@ export function ProductsTab({
                     </div>
                   </div>
 
+                  {expandedProduct === product.id && storeInventoryMap[product.id] && (
+                    <div className="mt-4 pt-4 border-t space-y-3">
+                      <h4 className="font-semibold text-sm">Store Inventory</h4>
+                      <div className="space-y-2">
+                        {storeInventoryMap[product.id].map((store: StoreInventory) => (
+                          <div key={store.storeId} className="flex gap-2 items-center">
+                            <span className="text-xs flex-1">{store.storeName}</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={store.quantity}
+                              onChange={(e) => {
+                                const updated = storeInventoryMap[product.id].map((s: StoreInventory) =>
+                                  s.storeId === store.storeId
+                                    ? { ...s, quantity: parseInt(e.target.value) || 0 }
+                                    : s
+                                );
+                                queryClient.setQueryData(
+                                  ["/api/inventory/stores"],
+                                  { ...storeInventoryMap, [product.id]: updated }
+                                );
+                              }}
+                              className="w-16 h-8"
+                              data-testid={`input-store-quantity-${store.storeId}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          updateInventoryMutation.mutate({
+                            productId: product.id,
+                            storeInventory: storeInventoryMap[product.id].map(
+                              (s: StoreInventory) => ({
+                                storeId: s.storeId,
+                                quantity: s.quantity,
+                              })
+                            ),
+                          });
+                        }}
+                        disabled={updateInventoryMutation.isPending}
+                        className="w-full"
+                        data-testid={`button-save-inventory-${product.id}`}
+                      >
+                        Save Inventory
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setExpandedProduct(expandedProduct === product.id ? null : product.id)}
+                      data-testid={`button-manage-inventory-${product.id}`}
+                    >
+                      <ArrowRightLeft className="h-3 w-3 mr-1" />
+                      Inventory
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedProductForMove(product);
+                        setMoveDialogOpen(true);
+                      }}
+                      data-testid={`button-move-product-${product.id}`}
+                    >
+                      Move
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -243,13 +417,75 @@ export function ProductsTab({
                       <Trash2 className="h-3 w-3 mr-1" />
                       Delete
                     </Button>
-                    </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
+
+      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move Inventory Between Stores</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="from-store">From Store</Label>
+              <Select value={moveData.fromStoreId} onValueChange={(val) => setMoveData({ ...moveData, fromStoreId: val })}>
+                <SelectTrigger id="from-store" data-testid="select-from-store">
+                  <SelectValue placeholder="Select source store" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedProductForMove && storeInventoryMap[selectedProductForMove.id]?.map((store: StoreInventory) => (
+                    <SelectItem key={store.storeId} value={store.storeId}>
+                      {store.storeName} ({store.quantity} available)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="to-store">To Store</Label>
+              <Select value={moveData.toStoreId} onValueChange={(val) => setMoveData({ ...moveData, toStoreId: val })}>
+                <SelectTrigger id="to-store" data-testid="select-to-store">
+                  <SelectValue placeholder="Select destination store" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedProductForMove && storeInventoryMap[selectedProductForMove.id]?.map((store: StoreInventory) => (
+                    <SelectItem key={store.storeId} value={store.storeId}>
+                      {store.storeName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="move-quantity">Quantity</Label>
+              <Input
+                id="move-quantity"
+                type="number"
+                min="1"
+                value={moveData.quantity}
+                onChange={(e) => setMoveData({ ...moveData, quantity: parseInt(e.target.value) || 1 })}
+                data-testid="input-move-quantity"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end pt-4">
+              <Button variant="outline" onClick={() => setMoveDialogOpen(false)} data-testid="button-cancel-move">
+                Cancel
+              </Button>
+              <Button onClick={handleMoveInventory} disabled={moveInventoryMutation.isPending} data-testid="button-confirm-move">
+                Move Inventory
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
