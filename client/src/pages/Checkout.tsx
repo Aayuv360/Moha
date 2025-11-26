@@ -69,6 +69,7 @@ export default function Checkout() {
       setOrderId(data.id);
       setOrderPlaced(true);
       queryClient.invalidateQueries({ queryKey: ['/api/cart', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
 
       toast({
         title: "Order placed successfully!",

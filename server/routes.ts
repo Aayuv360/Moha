@@ -393,7 +393,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Inventory endpoints
   app.get(
     "/api/inventory/products",
     authMiddleware,
@@ -441,22 +440,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ error: "Inventory access required" });
         }
 
-        // Generate unique tracking ID (format: PROD-TIMESTAMP-RANDOM)
         const timestamp = Date.now().toString(36).toUpperCase();
         const random = Math.random().toString(36).substring(2, 8).toUpperCase();
         const trackingId = `PROD-${timestamp}-${random}`;
 
-        // Extract allocation data from payload
-        const { storeInventory, onlineStock, channel } = req.body;
+        const { storeInventory, channel } = req.body;
 
-        // Validate input with extended schema
         const schema = insertProductSchema.extend({
           trackingId: z.string(),
           images: z.array(z.string()).optional(),
           videoUrl: z.string().nullable().optional(),
         });
 
-        // Ensure images is an array and videoUrl is properly handled
         const requestData = {
           ...req.body,
           trackingId,
@@ -474,36 +469,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           inventoryId: user.inventoryId,
         });
 
-        // Allocate inventory based on channel and provided allocation data
-        if (channel === "Online" || channel === "Both") {
-          // For online allocation, use the first store as online warehouse
-          const stores = await storage.getAllInventories();
-          if (stores.length > 0 && onlineStock > 0) {
-            const onlineStore = stores[0]; // Primary store acts as online warehouse
+        if (channel === "Online") {
+          for (const allocation of storeInventory) {
             await storage.updateStoreProductInventory(
               product.id,
-              onlineStore.id,
-              onlineStock,
+              allocation.storeId,
+              allocation.quantity,
               "online",
             );
           }
-        }
+        } else if (channel === "Shop") {
+          for (const allocation of storeInventory) {
+            await storage.updateStoreProductInventory(
+              product.id,
+              allocation.storeId,
+              allocation.quantity,
+              "physical",
+            );
+          }
+        } else if (channel === "Both") {
+          const stores = await storage.getAllInventories();
 
-        if (channel === "Shop" || channel === "Both") {
-          // For physical shop allocation
-          if (
-            storeInventory &&
-            Array.isArray(storeInventory) &&
-            storeInventory.length > 0
-          ) {
-            for (const allocation of storeInventory) {
-              await storage.updateStoreProductInventory(
-                product.id,
-                allocation.storeId,
-                allocation.quantity,
-                "physical",
-              );
-            }
+          for (const allocation of storeInventory) {
+            const store = stores.find((s) => s.id === allocation.storeId);
+
+            const channelName =
+              store?.name === "Online Store" ? "online" : "physical";
+            await storage.updateStoreProductInventory(
+              product.id,
+              allocation.storeId,
+              allocation.quantity,
+              channelName,
+            );
           }
         }
 
@@ -537,16 +534,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ error: "Product not found or unauthorized" });
         }
 
-        // Extract allocation data from payload
-        const { storeInventory, onlineStock, channel } = req.body;
-
-        // Prepare data to update (exclude allocation fields)
+        const { storeInventory, channel } = req.body;
+        console.log("sdsdsd", storeInventory, channel);
         const updateData = { ...req.body };
-        delete updateData.storeInventory;
-        delete updateData.onlineStock;
-        delete updateData.channel;
 
-        // Handle images if provided
         if (updateData.images && !Array.isArray(updateData.images)) {
           updateData.images = [];
         }
@@ -556,52 +547,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updateData,
         );
 
-        // Clear existing allocations for this product
-        const existingAllocations = await storage.getProductInventoryByProduct(
-          req.params.id,
-        );
-        for (const alloc of existingAllocations) {
-          const stores = await storage.getAllInventories();
-          const storeToDelete = stores.find((s) => s.id === alloc.storeId);
-          if (storeToDelete) {
+        if (channel === "Online") {
+          for (const allocation of storeInventory) {
             await storage.updateStoreProductInventory(
               req.params.id,
-              alloc.storeId,
-              0,
-            );
-          }
-        }
-
-        // Allocate inventory based on channel and provided allocation data
-        if (channel === "Online" || channel === "Both") {
-          // For online allocation, use the first store as online warehouse
-          const stores = await storage.getAllInventories();
-          if (stores.length > 0 && onlineStock > 0) {
-            const onlineStore = stores[0]; // Primary store acts as online warehouse
-            await storage.updateStoreProductInventory(
-              req.params.id,
-              onlineStore.id,
-              onlineStock,
+              allocation.storeId,
+              allocation.quantity,
               "online",
             );
           }
-        }
+        } else if (channel === "Shop") {
+          for (const allocation of storeInventory) {
+            await storage.updateStoreProductInventory(
+              req.params.id,
+              allocation.storeId,
+              allocation.quantity,
+              "physical",
+            );
+          }
+        } else if (channel === "Both") {
+          const stores = await storage.getAllInventories();
 
-        if (channel === "Shop" || channel === "Both") {
-          // For physical shop allocation
-          if (
-            storeInventory &&
-            Array.isArray(storeInventory) &&
-            storeInventory.length > 0
-          ) {
-            for (const allocation of storeInventory) {
-              await storage.updateStoreProductInventory(
-                req.params.id,
-                allocation.storeId,
-                allocation.quantity,
-                "physical",
-              );
-            }
+          for (const allocation of storeInventory) {
+            const store = stores.find((s) => s.id === allocation.storeId);
+
+            const channelName =
+              store?.name === "Online Store" ? "online" : "physical";
+            await storage.updateStoreProductInventory(
+              req.params.id,
+              allocation.storeId,
+              allocation.quantity,
+              channelName,
+            );
           }
         }
 
@@ -736,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Product endpoints
-  app.get("/api/products", async (req, res) => {
+  app.get("/api/onlineProducts", async (req, res) => {
     try {
       const { search, fabric, occasion, minPrice, maxPrice } = req.query;
 
@@ -748,26 +725,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof maxPrice === "string") filters.maxPrice = parseFloat(maxPrice);
 
       const products = await storage.getAllProducts(filters);
-      console.log("Fetched products:", products);
-      const productsWithAllocations = await Promise.all(
+
+      const productsWithOnlineStock = await Promise.all(
         products.map(async (product) => {
           const allocations = await storage.getProductInventoryByProduct(
             product.id,
           );
+
           const storeInventory = allocations.map((alloc) => ({
             storeId: alloc.storeId,
             quantity: alloc.quantity,
             channel: alloc.channel,
           }));
 
+          const onlineEntry = storeInventory.find(
+            (inv) => inv.channel === "online",
+          );
+
+          if (!onlineEntry) return null;
+
           return {
             ...product,
-            storeInventory,
+            inStock: onlineEntry.quantity,
           };
         }),
       );
 
-      res.json(productsWithAllocations);
+      const filteredProducts = productsWithOnlineStock.filter(Boolean);
+
+      res.json(filteredProducts);
     } catch (error) {
       console.error("Error fetching products:", error);
       res
@@ -776,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/products/:id", async (req, res) => {
+  app.get("/api/onlineProducts/:id", async (req, res) => {
     try {
       const product = await storage.getProduct(req.params.id);
       if (!product) {
@@ -787,21 +773,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         product.id,
       );
 
-      const storeInventory = allocations.map((alloc) => ({
-        storeId: alloc.storeId,
-        quantity: alloc.quantity,
-        channel: alloc.channel,
-      }));
+      const onlineEntry = allocations.find(
+        (alloc) => alloc.channel === "online",
+      );
+
+      const onlineStock = onlineEntry ? onlineEntry.quantity : 0;
 
       res.json({
         ...product,
-        storeInventory,
+        inStock: onlineStock,
       });
     } catch (error) {
       console.error("Error fetching product:", error);
-      res
-        .status(500)
-        .json({ error: "Failed to fetch product", details: String(error) });
+      res.status(500).json({
+        error: "Failed to fetch product",
+        details: String(error),
+      });
     }
   });
 

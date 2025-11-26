@@ -96,10 +96,25 @@ export interface IStorage {
   updateReturnStatus(id: string, status: string): Promise<Return | undefined>;
 
   // Store Product Inventory
-  getProductInventoryByStore(productId: string, storeId: string): Promise<StoreProductInventory | undefined>;
-  getProductInventoryByProduct(productId: string): Promise<StoreProductInventory[]>;
-  updateStoreProductInventory(productId: string, storeId: string, quantity: number, channel?: string): Promise<StoreProductInventory>;
-  moveProductInventory(productId: string, fromStoreId: string, toStoreId: string, quantity: number): Promise<boolean>;
+  getProductInventoryByStore(
+    productId: string,
+    storeId: string,
+  ): Promise<StoreProductInventory | undefined>;
+  getProductInventoryByProduct(
+    productId: string,
+  ): Promise<StoreProductInventory[]>;
+  updateStoreProductInventory(
+    productId: string,
+    storeId: string,
+    quantity: number,
+    channel?: string,
+  ): Promise<StoreProductInventory>;
+  moveProductInventory(
+    productId: string,
+    fromStoreId: string,
+    toStoreId: string,
+    quantity: number,
+  ): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -369,7 +384,7 @@ export class DatabaseStorage implements IStorage {
     const updates: any = { status };
     if (status === "shipped") updates.shippedAt = new Date();
     if (status === "delivered") updates.deliveredAt = new Date();
-    
+
     const [order] = await db
       .update(orders)
       .set(updates)
@@ -481,10 +496,13 @@ export class DatabaseStorage implements IStorage {
     return returnRecord || undefined;
   }
 
-  async updateReturnStatus(id: string, status: string): Promise<Return | undefined> {
+  async updateReturnStatus(
+    id: string,
+    status: string,
+  ): Promise<Return | undefined> {
     const updates: any = { status };
     if (status === "approved") updates.approvedAt = new Date();
-    
+
     const [returnRecord] = await db
       .update(returns)
       .set(updates)
@@ -493,7 +511,10 @@ export class DatabaseStorage implements IStorage {
     return returnRecord || undefined;
   }
 
-  async getProductInventoryByStore(productId: string, storeId: string): Promise<StoreProductInventory | undefined> {
+  async getProductInventoryByStore(
+    productId: string,
+    storeId: string,
+  ): Promise<StoreProductInventory | undefined> {
     const [inventory] = await db
       .select()
       .from(storeProductInventory)
@@ -506,16 +527,23 @@ export class DatabaseStorage implements IStorage {
     return inventory || undefined;
   }
 
-  async getProductInventoryByProduct(productId: string): Promise<StoreProductInventory[]> {
+  async getProductInventoryByProduct(
+    productId: string,
+  ): Promise<StoreProductInventory[]> {
     return await db
       .select()
       .from(storeProductInventory)
       .where(eq(storeProductInventory.productId, productId));
   }
 
-  async updateStoreProductInventory(productId: string, storeId: string, quantity: number, channel: string = "physical"): Promise<StoreProductInventory> {
+  async updateStoreProductInventory(
+    productId: string,
+    storeId: string,
+    quantity: number,
+    channel: string,
+  ): Promise<StoreProductInventory> {
     const existing = await this.getProductInventoryByStore(productId, storeId);
-    
+
     if (existing) {
       const [updated] = await db
         .update(storeProductInventory)
@@ -537,19 +565,38 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async moveProductInventory(productId: string, fromStoreId: string, toStoreId: string, quantity: number): Promise<boolean> {
+  async moveProductInventory(
+    productId: string,
+    fromStoreId: string,
+    toStoreId: string,
+    quantity: number,
+  ): Promise<boolean> {
     try {
-      const fromInventory = await this.getProductInventoryByStore(productId, fromStoreId);
+      const fromInventory = await this.getProductInventoryByStore(
+        productId,
+        fromStoreId,
+      );
       if (!fromInventory || fromInventory.quantity < quantity) {
         return false;
       }
 
       const fromNewQuantity = fromInventory.quantity - quantity;
-      const toInventory = await this.getProductInventoryByStore(productId, toStoreId);
+      const toInventory = await this.getProductInventoryByStore(
+        productId,
+        toStoreId,
+      );
       const toNewQuantity = (toInventory?.quantity || 0) + quantity;
 
-      await this.updateStoreProductInventory(productId, fromStoreId, fromNewQuantity);
-      await this.updateStoreProductInventory(productId, toStoreId, toNewQuantity);
+      await this.updateStoreProductInventory(
+        productId,
+        fromStoreId,
+        fromNewQuantity,
+      );
+      await this.updateStoreProductInventory(
+        productId,
+        toStoreId,
+        toNewQuantity,
+      );
 
       return true;
     } catch (error) {
@@ -557,7 +604,6 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
-
 }
 
 export const storage = new DatabaseStorage();

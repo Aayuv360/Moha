@@ -18,29 +18,35 @@ export default function Wishlist() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: wishlistItems = [], isLoading: loadingWishlist } = useQuery<WishlistItem[]>({
-    queryKey: ['/api/wishlist'],
+  const { data: wishlistItems = [], isLoading: loadingWishlist } = useQuery<
+    WishlistItem[]
+  >({
+    queryKey: ["/api/wishlist"],
     enabled: !!token,
   });
 
   useEffect(() => {
     if (!authLoading && !user) {
-      setLocation('/login');
+      setLocation("/login");
     }
   }, [user, authLoading, setLocation]);
 
-  const { data: products = [], isLoading: loadingProducts } = useQuery<Product[]>({
-    queryKey: ['/api/products'],
+  const { data: products = [], isLoading: loadingProducts } = useQuery<
+    Product[]
+  >({
+    queryKey: ["/api/onlineProducts"],
     enabled: !!token,
   });
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
-      return await apiRequest('POST', '/api/cart', item);
+      return await apiRequest("POST", "/api/cart", item);
     },
     onSuccess: () => {
       const sessionId = getOrCreateSessionId();
-      queryClient.invalidateQueries({ queryKey: [`/api/cart?sessionId=${sessionId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/cart?sessionId=${sessionId}`],
+      });
       toast({
         title: "Added to cart",
         description: "Item has been added to your cart successfully.",
@@ -77,8 +83,8 @@ export default function Wishlist() {
     );
   }
 
-  const wishlistedProducts = products.filter(p => 
-    wishlistItems.some(w => w.productId === p.id)
+  const wishlistedProducts = products.filter((p) =>
+    wishlistItems.some((w) => w.productId === p.id),
   );
 
   const isLoading = loadingWishlist || loadingProducts;
@@ -102,19 +108,29 @@ export default function Wishlist() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Heart className="h-16 w-16 text-muted-foreground mb-4" />
-              <h2 className="text-xl font-medium mb-2">Your wishlist is empty</h2>
+              <h2 className="text-xl font-medium mb-2">
+                Your wishlist is empty
+              </h2>
               <p className="text-muted-foreground mb-6 text-center">
                 Start adding sarees to your wishlist by clicking the heart icon
               </p>
-              <Button onClick={() => setLocation('/products')} data-testid="button-browse-products">
+              <Button
+                onClick={() => setLocation("/products")}
+                data-testid="button-browse-products"
+              >
                 Browse Products
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div>
-            <p className="text-sm text-muted-foreground mb-6" data-testid="text-wishlist-count">
-              {wishlistedProducts.length} {wishlistedProducts.length === 1 ? 'item' : 'items'} in your wishlist
+            <p
+              className="text-sm text-muted-foreground mb-6"
+              data-testid="text-wishlist-count"
+            >
+              {wishlistedProducts.length}{" "}
+              {wishlistedProducts.length === 1 ? "item" : "items"} in your
+              wishlist
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {wishlistedProducts.map((product, index) => (

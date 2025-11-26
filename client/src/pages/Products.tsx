@@ -62,21 +62,13 @@ export default function Products() {
 
       const queryString = apiParams.toString();
       const url = queryString
-        ? `/api/products?${queryString}`
-        : "/api/products";
+        ? `/api/onlineProducts?${queryString}`
+        : "/api/onlineProducts";
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
   });
-
-  const onlineProducts = products.filter(
-    (product: any) =>
-      product.storeInventory &&
-      product.storeInventory.some(
-        (alloc: any) => alloc.channel === "online" && alloc.quantity > 0,
-      ),
-  );
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
@@ -243,7 +235,7 @@ export default function Products() {
           <div className="lg:col-span-3">
             {isLoading ? (
               <LoadingSpinner />
-            ) : onlineProducts.length === 0 ? (
+            ) : products.length === 0 ? (
               <EmptyState
                 icon={
                   <ShoppingBag className="h-12 w-12 text-muted-foreground" />
@@ -255,7 +247,7 @@ export default function Products() {
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
-                {onlineProducts.map((product, index) => (
+                {products.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     product={product}
