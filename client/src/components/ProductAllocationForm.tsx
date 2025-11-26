@@ -69,7 +69,10 @@ interface ProductAllocationFormProps {
   editingProduct?: any;
 }
 
-export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllocationFormProps) {
+export function ProductAllocationForm({
+  onSuccess,
+  editingProduct,
+}: ProductAllocationFormProps) {
   const { toast } = useToast();
   const [channel, setChannel] = useState<ChannelType>("Both");
   const [shopStocks, setShopStocks] = useState<{ [key: string]: number }>({});
@@ -122,7 +125,8 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
       if (editingProduct && editingProduct.storeInventory) {
         const initialShopStocks = allStores.reduce((acc, store) => {
           const allocation = editingProduct.storeInventory.find(
-            (inv: any) => inv.storeId === store.id && inv.channel === "physical"
+            (inv: any) =>
+              inv.storeId === store.id && inv.channel === "physical",
           );
           return { ...acc, [store.id]: allocation?.quantity || 0 };
         }, {});
@@ -130,15 +134,17 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
 
         // Set online stock for edit mode
         const onlineAlloc = editingProduct.storeInventory.find(
-          (inv: any) => inv.channel === "online"
+          (inv: any) => inv.channel === "online",
         );
         const onlineQty = onlineAlloc?.quantity || 0;
         setOnlineStock(onlineQty);
 
         // Determine channel based on existing allocations
         const hasOnline = onlineQty > 0;
-        const hasPhysical = Object.values(initialShopStocks).some(qty => qty > 0);
-        
+        const hasPhysical = Object.values(initialShopStocks).some(
+          (qty) => qty > 0,
+        );
+
         if (hasOnline && hasPhysical) {
           setChannel("Both");
         } else if (hasOnline) {
@@ -151,7 +157,7 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
       } else if (Object.keys(shopStocks).length === 0) {
         const initialShopStocks = allStores.reduce(
           (acc, store) => ({ ...acc, [store.id]: 0 }),
-          {}
+          {},
         );
         setShopStocks(initialShopStocks);
       }
@@ -166,7 +172,7 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
       setOnlineStock(totalStock);
       const resetShops = allStores.reduce(
         (acc, store) => ({ ...acc, [store.id]: 0 }),
-        {}
+        {},
       );
       setShopStocks(resetShops);
     } else if (newChannel === "Shop") {
@@ -184,7 +190,10 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
       setOnlineStock(newTotal);
     } else if (channel === "Shop") {
       // Proportionally redistribute
-      const currentShopTotal = Object.values(shopStocks).reduce((a, b) => a + b, 0);
+      const currentShopTotal = Object.values(shopStocks).reduce(
+        (a, b) => a + b,
+        0,
+      );
       if (currentShopTotal > newTotal) {
         const ratio = newTotal / currentShopTotal;
         const newShopStocks = Object.entries(shopStocks).reduce(
@@ -192,13 +201,14 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
             ...acc,
             [storeId]: Math.floor(stock * ratio),
           }),
-          {}
+          {},
         );
         setShopStocks(newShopStocks);
       }
     } else if (channel === "Both") {
       // Proportionally redistribute both
-      const currentTotal = onlineStock + Object.values(shopStocks).reduce((a, b) => a + b, 0);
+      const currentTotal =
+        onlineStock + Object.values(shopStocks).reduce((a, b) => a + b, 0);
       if (currentTotal > newTotal) {
         const onlineRatio = onlineStock / currentTotal;
         const shopRatio = 1 - onlineRatio;
@@ -206,15 +216,19 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
         const newOnlineStock = Math.floor(newTotal * onlineRatio);
         const remainingForShops = newTotal - newOnlineStock;
 
-        const currentShopTotal = Object.values(shopStocks).reduce((a, b) => a + b, 0);
+        const currentShopTotal = Object.values(shopStocks).reduce(
+          (a, b) => a + b,
+          0,
+        );
         const newShopStocks = Object.entries(shopStocks).reduce(
           (acc, [storeId, stock]) => ({
             ...acc,
-            [storeId]: currentShopTotal > 0
-              ? Math.floor(stock / currentShopTotal * remainingForShops)
-              : 0,
+            [storeId]:
+              currentShopTotal > 0
+                ? Math.floor((stock / currentShopTotal) * remainingForShops)
+                : 0,
           }),
-          {}
+          {},
         );
 
         setOnlineStock(newOnlineStock);
@@ -243,7 +257,8 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
   };
 
   const getStatusText = () => {
-    if (isOverAllocated) return `OVER-ALLOCATED: ${Math.abs(unallocated)} units`;
+    if (isOverAllocated)
+      return `OVER-ALLOCATED: ${Math.abs(unallocated)} units`;
     if (isValid) return `Unallocated: 0 units`;
     return `Unallocated: ${unallocated} units`;
   };
@@ -259,7 +274,9 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
 
       // Prepare allocation data - include both online and physical allocations
       const storeInventory = Object.entries(shopStocks)
-        .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
+        .map(([storeId, quantity]) =>
+          quantity > 0 ? { storeId, quantity } : null,
+        )
         .filter((x) => x !== null) as { storeId: string; quantity: number }[];
 
       const payload = {
@@ -273,14 +290,22 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
         inStock: data.totalStock,
         imageUrl: data.imageUrl,
         images: images.length > 0 ? images : [],
-        videoUrl: data.videoUrl && data.videoUrl.startsWith("http") ? data.videoUrl : null,
+        videoUrl:
+          data.videoUrl && data.videoUrl.startsWith("http")
+            ? data.videoUrl
+            : null,
         storeInventory: storeInventory,
-        onlineStock: channel === "Online" || channel === "Both" ? onlineStock : 0,
+        onlineStock:
+          channel === "Online" || channel === "Both" ? onlineStock : 0,
         channel: channel,
       };
 
       if (editingProduct) {
-        return await apiRequest("PATCH", `/api/inventory/products/${editingProduct.id}`, payload);
+        return await apiRequest(
+          "PATCH",
+          `/api/inventory/products/${editingProduct.id}`,
+          payload,
+        );
       } else {
         return await apiRequest("POST", "/api/inventory/products", payload);
       }
@@ -291,7 +316,8 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
     if (!isValid) {
       setFeedbackData({
         title: "Validation Error",
-        message: "Total allocated stock does not match the total inventory. Please correct the allocation.",
+        message:
+          "Total allocated stock does not match the total inventory. Please correct the allocation.",
       });
       setShowFeedback(true);
       return;
@@ -305,12 +331,12 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
       setOnlineStock(0);
       const resetShops = allStores.reduce(
         (acc, store) => ({ ...acc, [store.id]: 0 }),
-        {}
+        {},
       );
       setShopStocks(resetShops);
       setFeedbackData({
         title: "Success!",
-        message: editingProduct 
+        message: editingProduct
           ? `Product "${data.name}" updated successfully with stock allocation.`
           : `Product "${data.name}" saved successfully with stock allocation.`,
       });
@@ -435,7 +461,11 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
                   <FormItem>
                     <FormLabel>Fabric</FormLabel>
                     <FormControl>
-                      <Input placeholder="Silk, Cotton..." {...field} data-testid="input-fabric" />
+                      <Input
+                        placeholder="Silk, Cotton..."
+                        {...field}
+                        data-testid="input-fabric"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -449,7 +479,11 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
                   <FormItem>
                     <FormLabel>Color</FormLabel>
                     <FormControl>
-                      <Input placeholder="Red, Blue..." {...field} data-testid="input-color" />
+                      <Input
+                        placeholder="Red, Blue..."
+                        {...field}
+                        data-testid="input-color"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -592,7 +626,10 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
               ))}
             </div>
 
-            <p className="text-sm text-blue-700 font-medium" data-testid="text-channel-info">
+            <p
+              className="text-sm text-blue-700 font-medium"
+              data-testid="text-channel-info"
+            >
               {channel === "Online"
                 ? "All stock will be allocated to the Online Warehouse."
                 : channel === "Shop"
@@ -618,7 +655,8 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
             >
               <div className="flex flex-col sm:flex-row sm:space-x-4 w-full sm:w-auto">
                 <p className="text-gray-600">
-                  Total Stock: <span className="text-gray-900">{totalStock}</span> units
+                  Total Stock:{" "}
+                  <span className="text-gray-900">{totalStock}</span> units
                 </p>
                 <p className="text-gray-600">
                   Allocated:{" "}
@@ -639,7 +677,10 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
                 <h3 className="text-lg font-medium text-indigo-700 mb-3">
                   Online Sales Stock
                 </h3>
-                <label htmlFor="onlineStock" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="onlineStock"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Stock for Online Warehouse
                 </label>
                 <Input
@@ -647,7 +688,9 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
                   type="number"
                   min="0"
                   value={onlineStock}
-                  onChange={(e) => setOnlineStock(Math.max(0, parseInt(e.target.value) || 0))}
+                  onChange={(e) =>
+                    setOnlineStock(Math.max(0, parseInt(e.target.value) || 0))
+                  }
                   className="w-full md:w-1/2"
                   data-testid="input-online-stock"
                 />
@@ -660,32 +703,43 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
                 <h3 className="text-lg font-medium text-yellow-700 mb-3">
                   Physical Shop Allocation
                 </h3>
-                {allStores.filter(store => store.name !== "Online Store").length === 0 ? (
-                  <p className="text-sm text-gray-600">No physical stores available</p>
+                {allStores.filter((store) => store.name !== "Online Store")
+                  .length === 0 ? (
+                  <p className="text-sm text-gray-600">
+                    No physical stores available
+                  </p>
                 ) : (
                   <div className="space-y-3">
-                    {allStores.filter(store => store.name !== "Online Store").map((store) => (
-                      <div
-                        key={store.id}
-                        className="flex items-center space-x-3 p-3 bg-yellow-100 rounded-lg"
-                      >
-                        <label htmlFor={store.id} className="flex-1 text-sm font-medium text-gray-700">
-                          {store.name}
-                        </label>
-                        <Input
-                          id={store.id}
-                          type="number"
-                          min="0"
-                          value={shopStocks[store.id] || 0}
-                          onChange={(e) =>
-                            updateShopStock(store.id, parseInt(e.target.value) || 0)
-                          }
-                          className="w-20 text-center"
-                          data-testid={`input-store-${store.id}`}
-                        />
-                        <span className="text-sm text-gray-500">units</span>
-                      </div>
-                    ))}
+                    {allStores
+                      .filter((store) => store.name !== "Online Store")
+                      .map((store) => (
+                        <div
+                          key={store.id}
+                          className="flex items-center space-x-3 p-3 bg-yellow-100 rounded-lg"
+                        >
+                          <label
+                            htmlFor={store.id}
+                            className="flex-1 text-sm font-medium text-gray-700"
+                          >
+                            {store.name}
+                          </label>
+                          <Input
+                            id={store.id}
+                            type="number"
+                            min="0"
+                            value={shopStocks[store.id] || 0}
+                            onChange={(e) =>
+                              updateShopStock(
+                                store.id,
+                                parseInt(e.target.value) || 0,
+                              )
+                            }
+                            className="w-20 text-center"
+                            data-testid={`input-store-${store.id}`}
+                          />
+                          <span className="text-sm text-gray-500">units</span>
+                        </div>
+                      ))}
                   </div>
                 )}
               </div>
@@ -696,10 +750,7 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
           <div className="pt-4 border-t flex justify-end">
             <Button
               type="submit"
-              disabled={
-                !isValid ||
-                createProductMutation.isPending
-              }
+              disabled={!isValid || createProductMutation.isPending}
               className={`px-8 py-3 font-bold rounded-xl shadow-lg transition duration-300 ${
                 isValid
                   ? "bg-green-600 hover:bg-green-700 text-white"
