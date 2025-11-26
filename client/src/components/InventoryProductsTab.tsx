@@ -55,9 +55,12 @@ export function ProductsTab({
     queryKey: ["/api/inventory/all-stores"],
   });
 
-  const storeMap = allStores.reduce((acc, store) => {
-    return { ...acc, [store.id]: store.name };
-  }, {} as { [key: string]: string });
+  const storeMap = allStores.reduce(
+    (acc, store) => {
+      return { ...acc, [store.id]: store.name };
+    },
+    {} as { [key: string]: string },
+  );
 
   const { data: storeInventoryMap = {} } = useQuery({
     queryKey: ["/api/inventory/stores"],
@@ -312,24 +315,33 @@ export function ProductsTab({
                           {product.inStock}
                         </td>
                         <td className="px-4 py-3">
-                          {storeInventoryMap[product.id] && storeInventoryMap[product.id].length > 0 ? (
+                          {storeInventoryMap[product.id] &&
+                          storeInventoryMap[product.id].length > 0 ? (
                             <div className="space-y-1 text-xs">
-                              {storeInventoryMap[product.id].map((inv: StoreInventory) => (
-                                <div key={inv.storeId} className="flex items-center gap-2">
-                                  {inv.channel === "online" ? (
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                                      Online: {inv.quantity}
-                                    </span>
-                                  ) : (
-                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
-                                      {storeMap[inv.storeId] || inv.storeName}: {inv.quantity}
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
+                              {storeInventoryMap[product.id].map(
+                                (inv: StoreInventory) => (
+                                  <div
+                                    key={inv.storeId}
+                                    className="flex items-center gap-2"
+                                  >
+                                    {inv.channel === "online" ? (
+                                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                                        Online: {inv.quantity}
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
+                                        {storeMap[inv.storeId] || inv.storeName}
+                                        : {inv.quantity}
+                                      </span>
+                                    )}
+                                  </div>
+                                ),
+                              )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground text-xs">No allocation</span>
+                            <span className="text-muted-foreground text-xs">
+                              No allocation
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3">
