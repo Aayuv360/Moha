@@ -58,14 +58,19 @@ export function ProductsTab({
   const categories = Array.from(
     new Set(products.map((p: any) => p.category || "Uncategorized")),
   ).sort();
-  
+
   const [selectedCategory, setSelectedCategory] = useState<string>(
-    categories.length > 0 ? categories[0] : "Uncategorized"
+    categories.length > 0 ? categories[0] : "Uncategorized",
   );
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [selectedProductForMove, setSelectedProductForMove] = useState<Product | null>(null);
-  const [moveData, setMoveData] = useState({ fromStoreId: "", toStoreId: "", quantity: 1 });
+  const [selectedProductForMove, setSelectedProductForMove] =
+    useState<Product | null>(null);
+  const [moveData, setMoveData] = useState({
+    fromStoreId: "",
+    toStoreId: "",
+    quantity: 1,
+  });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -92,20 +97,26 @@ export function ProductsTab({
     queryKey: ["/api/inventory/stores"],
     queryFn: async () => {
       const map: { [key: string]: StoreInventory[] } = {};
-      const token = localStorage.getItem('token');
-      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
-      
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
       for (const product of products) {
         try {
-          const res = await fetch(`/api/inventory/products/${product.id}/stores`, {
-            headers,
-            credentials: "include",
-          });
+          const res = await fetch(
+            `/api/inventory/products/${product.id}/stores`,
+            {
+              headers,
+              credentials: "include",
+            },
+          );
           if (res.ok) {
             map[product.id] = await res.json();
           }
         } catch (error) {
-          console.error(`Failed to fetch stores for product ${product.id}:`, error);
+          console.error(
+            `Failed to fetch stores for product ${product.id}:`,
+            error,
+          );
         }
       }
       return map;
@@ -121,9 +132,13 @@ export function ProductsTab({
       productId: string;
       storeInventory: { storeId: string; quantity: number }[];
     }) => {
-      return await apiRequest("PATCH", `/api/inventory/products/${productId}/inventory`, {
-        storeInventory,
-      });
+      return await apiRequest(
+        "PATCH",
+        `/api/inventory/products/${productId}/inventory`,
+        {
+          storeInventory,
+        },
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/stores"] });
@@ -147,11 +162,15 @@ export function ProductsTab({
       toStoreId: string;
       quantity: number;
     }) => {
-      return await apiRequest("POST", `/api/inventory/products/${productId}/move`, {
-        fromStoreId,
-        toStoreId,
-        quantity,
-      });
+      return await apiRequest(
+        "POST",
+        `/api/inventory/products/${productId}/move`,
+        {
+          fromStoreId,
+          toStoreId,
+          quantity,
+        },
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/stores"] });
@@ -202,12 +221,19 @@ export function ProductsTab({
   };
 
   const handleMoveInventory = () => {
-    if (!selectedProductForMove || !moveData.fromStoreId || !moveData.toStoreId) {
+    if (
+      !selectedProductForMove ||
+      !moveData.fromStoreId ||
+      !moveData.toStoreId
+    ) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
       return;
     }
     if (moveData.fromStoreId === moveData.toStoreId) {
-      toast({ title: "Source and destination must be different", variant: "destructive" });
+      toast({
+        title: "Source and destination must be different",
+        variant: "destructive",
+      });
       return;
     }
     moveInventoryMutation.mutate({
@@ -240,9 +266,15 @@ export function ProductsTab({
               Delete {selectedProducts.size}
             </Button>
           )}
-          <Dialog open={showProductDialog} onOpenChange={handleDialogOpenChange}>
+          <Dialog
+            open={showProductDialog}
+            onOpenChange={handleDialogOpenChange}
+          >
             <DialogTrigger asChild>
-              <Button onClick={handleAddProduct} data-testid="button-add-product-modal">
+              <Button
+                onClick={handleAddProduct}
+                data-testid="button-add-product-modal"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
               </Button>
@@ -279,14 +311,22 @@ export function ProductsTab({
                 onClick={() => setSelectedCategory(category)}
                 data-testid={`button-category-${category}`}
               >
-                {category} ({products.filter((p: any) => (p.category || "Uncategorized") === category).length})
+                {category} (
+                {
+                  products.filter(
+                    (p: any) => (p.category || "Uncategorized") === category,
+                  ).length
+                }
+                )
               </Button>
             ))}
           </div>
 
           {categoryProducts.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No products in this category</p>
+              <p className="text-muted-foreground">
+                No products in this category
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -337,7 +377,10 @@ export function ProductsTab({
                   <div className="flex justify-between items-center pt-2 border-t">
                     <div>
                       <p className="text-sm font-bold text-primary">
-                        ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
+                        ₹
+                        {parseFloat(product.price.toString()).toLocaleString(
+                          "en-IN",
+                        )}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Stock: {product.inStock}
@@ -345,66 +388,76 @@ export function ProductsTab({
                     </div>
                   </div>
 
-                  {expandedProduct === product.id && storeInventoryMap[product.id] && (
-                    <div className="mt-4 pt-4 border-t space-y-3">
-                      <h4 className="font-semibold text-sm">Store Inventory</h4>
-                      <div className="space-y-2">
-                        {storeInventoryMap[product.id].map((store: StoreInventory) => (
-                          <div key={store.storeId} className="flex gap-2 items-center">
-                            <span className="text-xs flex-1">{store.storeName}</span>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={store.quantity}
-                              onChange={(e) => {
-                                const updated = storeInventoryMap[product.id].map((s: StoreInventory) =>
-                                  s.storeId === store.storeId
-                                    ? { ...s, quantity: parseInt(e.target.value) || 0 }
-                                    : s
-                                );
-                                queryClient.setQueryData(
-                                  ["/api/inventory/stores"],
-                                  { ...storeInventoryMap, [product.id]: updated }
-                                );
-                              }}
-                              className="w-16 h-8"
-                              data-testid={`input-store-quantity-${store.storeId}`}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          updateInventoryMutation.mutate({
-                            productId: product.id,
-                            storeInventory: storeInventoryMap[product.id].map(
-                              (s: StoreInventory) => ({
-                                storeId: s.storeId,
-                                quantity: s.quantity,
-                              })
+                  {expandedProduct === product.id &&
+                    storeInventoryMap[product.id] && (
+                      <div className="mt-4 pt-4 border-t space-y-3">
+                        <h4 className="font-semibold text-sm">
+                          Store Inventory
+                        </h4>
+                        <div className="space-y-2">
+                          {storeInventoryMap[product.id].map(
+                            (store: StoreInventory) => (
+                              <div
+                                key={store.storeId}
+                                className="flex gap-2 items-center"
+                              >
+                                <span className="text-xs flex-1">
+                                  {store.storeName}
+                                </span>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={store.quantity}
+                                  onChange={(e) => {
+                                    const updated = storeInventoryMap[
+                                      product.id
+                                    ].map((s: StoreInventory) =>
+                                      s.storeId === store.storeId
+                                        ? {
+                                            ...s,
+                                            quantity:
+                                              parseInt(e.target.value) || 0,
+                                          }
+                                        : s,
+                                    );
+                                    queryClient.setQueryData(
+                                      ["/api/inventory/stores"],
+                                      {
+                                        ...storeInventoryMap,
+                                        [product.id]: updated,
+                                      },
+                                    );
+                                  }}
+                                  className="w-16 h-8"
+                                  data-testid={`input-store-quantity-${store.storeId}`}
+                                />
+                              </div>
                             ),
-                          });
-                        }}
-                        disabled={updateInventoryMutation.isPending}
-                        className="w-full"
-                        data-testid={`button-save-inventory-${product.id}`}
-                      >
-                        Save Inventory
-                      </Button>
-                    </div>
-                  )}
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            updateInventoryMutation.mutate({
+                              productId: product.id,
+                              storeInventory: storeInventoryMap[product.id].map(
+                                (s: StoreInventory) => ({
+                                  storeId: s.storeId,
+                                  quantity: s.quantity,
+                                }),
+                              ),
+                            });
+                          }}
+                          disabled={updateInventoryMutation.isPending}
+                          className="w-full"
+                          data-testid={`button-save-inventory-${product.id}`}
+                        >
+                          Save Inventory
+                        </Button>
+                      </div>
+                    )}
 
                   <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setExpandedProduct(expandedProduct === product.id ? null : product.id)}
-                      data-testid={`button-manage-inventory-${product.id}`}
-                    >
-                      <ArrowRightLeft className="h-3 w-3 mr-1" />
-                      Inventory
-                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -451,30 +504,13 @@ export function ProductsTab({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="from-store">From Store</Label>
-              <Select value={moveData.fromStoreId} onValueChange={(val) => setMoveData({ ...moveData, fromStoreId: val })}>
-                <SelectTrigger id="from-store" data-testid="select-from-store">
-                  <SelectValue placeholder="Select source store" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allStores.map((store: Store) => {
-                    const storeInv = selectedProductForMove && storeInventoryMap[selectedProductForMove.id]?.find(
-                      (si: StoreInventory) => si.storeId === store.id
-                    );
-                    const quantity = storeInv?.quantity || 0;
-                    return (
-                      <SelectItem key={store.id} value={store.id}>
-                        {store.name} ({quantity} available)
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
               <Label htmlFor="to-store">To Store</Label>
-              <Select value={moveData.toStoreId} onValueChange={(val) => setMoveData({ ...moveData, toStoreId: val })}>
+              <Select
+                value={moveData.toStoreId}
+                onValueChange={(val) =>
+                  setMoveData({ ...moveData, toStoreId: val })
+                }
+              >
                 <SelectTrigger id="to-store" data-testid="select-to-store">
                   <SelectValue placeholder="Select destination store" />
                 </SelectTrigger>
@@ -495,16 +531,29 @@ export function ProductsTab({
                 type="number"
                 min="1"
                 value={moveData.quantity}
-                onChange={(e) => setMoveData({ ...moveData, quantity: parseInt(e.target.value) || 1 })}
+                onChange={(e) =>
+                  setMoveData({
+                    ...moveData,
+                    quantity: parseInt(e.target.value) || 1,
+                  })
+                }
                 data-testid="input-move-quantity"
               />
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button variant="outline" onClick={() => setMoveDialogOpen(false)} data-testid="button-cancel-move">
+              <Button
+                variant="outline"
+                onClick={() => setMoveDialogOpen(false)}
+                data-testid="button-cancel-move"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleMoveInventory} disabled={moveInventoryMutation.isPending} data-testid="button-confirm-move">
+              <Button
+                onClick={handleMoveInventory}
+                disabled={moveInventoryMutation.isPending}
+                data-testid="button-confirm-move"
+              >
                 Move Inventory
               </Button>
             </div>
