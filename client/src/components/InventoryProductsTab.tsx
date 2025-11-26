@@ -273,27 +273,13 @@ export function ProductsTab({
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingProduct ? "Edit Product" : "Add New Product & Allocate Stock"}
-                </DialogTitle>
-              </DialogHeader>
-              {editingProduct ? (
-                <ProductForm
-                  editingProduct={editingProduct}
-                  onSuccess={() => {
-                    setEditingProduct(null);
-                    setShowProductDialog(false);
-                  }}
-                />
-              ) : (
-                <ProductAllocationForm
-                  onSuccess={() => {
-                    setEditingProduct(null);
-                    setShowProductDialog(false);
-                  }}
-                />
-              )}
+              <ProductAllocationForm
+                editingProduct={editingProduct || undefined}
+                onSuccess={() => {
+                  setEditingProduct(null);
+                  setShowProductDialog(false);
+                }}
+              />
             </DialogContent>
           </Dialog>
         </div>

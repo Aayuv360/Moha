@@ -527,12 +527,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ error: "Product not found or unauthorized" });
         }
 
+        // Extract allocation data from payload
+        const { storeInventory, onlineStock, channel } = req.body;
+
+        // Prepare data to update (exclude allocation fields)
+        const updateData = { ...req.body };
+        delete updateData.storeInventory;
+        delete updateData.onlineStock;
+        delete updateData.channel;
+
+        // Handle images if provided
+        if (updateData.images && !Array.isArray(updateData.images)) {
+          updateData.images = [];
+        }
+
         const updatedProduct = await storage.updateProduct(
           req.params.id,
-          req.body,
+          updateData,
         );
+
+        // Clear existing allocations for this product
+        const existingAllocations = await storage.getProductInventoryByProduct(req.params.id);
+        for (const alloc of existingAllocations) {
+          const stores = await storage.getAllInventories();
+          const storeToDelete = stores.find(s => s.id === alloc.storeId);
+          if (storeToDelete) {
+            await storage.updateStoreProductInventory(
+              req.params.id,
+              alloc.storeId,
+              0
+            );
+          }
+        }
+
+        // Allocate inventory based on channel and provided allocation data
+        if (channel === "Online" || channel === "Both") {
+          // For online allocation, use the first store as online warehouse
+          const stores = await storage.getAllInventories();
+          if (stores.length > 0 && onlineStock > 0) {
+            const onlineStore = stores[0]; // Primary store acts as online warehouse
+            await storage.updateStoreProductInventory(
+              req.params.id,
+              onlineStore.id,
+              onlineStock,
+              "online"
+            );
+          }
+        }
+
+        if (channel === "Shop" || channel === "Both") {
+          // For physical shop allocation
+          if (storeInventory && Array.isArray(storeInventory) && storeInventory.length > 0) {
+            for (const allocation of storeInventory) {
+              await storage.updateStoreProductInventory(
+                req.params.id,
+                allocation.storeId,
+                allocation.quantity,
+                "physical"
+              );
+            }
+          }
+        }
+
         res.json(updatedProduct);
       } catch (error) {
+        console.error("Product update error:", error);
         res.status(500).json({ error: "Failed to update product" });
       }
     },
