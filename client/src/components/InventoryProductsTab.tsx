@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProductForm } from "./ProductForm";
+import { ProductAllocationForm } from "./ProductAllocationForm";
 
 interface StoreInventory {
   storeId: string;
@@ -275,16 +276,25 @@ export function ProductsTab({
             <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  {editingProduct ? "Edit Product" : "Add New Product"}
+                  {editingProduct ? "Edit Product" : "Add New Product & Allocate Stock"}
                 </DialogTitle>
               </DialogHeader>
-              <ProductForm
-                editingProduct={editingProduct}
-                onSuccess={() => {
-                  setEditingProduct(null);
-                  setShowProductDialog(false);
-                }}
-              />
+              {editingProduct ? (
+                <ProductForm
+                  editingProduct={editingProduct}
+                  onSuccess={() => {
+                    setEditingProduct(null);
+                    setShowProductDialog(false);
+                  }}
+                />
+              ) : (
+                <ProductAllocationForm
+                  onSuccess={() => {
+                    setEditingProduct(null);
+                    setShowProductDialog(false);
+                  }}
+                />
+              )}
             </DialogContent>
           </Dialog>
         </div>
