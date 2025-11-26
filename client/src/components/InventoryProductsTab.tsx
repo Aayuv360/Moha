@@ -17,6 +17,11 @@ interface StoreInventory {
   channel: string;
 }
 
+interface Store {
+  id: string;
+  name: string;
+}
+
 interface ProductsTabProps {
   products: Product[];
   editingProduct: Product | null;
@@ -45,6 +50,14 @@ export function ProductsTab({
     categories.length > 0 ? categories[0] : "Uncategorized",
   );
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+
+  const { data: allStores = [] } = useQuery<Store[]>({
+    queryKey: ["/api/inventory/all-stores"],
+  });
+
+  const storeMap = allStores.reduce((acc, store) => {
+    return { ...acc, [store.id]: store.name };
+  }, {} as { [key: string]: string });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
