@@ -112,6 +112,17 @@ export const returns = pgTable("returns", {
   approvedAt: timestamp("approved_at"),
 });
 
+export const storeProductInventory = pgTable("store_product_inventory", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull(),
+  storeId: varchar("store_id").notNull(),
+  quantity: integer("quantity").notNull().default(0),
+  channel: text("channel").notNull().default("physical"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -144,6 +155,10 @@ export const insertReturnSchema = createInsertSchema(returns).omit({
   id: true,
   createdAt: true,
 });
+export const insertStoreProductInventorySchema = createInsertSchema(storeProductInventory).omit({
+  id: true,
+  createdAt: true,
+});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -159,3 +174,5 @@ export type InsertWishlistItem = z.infer<typeof insertWishlistItemSchema>;
 export type WishlistItem = typeof wishlistItems.$inferSelect;
 export type InsertReturn = z.infer<typeof insertReturnSchema>;
 export type Return = typeof returns.$inferSelect;
+export type InsertStoreProductInventory = z.infer<typeof insertStoreProductInventorySchema>;
+export type StoreProductInventory = typeof storeProductInventory.$inferSelect;

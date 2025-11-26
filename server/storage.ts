@@ -13,6 +13,8 @@ import {
   type InsertInventory,
   type Return,
   type InsertReturn,
+  type StoreProductInventory,
+  type InsertStoreProductInventory,
   products,
   cartItems,
   orders,
@@ -20,6 +22,7 @@ import {
   wishlistItems,
   inventories,
   returns,
+  storeProductInventory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, ilike, sql, gte, lte } from "drizzle-orm";
@@ -91,6 +94,12 @@ export interface IStorage {
   getInventoryReturns(inventoryId: string): Promise<Return[]>;
   getReturn(id: string): Promise<Return | undefined>;
   updateReturnStatus(id: string, status: string): Promise<Return | undefined>;
+
+  // Store Product Inventory
+  getProductInventoryByStore(productId: string, storeId: string): Promise<StoreProductInventory | undefined>;
+  getProductInventoryByProduct(productId: string): Promise<StoreProductInventory[]>;
+  updateStoreProductInventory(productId: string, storeId: string, quantity: number): Promise<StoreProductInventory>;
+  moveProductInventory(productId: string, fromStoreId: string, toStoreId: string, quantity: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
