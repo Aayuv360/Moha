@@ -71,7 +71,7 @@ interface ProductAllocationFormProps {
 
 export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllocationFormProps) {
   const { toast } = useToast();
-  const [channel, setChannel] = useState<ChannelType>(editingProduct?.channel || "Both");
+  const [channel, setChannel] = useState<ChannelType>("Both");
   const [shopStocks, setShopStocks] = useState<{ [key: string]: number }>({});
   const [onlineStock, setOnlineStock] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -132,7 +132,22 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
         const onlineAlloc = editingProduct.storeInventory.find(
           (inv: any) => inv.channel === "online"
         );
-        setOnlineStock(onlineAlloc?.quantity || 0);
+        const onlineQty = onlineAlloc?.quantity || 0;
+        setOnlineStock(onlineQty);
+
+        // Determine channel based on existing allocations
+        const hasOnline = onlineQty > 0;
+        const hasPhysical = Object.values(initialShopStocks).some(qty => qty > 0);
+        
+        if (hasOnline && hasPhysical) {
+          setChannel("Both");
+        } else if (hasOnline) {
+          setChannel("Online");
+        } else if (hasPhysical) {
+          setChannel("Shop");
+        } else {
+          setChannel("Both");
+        }
       } else if (Object.keys(shopStocks).length === 0) {
         const initialShopStocks = allStores.reduce(
           (acc, store) => ({ ...acc, [store.id]: 0 }),
