@@ -200,9 +200,9 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
     mutationFn: async (data: ProductFormData) => {
       const images = data.multipleImages
         ? data.multipleImages
-            .split(",")
+            .split("\n")
             .map((url) => url.trim())
-            .filter((url) => url)
+            .filter((url) => url && url.startsWith("http"))
         : [];
 
       return await apiRequest("POST", "/api/inventory/products", {
@@ -215,8 +215,8 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
         category: data.category,
         inStock: data.totalStock,
         imageUrl: data.imageUrl,
-        images: images,
-        videoUrl: data.videoUrl || null,
+        images: images.length > 0 ? images : undefined,
+        videoUrl: data.videoUrl && data.videoUrl.startsWith("http") ? data.videoUrl : undefined,
       });
     },
   });

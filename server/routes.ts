@@ -427,10 +427,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const random = Math.random().toString(36).substring(2, 8).toUpperCase();
         const trackingId = `PROD-${timestamp}-${random}`;
 
+        // Validate input with extended schema
         const schema = insertProductSchema.extend({
           trackingId: z.string(),
+          images: z.array(z.string().url()).optional(),
+          videoUrl: z.string().url().optional().or(z.literal("")),
         });
-        const validatedData = schema.parse({ ...req.body, trackingId });
+
+        // Ensure images is an array and videoUrl is properly handled
+        const requestData = {
+          ...req.body,
+          trackingId,
+          images: req.body.images && Array.isArray(req.body.images) ? req.body.images : [],
+          videoUrl: req.body.videoUrl || null,
+        };
+
+        const validatedData = schema.parse(requestData);
 
         const product = await storage.createProduct({
           ...validatedData,
