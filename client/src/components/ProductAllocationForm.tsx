@@ -64,9 +64,14 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 type ChannelType = "Online" | "Shop" | "Both";
 
-export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) {
+interface ProductAllocationFormProps {
+  onSuccess: () => void;
+  editingProduct?: any;
+}
+
+export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllocationFormProps) {
   const { toast } = useToast();
-  const [channel, setChannel] = useState<ChannelType>("Both");
+  const [channel, setChannel] = useState<ChannelType>(editingProduct?.channel || "Both");
   const [shopStocks, setShopStocks] = useState<{ [key: string]: number }>({});
   const [onlineStock, setOnlineStock] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -74,19 +79,35 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      price: 0,
-      fabric: "Silk",
-      color: "",
-      occasion: "Wedding",
-      category: "",
-      totalStock: 1,
-      imageUrl: "",
-      multipleImages: "",
-      videoUrl: "",
-    },
+    defaultValues: editingProduct
+      ? {
+          name: editingProduct.name,
+          description: editingProduct.description,
+          price: parseFloat(editingProduct.price.toString()),
+          fabric: editingProduct.fabric,
+          color: editingProduct.color,
+          occasion: editingProduct.occasion,
+          category: editingProduct.category,
+          totalStock: editingProduct.inStock,
+          imageUrl: editingProduct.imageUrl,
+          multipleImages: Array.isArray(editingProduct.images)
+            ? editingProduct.images.join("\n")
+            : "",
+          videoUrl: editingProduct.videoUrl || "",
+        }
+      : {
+          name: "",
+          description: "",
+          price: 0,
+          fabric: "Silk",
+          color: "",
+          occasion: "Wedding",
+          category: "",
+          totalStock: 1,
+          imageUrl: "",
+          multipleImages: "",
+          videoUrl: "",
+        },
   });
 
   const { data: allStores = [] } = useQuery<Store[]>({
@@ -95,16 +116,32 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
 
   const totalStock = form.watch("totalStock");
 
-  // Initialize shop stocks when stores load
+  // Initialize shop stocks when stores load or when editing
   useEffect(() => {
-    if (allStores.length > 0 && Object.keys(shopStocks).length === 0) {
-      const initialShopStocks = allStores.reduce(
-        (acc, store) => ({ ...acc, [store.id]: 0 }),
-        {}
-      );
-      setShopStocks(initialShopStocks);
+    if (allStores.length > 0) {
+      if (editingProduct && editingProduct.storeInventory) {
+        const initialShopStocks = allStores.reduce((acc, store) => {
+          const allocation = editingProduct.storeInventory.find(
+            (inv: any) => inv.storeId === store.id && inv.channel === "physical"
+          );
+          return { ...acc, [store.id]: allocation?.quantity || 0 };
+        }, {});
+        setShopStocks(initialShopStocks);
+
+        // Set online stock for edit mode
+        const onlineAlloc = editingProduct.storeInventory.find(
+          (inv: any) => inv.channel === "online"
+        );
+        setOnlineStock(onlineAlloc?.quantity || 0);
+      } else if (Object.keys(shopStocks).length === 0) {
+        const initialShopStocks = allStores.reduce(
+          (acc, store) => ({ ...acc, [store.id]: 0 }),
+          {}
+        );
+        setShopStocks(initialShopStocks);
+      }
     }
-  }, [allStores, shopStocks]);
+  }, [allStores, editingProduct]);
 
   // Handle channel change
   const handleChannelChange = (newChannel: ChannelType) => {
@@ -210,7 +247,7 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
         .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
         .filter((x) => x !== null) as { storeId: string; quantity: number }[];
 
-      return await apiRequest("POST", "/api/inventory/products", {
+      const payload = {
         name: data.name,
         description: data.description,
         price: data.price.toString(),
@@ -222,11 +259,16 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
         imageUrl: data.imageUrl,
         images: images.length > 0 ? images : [],
         videoUrl: data.videoUrl && data.videoUrl.startsWith("http") ? data.videoUrl : null,
-        // Include allocation in payload with both online and physical allocations
         storeInventory: storeInventory,
         onlineStock: channel === "Online" || channel === "Both" ? onlineStock : 0,
         channel: channel,
-      });
+      };
+
+      if (editingProduct) {
+        return await apiRequest("PATCH", `/api/inventory/products/${editingProduct.id}`, payload);
+      } else {
+        return await apiRequest("POST", "/api/inventory/products", payload);
+      }
     },
   });
 
@@ -253,7 +295,9 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
       setShopStocks(resetShops);
       setFeedbackData({
         title: "Success!",
-        message: `Product "${data.name}" saved successfully with stock allocation.`,
+        message: editingProduct 
+          ? `Product "${data.name}" updated successfully with stock allocation.`
+          : `Product "${data.name}" saved successfully with stock allocation.`,
       });
       setShowFeedback(true);
       setTimeout(() => {

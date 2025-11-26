@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ProductForm } from "./ProductForm";
 import { ProductAllocationForm } from "./ProductAllocationForm";
 
 interface StoreInventory {
