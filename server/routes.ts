@@ -1064,14 +1064,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const { fromStoreId, toStoreId, quantity } = z.object({
-          fromStoreId: z.string(),
+          fromStoreId: z.string().optional(),
           toStoreId: z.string(),
           quantity: z.number().min(1),
         }).parse(req.body);
 
+        // If no fromStoreId provided, find the store with inventory
+        let sourceStoreId = fromStoreId;
+        if (!sourceStoreId) {
+          const storeInventories = await storage.getProductInventoryByProduct(req.params.productId);
+          const storeWithInventory = storeInventories.find((si) => si.quantity > 0);
+          if (!storeWithInventory) {
+            return res.status(400).json({ error: "No inventory found to move" });
+          }
+          sourceStoreId = storeWithInventory.storeId;
+        }
+
         const success = await storage.moveProductInventory(
           req.params.productId,
-          fromStoreId,
+          sourceStoreId,
           toStoreId,
           quantity
         );
