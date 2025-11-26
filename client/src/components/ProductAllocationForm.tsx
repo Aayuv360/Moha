@@ -205,7 +205,7 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
             .filter((url) => url && url.startsWith("http"))
         : [];
 
-      // Prepare allocation data
+      // Prepare allocation data - include both online and physical allocations
       const storeInventory = Object.entries(shopStocks)
         .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
         .filter((x) => x !== null) as { storeId: string; quantity: number }[];
@@ -222,8 +222,9 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
         imageUrl: data.imageUrl,
         images: images.length > 0 ? images : [],
         videoUrl: data.videoUrl && data.videoUrl.startsWith("http") ? data.videoUrl : null,
-        // Include allocation in payload
+        // Include allocation in payload with both online and physical allocations
         storeInventory: storeInventory,
+        onlineStock: channel === "Online" || channel === "Both" ? onlineStock : 0,
         channel: channel,
       });
     },
