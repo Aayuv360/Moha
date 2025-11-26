@@ -179,20 +179,20 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
               )}
             </div>
 
-            <div className="p-2 md:p-3">
-              <div className="mb-1">
+            <div className="p-1.5 md:p-2">
+              <div className="mb-0.5">
                 <Badge variant="secondary" className="text-xs">
                   {product.fabric}
                 </Badge>
               </div>
-              <h3 className="text-base md:text-lg font-serif font-medium mb-1 line-clamp-1">
+              <h3 className="text-sm md:text-base font-serif font-medium mb-0.5 line-clamp-1">
                 {product.name}
               </h3>
-              <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+              <p className="text-xs text-muted-foreground mb-1.5 line-clamp-1">
                 {product.description}
               </p>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-lg md:text-xl font-semibold">
+                <p className="text-base md:text-lg font-semibold">
                   ₹{parseFloat(product.price).toLocaleString("en-IN")}
                 </p>
                 <Button
