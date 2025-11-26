@@ -316,16 +316,16 @@ export function ProductsTab({
                         </td>
                         <td className="px-4 py-3">
                           {storeInventoryMap[product.id] &&
-                          storeInventoryMap[product.id].length > 0 ? (
+                          storeInventoryMap[product.id].filter((inv: StoreInventory) => inv.quantity > 0).length > 0 ? (
                             <div className="space-y-2 text-xs">
                               {storeInventoryMap[product.id].some(
-                                (inv: StoreInventory) => inv.channel === "online"
+                                (inv: StoreInventory) => inv.channel === "online" && inv.quantity > 0
                               ) && (
                                 <div className="border-b pb-2">
                                   <p className="font-semibold text-blue-700 mb-1">Online</p>
                                   <div className="space-y-1">
                                     {storeInventoryMap[product.id]
-                                      .filter((inv: StoreInventory) => inv.channel === "online")
+                                      .filter((inv: StoreInventory) => inv.channel === "online" && inv.quantity > 0)
                                       .map((inv: StoreInventory) => (
                                         <span
                                           key={inv.storeId}
@@ -338,13 +338,13 @@ export function ProductsTab({
                                 </div>
                               )}
                               {storeInventoryMap[product.id].some(
-                                (inv: StoreInventory) => inv.channel === "physical"
+                                (inv: StoreInventory) => inv.channel === "physical" && inv.quantity > 0
                               ) && (
                                 <div>
                                   <p className="font-semibold text-yellow-700 mb-1">Shops</p>
                                   <div className="space-y-1">
                                     {storeInventoryMap[product.id]
-                                      .filter((inv: StoreInventory) => inv.channel === "physical")
+                                      .filter((inv: StoreInventory) => inv.channel === "physical" && inv.quantity > 0)
                                       .map((inv: StoreInventory) => (
                                         <div
                                           key={inv.storeId}
