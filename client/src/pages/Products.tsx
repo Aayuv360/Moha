@@ -70,6 +70,12 @@ export default function Products() {
     },
   });
 
+  const onlineProducts = products
+    .filter((product: any) => 
+      product.storeInventory && 
+      product.storeInventory.some((alloc: any) => alloc.channel === "online" && alloc.quantity > 0)
+    );
+
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
       return await apiRequest("POST", "/api/cart", item);
