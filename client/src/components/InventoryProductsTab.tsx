@@ -225,9 +225,7 @@ export function ProductsTab({
                     </th>
                     <th className="px-4 py-3 text-left font-semibold">Price</th>
                     <th className="px-4 py-3 text-left font-semibold">Stock</th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Stock Allocation
-                    </th>
+
                     <th className="px-4 py-3 text-left font-semibold">
                       Actions
                     </th>
@@ -273,19 +271,6 @@ export function ProductsTab({
 
                       <td className="px-4 py-3 font-medium">
                         {product.inStock}
-                      </td>
-
-                      {/* ✅ STOCK ALLOCATION */}
-                      <td className="px-4 py-3 font-medium">
-                        {(product.storeInventory || []).map((item, idx) => {
-                          const storeName =
-                            storeMap[item.storeId] || storeMap["online"];
-                          return (
-                            <div key={idx}>
-                              {storeName}: {item.quantity}
-                            </div>
-                          );
-                        })}
                       </td>
 
                       <td className="px-4 py-3">
