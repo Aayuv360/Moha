@@ -660,11 +660,11 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
                 <h3 className="text-lg font-medium text-yellow-700 mb-3">
                   Physical Shop Allocation
                 </h3>
-                {allStores.length === 0 ? (
+                {allStores.filter(store => store.name !== "Online Store").length === 0 ? (
                   <p className="text-sm text-gray-600">No physical stores available</p>
                 ) : (
                   <div className="space-y-3">
-                    {allStores.map((store) => (
+                    {allStores.filter(store => store.name !== "Online Store").map((store) => (
                       <div
                         key={store.id}
                         className="flex items-center space-x-3 p-3 bg-yellow-100 rounded-lg"
