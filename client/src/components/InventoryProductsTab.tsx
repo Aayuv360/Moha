@@ -223,22 +223,15 @@ export function ProductsTab({
   const handleMoveInventory = () => {
     if (
       !selectedProductForMove ||
-      !moveData.fromStoreId ||
-      !moveData.toStoreId
+      !moveData.toStoreId ||
+      moveData.quantity < 1
     ) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
       return;
     }
-    if (moveData.fromStoreId === moveData.toStoreId) {
-      toast({
-        title: "Source and destination must be different",
-        variant: "destructive",
-      });
-      return;
-    }
     moveInventoryMutation.mutate({
       productId: selectedProductForMove.id,
-      fromStoreId: moveData.fromStoreId,
+      fromStoreId: "",
       toStoreId: moveData.toStoreId,
       quantity: moveData.quantity,
     });
