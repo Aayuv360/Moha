@@ -638,8 +638,7 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
               type="submit"
               disabled={
                 !isValid ||
-                createProductMutation.isPending ||
-                allocateInventoryMutation.isPending
+                createProductMutation.isPending
               }
               className={`px-8 py-3 font-bold rounded-xl shadow-lg transition duration-300 ${
                 isValid
@@ -648,7 +647,7 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
               }`}
               data-testid="button-save-product"
             >
-              {createProductMutation.isPending || allocateInventoryMutation.isPending
+              {createProductMutation.isPending
                 ? "Saving..."
                 : "Save Product & Allocation"}
             </Button>
