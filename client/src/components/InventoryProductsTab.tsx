@@ -314,55 +314,7 @@ export function ProductsTab({
                         <td className="px-4 py-3 font-medium">
                           {product.inStock}
                         </td>
-                        <td className="px-4 py-3">
-                          {storeInventoryMap[product.id] &&
-                          storeInventoryMap[product.id].filter((inv: StoreInventory) => inv.quantity > 0).length > 0 ? (
-                            <div className="space-y-2 text-xs">
-                              {storeInventoryMap[product.id].some(
-                                (inv: StoreInventory) => inv.channel === "online" && inv.quantity > 0
-                              ) && (
-                                <div className="border-b pb-2">
-                                  <p className="font-semibold text-blue-700 mb-1">Online</p>
-                                  <div className="space-y-1">
-                                    {storeInventoryMap[product.id]
-                                      .filter((inv: StoreInventory) => inv.channel === "online" && inv.quantity > 0)
-                                      .map((inv: StoreInventory) => (
-                                        <span
-                                          key={inv.storeId}
-                                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded inline-block"
-                                        >
-                                          {inv.quantity} units
-                                        </span>
-                                      ))}
-                                  </div>
-                                </div>
-                              )}
-                              {storeInventoryMap[product.id].some(
-                                (inv: StoreInventory) => inv.channel === "physical" && inv.quantity > 0
-                              ) && (
-                                <div>
-                                  <p className="font-semibold text-yellow-700 mb-1">Shops</p>
-                                  <div className="space-y-1">
-                                    {storeInventoryMap[product.id]
-                                      .filter((inv: StoreInventory) => inv.channel === "physical" && inv.quantity > 0)
-                                      .map((inv: StoreInventory) => (
-                                        <div
-                                          key={inv.storeId}
-                                          className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded"
-                                        >
-                                          {storeMap[inv.storeId] || inv.storeName}: {inv.quantity}
-                                        </div>
-                                      ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">
-                              No allocation
-                            </span>
-                          )}
-                        </td>
+
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
                             <Button
