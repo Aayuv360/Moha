@@ -236,180 +236,175 @@ export function ProductsTab({
               </p>
             </div>
           ) : (
-            <div className="space-y-2 overflow-x-auto">
-              {categoryProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow"
-                  data-testid={`card-product-${product.id}`}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 flex-1">
+            <div className="overflow-x-auto border rounded-lg">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-4 py-3 text-left font-semibold">
                       <input
                         type="checkbox"
-                        checked={selectedProducts.has(product.id)}
+                        checked={selectedProducts.size === categoryProducts.length && categoryProducts.length > 0}
                         onChange={(e) => {
-                          const newSelected = new Set(selectedProducts);
                           if (e.target.checked) {
-                            newSelected.add(product.id);
+                            const newSelected = new Set(categoryProducts.map(p => p.id));
+                            setSelectedProducts(newSelected);
                           } else {
-                            newSelected.delete(product.id);
+                            setSelectedProducts(new Set());
                           }
-                          setSelectedProducts(newSelected);
                         }}
-                        data-testid={`checkbox-product-${product.id}`}
                       />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm">
-                          {product.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ID: {product.trackingId}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-xs text-muted-foreground">Description</span>
-                      <p className="text-sm line-clamp-1">{product.description}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">Fabric</span>
-                      <p className="text-sm font-medium">{product.fabric}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">Color</span>
-                      <p className="text-sm font-medium">{product.color}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">Occasion</span>
-                      <p className="text-sm font-medium">{product.occasion}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">Price</span>
-                      <p className="text-sm font-bold text-primary">
-                        ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">Stock</span>
-                      <p className="text-sm font-medium">{product.inStock}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">Category</span>
-                      <p className="text-sm font-medium">{product.category}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground">Image</span>
-                      <p className="text-xs truncate text-blue-500">{product.imageUrl}</p>
-                    </div>
-                  </div>
-
-                  {expandedProduct === product.id &&
-                    storeInventoryMap[product.id] && (
-                      <div className="mt-4 pt-4 border-t space-y-3 bg-muted/50 p-3 rounded">
-                        <h4 className="font-semibold text-sm">
-                          Store Inventory
-                        </h4>
-                        <div className="space-y-2">
-                          {storeInventoryMap[product.id].map(
-                            (store: StoreInventory) => (
-                              <div
-                                key={store.storeId}
-                                className="flex gap-2 items-center"
-                              >
-                                <span className="text-xs flex-1">
-                                  {store.storeName}
-                                </span>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={store.quantity}
-                                  onChange={(e) => {
-                                    const updated = storeInventoryMap[
-                                      product.id
-                                    ].map((s: StoreInventory) =>
-                                      s.storeId === store.storeId
-                                        ? {
-                                            ...s,
-                                            quantity:
-                                              parseInt(e.target.value) || 0,
-                                          }
-                                        : s,
-                                    );
-                                    queryClient.setQueryData(
-                                      ["/api/inventory/stores"],
-                                      {
-                                        ...storeInventoryMap,
-                                        [product.id]: updated,
-                                      },
-                                    );
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">Product Name</th>
+                    <th className="px-4 py-3 text-left font-semibold">ID</th>
+                    <th className="px-4 py-3 text-left font-semibold">Description</th>
+                    <th className="px-4 py-3 text-left font-semibold">Fabric</th>
+                    <th className="px-4 py-3 text-left font-semibold">Color</th>
+                    <th className="px-4 py-3 text-left font-semibold">Occasion</th>
+                    <th className="px-4 py-3 text-left font-semibold">Price</th>
+                    <th className="px-4 py-3 text-left font-semibold">Stock</th>
+                    <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryProducts.map((product) => (
+                    <>
+                      <tr
+                        key={product.id}
+                        className="border-b hover:bg-muted/30 transition-colors"
+                        data-testid={`card-product-${product.id}`}
+                      >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.has(product.id)}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedProducts);
+                              if (e.target.checked) {
+                                newSelected.add(product.id);
+                              } else {
+                                newSelected.delete(product.id);
+                              }
+                              setSelectedProducts(newSelected);
+                            }}
+                            data-testid={`checkbox-product-${product.id}`}
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-semibold">{product.name}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{product.trackingId}</td>
+                        <td className="px-4 py-3 max-w-xs truncate">{product.description}</td>
+                        <td className="px-4 py-3">{product.fabric}</td>
+                        <td className="px-4 py-3">{product.color}</td>
+                        <td className="px-4 py-3">{product.occasion}</td>
+                        <td className="px-4 py-3 font-bold text-primary">
+                          ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
+                        </td>
+                        <td className="px-4 py-3 font-medium">{product.inStock}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                setExpandedProduct(
+                                  expandedProduct === product.id ? null : product.id,
+                                )
+                              }
+                              data-testid={`button-inventory-${product.id}`}
+                            >
+                              {expandedProduct === product.id ? "Hide" : "Show"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditProduct(product)}
+                              data-testid={`button-edit-product-${product.id}`}
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteProduct(product.id)}
+                              data-testid={`button-delete-product-${product.id}`}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedProduct === product.id &&
+                        storeInventoryMap[product.id] && (
+                          <tr className="border-b bg-muted/20">
+                            <td colSpan={10} className="px-4 py-4">
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-sm">Store Inventory</h4>
+                                <div className="space-y-2">
+                                  {storeInventoryMap[product.id].map(
+                                    (store: StoreInventory) => (
+                                      <div
+                                        key={store.storeId}
+                                        className="flex gap-2 items-center"
+                                      >
+                                        <span className="text-sm flex-1">
+                                          {store.storeName}
+                                        </span>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={store.quantity}
+                                          onChange={(e) => {
+                                            const updated = storeInventoryMap[
+                                              product.id
+                                            ].map((s: StoreInventory) =>
+                                              s.storeId === store.storeId
+                                                ? {
+                                                    ...s,
+                                                    quantity:
+                                                      parseInt(e.target.value) || 0,
+                                                  }
+                                                : s,
+                                            );
+                                            queryClient.setQueryData(
+                                              ["/api/inventory/stores"],
+                                              {
+                                                ...storeInventoryMap,
+                                                [product.id]: updated,
+                                              },
+                                            );
+                                          }}
+                                          className="w-20"
+                                          data-testid={`input-store-quantity-${store.storeId}`}
+                                        />
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    updateInventoryMutation.mutate({
+                                      productId: product.id,
+                                      storeInventory: storeInventoryMap[product.id].map(
+                                        (s: StoreInventory) => ({
+                                          storeId: s.storeId,
+                                          quantity: s.quantity,
+                                        }),
+                                      ),
+                                    });
                                   }}
-                                  className="w-16 h-8"
-                                  data-testid={`input-store-quantity-${store.storeId}`}
-                                />
+                                  disabled={updateInventoryMutation.isPending}
+                                  data-testid={`button-save-inventory-${product.id}`}
+                                >
+                                  Save Inventory
+                                </Button>
                               </div>
-                            ),
-                          )}
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            updateInventoryMutation.mutate({
-                              productId: product.id,
-                              storeInventory: storeInventoryMap[product.id].map(
-                                (s: StoreInventory) => ({
-                                  storeId: s.storeId,
-                                  quantity: s.quantity,
-                                }),
-                              ),
-                            });
-                          }}
-                          disabled={updateInventoryMutation.isPending}
-                          className="w-full"
-                          data-testid={`button-save-inventory-${product.id}`}
-                        >
-                          Save Inventory
-                        </Button>
-                      </div>
-                    )}
-
-                  <div className="flex gap-2 pt-2 flex-wrap">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        setExpandedProduct(
-                          expandedProduct === product.id ? null : product.id,
-                        )
-                      }
-                      data-testid={`button-inventory-${product.id}`}
-                    >
-                      {expandedProduct === product.id ? "Hide" : "Show"} Inventory
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEditProduct(product)}
-                      data-testid={`button-edit-product-${product.id}`}
-                    >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDeleteProduct(product.id)}
-                      data-testid={`button-delete-product-${product.id}`}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                            </td>
+                          </tr>
+                        )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
