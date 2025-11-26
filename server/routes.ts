@@ -733,26 +733,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const products = await storage.getAllProducts(filters);
       
-      // Enrich products with stock allocation details
+      // Enrich products with stock allocation details (same as inventory API)
       const productsWithAllocations = await Promise.all(
         products.map(async (product) => {
-          const allocations = await storage.getProductInventoryByProduct(product.id);
-          const storeInventory = allocations.map((alloc) => ({
-            storeId: alloc.storeId,
-            quantity: alloc.quantity,
-            channel: alloc.channel,
-          }));
-          
-          return {
-            ...product,
-            storeInventory,
-          };
+          try {
+            const allocations = await storage.getProductInventoryByProduct(product.id);
+            const storeInventory = allocations.map((alloc) => ({
+              storeId: alloc.storeId,
+              quantity: alloc.quantity,
+              channel: alloc.channel,
+            }));
+            
+            return {
+              ...product,
+              storeInventory,
+            };
+          } catch (err) {
+            console.error(`Error fetching allocations for product ${product.id}:`, err);
+            return {
+              ...product,
+              storeInventory: [],
+            };
+          }
         })
       );
       
       res.json(productsWithAllocations);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch products" });
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products", details: String(error) });
     }
   });
 
@@ -763,7 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Product not found" });
       }
       
-      // Enrich product with stock allocation details
+      // Enrich product with stock allocation details (same as inventory API)
       const allocations = await storage.getProductInventoryByProduct(product.id);
       const storeInventory = allocations.map((alloc) => ({
         storeId: alloc.storeId,
@@ -776,7 +785,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storeInventory,
       });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch product" });
+      console.error("Error fetching product:", error);
+      res.status(500).json({ error: "Failed to fetch product", details: String(error) });
     }
   });
 
