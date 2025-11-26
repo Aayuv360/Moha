@@ -732,7 +732,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof maxPrice === "string") filters.maxPrice = parseFloat(maxPrice);
 
       const products = await storage.getAllProducts(filters);
-      res.json(products);
+      
+      // Enrich products with stock allocation details
+      const productsWithAllocations = await Promise.all(
+        products.map(async (product) => {
+          const allocations = await storage.getProductInventoryByProduct(product.id);
+          const storeInventory = allocations.map((alloc) => ({
+            storeId: alloc.storeId,
+            quantity: alloc.quantity,
+            channel: alloc.channel,
+          }));
+          
+          return {
+            ...product,
+            storeInventory,
+          };
+        })
+      );
+      
+      res.json(productsWithAllocations);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch products" });
     }
@@ -744,7 +762,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
-      res.json(product);
+      
+      // Enrich product with stock allocation details
+      const allocations = await storage.getProductInventoryByProduct(product.id);
+      const storeInventory = allocations.map((alloc) => ({
+        storeId: alloc.storeId,
+        quantity: alloc.quantity,
+        channel: alloc.channel,
+      }));
+      
+      res.json({
+        ...product,
+        storeInventory,
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch product" });
     }
