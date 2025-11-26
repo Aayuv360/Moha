@@ -2,25 +2,12 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, ArrowRightLeft } from "lucide-react";
+import { Plus, Trash2, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product } from "@shared/schema";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+
 import { ProductAllocationForm } from "./ProductAllocationForm";
 
 interface StoreInventory {
@@ -28,11 +15,6 @@ interface StoreInventory {
   storeName: string;
   quantity: number;
   channel: string;
-}
-
-interface Store {
-  id: string;
-  name: string;
 }
 
 interface ProductsTabProps {
@@ -63,14 +45,6 @@ export function ProductsTab({
     categories.length > 0 ? categories[0] : "Uncategorized",
   );
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
-  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [selectedProductForMove, setSelectedProductForMove] =
-    useState<Product | null>(null);
-  const [moveData, setMoveData] = useState({
-    fromStoreId: "",
-    toStoreId: "",
-    quantity: 1,
-  });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -87,10 +61,6 @@ export function ProductsTab({
     onError: (error: any) => {
       toast({ title: "Failed to delete product", variant: "destructive" });
     },
-  });
-
-  const { data: allStores = [] } = useQuery<Store[]>({
-    queryKey: ["/api/inventory/all-stores"],
   });
 
   const { data: storeInventoryMap = {} } = useQuery({
@@ -150,40 +120,6 @@ export function ProductsTab({
     },
   });
 
-  const moveInventoryMutation = useMutation({
-    mutationFn: async ({
-      productId,
-      fromStoreId,
-      toStoreId,
-      quantity,
-    }: {
-      productId: string;
-      fromStoreId: string;
-      toStoreId: string;
-      quantity: number;
-    }) => {
-      return await apiRequest(
-        "POST",
-        `/api/inventory/products/${productId}/move`,
-        {
-          fromStoreId,
-          toStoreId,
-          quantity,
-        },
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/stores"] });
-      toast({ title: "Inventory moved successfully" });
-      setMoveDialogOpen(false);
-      setSelectedProductForMove(null);
-      setMoveData({ fromStoreId: "", toStoreId: "", quantity: 1 });
-    },
-    onError: () => {
-      toast({ title: "Failed to move inventory", variant: "destructive" });
-    },
-  });
-
   const handleDeleteProduct = (productId: string) => {
     if (window.confirm("Delete this product?")) {
       deleteProductMutation.mutate(productId);
@@ -218,23 +154,6 @@ export function ProductsTab({
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setShowProductDialog(true);
-  };
-
-  const handleMoveInventory = () => {
-    if (
-      !selectedProductForMove ||
-      !moveData.toStoreId ||
-      moveData.quantity < 1
-    ) {
-      toast({ title: "Please fill in all fields", variant: "destructive" });
-      return;
-    }
-    moveInventoryMutation.mutate({
-      productId: selectedProductForMove.id,
-      fromStoreId: "",
-      toStoreId: moveData.toStoreId,
-      quantity: moveData.quantity,
-    });
   };
 
   const categoryProducts = products.filter(
@@ -317,68 +236,80 @@ export function ProductsTab({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-2 overflow-x-auto">
               {categoryProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="border rounded-lg p-4 space-y-2 hover:shadow-md transition-shadow"
+                  className="border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow"
                   data-testid={`card-product-${product.id}`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.has(product.id)}
-                      onChange={(e) => {
-                        const newSelected = new Set(selectedProducts);
-                        if (e.target.checked) {
-                          newSelected.add(product.id);
-                        } else {
-                          newSelected.delete(product.id);
-                        }
-                        setSelectedProducts(newSelected);
-                      }}
-                      data-testid={`checkbox-product-${product.id}`}
-                    />
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm line-clamp-2">
-                        {product.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        ID: {product.trackingId}
-                      </p>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.has(product.id)}
+                        onChange={(e) => {
+                          const newSelected = new Set(selectedProducts);
+                          if (e.target.checked) {
+                            newSelected.add(product.id);
+                          } else {
+                            newSelected.delete(product.id);
+                          }
+                          setSelectedProducts(newSelected);
+                        }}
+                        data-testid={`checkbox-product-${product.id}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">
+                          {product.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ID: {product.trackingId}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 text-xs">
-                    {product.fabric && (
-                      <span className="bg-secondary px-2 py-1 rounded">
-                        {product.fabric}
-                      </span>
-                    )}
-                    {product.color && (
-                      <span className="bg-secondary px-2 py-1 rounded">
-                        {product.color}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex justify-between items-center pt-2 border-t">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
+                      <span className="text-xs text-muted-foreground">Description</span>
+                      <p className="text-sm line-clamp-1">{product.description}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Fabric</span>
+                      <p className="text-sm font-medium">{product.fabric}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Color</span>
+                      <p className="text-sm font-medium">{product.color}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Occasion</span>
+                      <p className="text-sm font-medium">{product.occasion}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Price</span>
                       <p className="text-sm font-bold text-primary">
-                        ₹
-                        {parseFloat(product.price.toString()).toLocaleString(
-                          "en-IN",
-                        )}
+                        ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Stock: {product.inStock}
-                      </p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Stock</span>
+                      <p className="text-sm font-medium">{product.inStock}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Category</span>
+                      <p className="text-sm font-medium">{product.category}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Image</span>
+                      <p className="text-xs truncate text-blue-500">{product.imageUrl}</p>
                     </div>
                   </div>
 
                   {expandedProduct === product.id &&
                     storeInventoryMap[product.id] && (
-                      <div className="mt-4 pt-4 border-t space-y-3">
+                      <div className="mt-4 pt-4 border-t space-y-3 bg-muted/50 p-3 rounded">
                         <h4 className="font-semibold text-sm">
                           Store Inventory
                         </h4>
@@ -445,22 +376,22 @@ export function ProductsTab({
                       </div>
                     )}
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-2 pt-2 flex-wrap">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        setSelectedProductForMove(product);
-                        setMoveDialogOpen(true);
-                      }}
-                      data-testid={`button-move-product-${product.id}`}
+                      onClick={() =>
+                        setExpandedProduct(
+                          expandedProduct === product.id ? null : product.id,
+                        )
+                      }
+                      data-testid={`button-inventory-${product.id}`}
                     >
-                      Move
+                      {expandedProduct === product.id ? "Hide" : "Show"} Inventory
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1"
                       onClick={() => handleEditProduct(product)}
                       data-testid={`button-edit-product-${product.id}`}
                     >
@@ -470,7 +401,6 @@ export function ProductsTab({
                     <Button
                       size="sm"
                       variant="destructive"
-                      className="flex-1"
                       onClick={() => handleDeleteProduct(product.id)}
                       data-testid={`button-delete-product-${product.id}`}
                     >
@@ -484,70 +414,6 @@ export function ProductsTab({
           )}
         </div>
       )}
-
-      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Move Inventory Between Stores</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="to-store">To Store</Label>
-              <Select
-                value={moveData.toStoreId}
-                onValueChange={(val) =>
-                  setMoveData({ ...moveData, toStoreId: val })
-                }
-              >
-                <SelectTrigger id="to-store" data-testid="select-to-store">
-                  <SelectValue placeholder="Select destination store" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allStores.map((store: Store) => (
-                    <SelectItem key={store.id} value={store.id}>
-                      {store.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="move-quantity">Quantity</Label>
-              <Input
-                id="move-quantity"
-                type="number"
-                min="1"
-                value={moveData.quantity}
-                onChange={(e) =>
-                  setMoveData({
-                    ...moveData,
-                    quantity: parseInt(e.target.value) || 1,
-                  })
-                }
-                data-testid="input-move-quantity"
-              />
-            </div>
-
-            <div className="flex gap-2 justify-end pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setMoveDialogOpen(false)}
-                data-testid="button-cancel-move"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleMoveInventory}
-                disabled={moveInventoryMutation.isPending}
-                data-testid="button-confirm-move"
-              >
-                Move Inventory
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
