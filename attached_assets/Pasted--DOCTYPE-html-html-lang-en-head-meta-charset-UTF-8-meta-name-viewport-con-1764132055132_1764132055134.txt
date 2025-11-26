@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Inventory Stock Allocation UX</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+        }
+        .input-focus:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div id="app" class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-10">
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Add New Product & Allocate Stock</h1>
+
+        <!-- PRODUCT DETAILS SECTION -->
+        <section class="mb-8 p-6 bg-gray-50 rounded-lg border">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">1. Product Core Information</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="productName" class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                    <input type="text" id="productName" value="Example T-Shirt" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus">
+                </div>
+                <div>
+                    <label for="totalStock" class="block text-sm font-medium text-gray-700 mb-1">Total Stock Quantity</label>
+                    <input type="number" id="totalStock" value="10" min="1" oninput="updateAllocation(true)" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus">
+                    <p class="text-xs text-gray-500 mt-1">This is the total inventory you have.</p>
+                </div>
+                <div>
+                    <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                    <input type="number" id="price" value="25.00" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus">
+                </div>
+            </div>
+        </section>
+
+        <!-- SALES CHANNEL SELECTION -->
+        <section class="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">2. Select Sales Channels</h2>
+            <div class="flex flex-wrap gap-4">
+                <button onclick="setChannel('Online')" id="btnOnline" class="channel-btn px-6 py-3 rounded-xl transition duration-150 ease-in-out">
+                    Sell Online Only
+                </button>
+                <button onclick="setChannel('Shop')" id="btnShop" class="channel-btn px-6 py-3 rounded-xl transition duration-150 ease-in-out">
+                    Sell In Physical Shops Only
+                </button>
+                <button onclick="setChannel('Both')" id="btnBoth" class="channel-btn px-6 py-3 rounded-xl transition duration-150 ease-in-out">
+                    Sell Both Online & In Shops
+                </button>
+            </div>
+            <input type="hidden" id="salesChannel" value="Both">
+            <p id="channelInfo" class="mt-4 text-sm text-blue-700 font-medium"></p>
+        </section>
+
+        <!-- STOCK ALLOCATION SECTION -->
+        <section id="allocationSection" class="p-6 bg-white rounded-lg border border-gray-300 shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">3. Stock Allocation</h2>
+            
+            <!-- Allocation Summary -->
+            <div id="allocationSummary" class="flex justify-between items-center p-4 mb-4 rounded-lg text-sm font-semibold">
+                <div class="flex flex-col sm:flex-row sm:space-x-4">
+                    <p class="text-gray-600 mb-1 sm:mb-0">Total Stock: <span id="summaryTotal" class="text-gray-900">0</span> units</p>
+                    <p class="text-gray-600 mb-1 sm:mb-0">Allocated: <span id="summaryAllocated" class="text-green-600">0</span> units</p>
+                </div>
+                <p id="summaryUnallocated" class="p-2 rounded-lg text-white font-bold transition duration-300">Unallocated: 0 units</p>
+            </div>
+
+
+            <!-- Online Allocation (Visible if Online or Both) -->
+            <div id="onlineAllocationContainer" class="mb-6 p-4 border border-indigo-200 bg-indigo-50 rounded-lg hidden">
+                <h3 class="text-lg font-medium text-indigo-700 mb-3">Online Sales Stock</h3>
+                <label for="onlineStock" class="block text-sm font-medium text-gray-700 mb-1">Stock for Online Warehouse</label>
+                <input type="number" id="onlineStock" value="0" min="0" oninput="updateAllocation()" class="w-full md:w-1/2 px-3 py-2 border border-indigo-300 rounded-lg input-focus">
+            </div>
+
+            <!-- Shop Allocation (Visible if Shop or Both, and Total Stock > 1) -->
+            <div id="shopAllocationContainer" class="mb-6 p-4 border border-yellow-200 bg-yellow-50 rounded-lg hidden">
+                <h3 class="text-lg font-medium text-yellow-700 mb-3">Physical Shop Allocation</h3>
+                <div id="shopList" class="space-y-3">
+                    <!-- Dynamic Shop Inputs will go here -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- SUBMIT BUTTON -->
+        <div class="mt-8 pt-4 border-t flex justify-end">
+            <button onclick="submitProduct()" id="submitButton" disabled class="px-8 py-3 bg-gray-400 text-white font-bold rounded-xl shadow-lg transition duration-300 disabled:opacity-50">
+                Save Product & Allocation
+            </button>
+        </div>
+
+        <!-- Feedback Modal (Not using alert()) -->
+        <div id="feedbackModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+                <h3 id="modalTitle" class="text-xl font-bold mb-3 text-gray-800"></h3>
+                <p id="modalMessage" class="text-gray-600 mb-4"></p>
+                <button onclick="document.getElementById('feedbackModal').classList.add('hidden')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">Close</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const MOCK_SHOPS = [
+            { id: 'shop1', name: 'Flagship Store - Downtown' },
+            { id: 'shop2', name: 'Mall Kiosk - West Side' },
+            { id: 'shop3', name: 'Outlet - North Suburbs' },
+        ];
+        
+        let shopStocks = {};
+
+        // --- Utility Functions ---
+
+        /** Shows a custom modal instead of alert() */
+        function showModal(title, message, isSuccess = false) {
+            const modal = document.getElementById('feedbackModal');
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            modal.classList.remove('hidden');
+        }
+
+        /** Renders the dynamic shop allocation inputs */
+        function renderShopInputs() {
+            const shopList = document.getElementById('shopList');
+            shopList.innerHTML = ''; // Clear previous inputs
+
+            MOCK_SHOPS.forEach(shop => {
+                // Initialize stock for new shops if not already present
+                if (shopStocks[shop.id] === undefined) {
+                    shopStocks[shop.id] = 0;
+                }
+
+                const shopDiv = document.createElement('div');
+                shopDiv.className = 'flex items-center space-x-3 p-3 bg-yellow-100 rounded-lg';
+                
+                shopDiv.innerHTML = `
+                    <label for="${shop.id}" class="flex-1 text-sm font-medium text-gray-700">${shop.name}</label>
+                    <input type="number" id="${shop.id}" value="${shopStocks[shop.id]}" min="0" 
+                           oninput="updateShopStock('${shop.id}', this.value)" 
+                           class="w-20 px-3 py-2 border border-yellow-300 rounded-lg text-center input-focus">
+                    <span class="text-sm text-gray-500">units</span>
+                `;
+                shopList.appendChild(shopDiv);
+            });
+        }
+
+        /** Updates the stock for a specific shop */
+        function updateShopStock(shopId, value) {
+            const stockValue = parseInt(value) || 0;
+            // Ensure stock is non-negative
+            shopStocks[shopId] = Math.max(0, stockValue);
+            // Update the input field value in case of negative input
+            document.getElementById(shopId).value = shopStocks[shopId];
+            updateAllocation();
+        }
+
+
+        // --- Main Logic Functions ---
+
+        /** Sets the sales channel and updates the UI */
+        function setChannel(channel) {
+            const channelInput = document.getElementById('salesChannel');
+            channelInput.value = channel;
+
+            // Update button styles
+            document.querySelectorAll('.channel-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                btn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300', 'hover:bg-blue-50');
+            });
+
+            const activeBtn = document.getElementById(`btn${channel}`);
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+            activeBtn.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300', 'hover:bg-blue-50');
+
+            // Reset and update containers
+            const onlineContainer = document.getElementById('onlineAllocationContainer');
+            const shopContainer = document.getElementById('shopAllocationContainer');
+            const totalStock = parseInt(document.getElementById('totalStock').value) || 0;
+
+            onlineContainer.classList.add('hidden');
+            shopContainer.classList.add('hidden');
+            document.getElementById('channelInfo').textContent = '';
+
+            // Logic to show/hide sections
+            if (channel === 'Online') {
+                onlineContainer.classList.remove('hidden');
+                document.getElementById('channelInfo').textContent = 'All stock will be allocated to the Online Warehouse.';
+                shopStocks = MOCK_SHOPS.reduce((acc, shop) => ({ ...acc, [shop.id]: 0 }), {});
+                document.getElementById('onlineStock').value = totalStock;
+            } else if (channel === 'Shop') {
+                if (totalStock > 1) {
+                    shopContainer.classList.remove('hidden');
+                    document.getElementById('channelInfo').textContent = 'Stock must be distributed across the physical shops.';
+                    document.getElementById('onlineStock').value = 0;
+                } else {
+                    document.getElementById('channelInfo').textContent = `Product will be sold in physical shops. Stock must be assigned to one shop. (Total stock: ${totalStock})`;
+                }
+            } else if (channel === 'Both') {
+                if (totalStock > 1) {
+                    onlineContainer.classList.remove('hidden');
+                    shopContainer.classList.remove('hidden');
+                    document.getElementById('channelInfo').textContent = 'Stock must be split between the Online Warehouse and physical shops.';
+                } else {
+                    onlineContainer.classList.remove('hidden');
+                    document.getElementById('channelInfo').textContent = 'Since total stock is 1, it must be assigned entirely to either Online or a single Shop.';
+                    shopStocks = MOCK_SHOPS.reduce((acc, shop) => ({ ...acc, [shop.id]: 0 }), {});
+                }
+            }
+
+            // Re-render shop inputs and recalculate
+            renderShopInputs();
+            updateAllocation();
+        }
+
+        /** Recalculates all stock figures and updates the summary and validation */
+        function updateAllocation(isTotalStockChange = false) {
+            const totalStockInput = document.getElementById('totalStock');
+            let totalStock = parseInt(totalStockInput.value) || 0;
+            totalStockInput.value = Math.max(1, totalStock); // Prevent stock from being less than 1
+            totalStock = Math.max(1, totalStock); // Update the variable too
+
+            const channel = document.getElementById('salesChannel').value;
+            const onlineInput = document.getElementById('onlineStock');
+            let onlineStock = 0;
+            let shopTotalStock = 0;
+
+            // 1. Calculate allocated shop stock
+            shopTotalStock = MOCK_SHOPS.reduce((sum, shop) => sum + shopStocks[shop.id], 0);
+
+            // 2. Calculate online stock based on channel/user input
+            if (channel === 'Online' || channel === 'Both') {
+                onlineStock = parseInt(onlineInput.value) || 0;
+
+                // Enforce max bounds and non-negative
+                if (channel === 'Both') {
+                    // In 'Both' mode, Online stock is limited by what's available
+                    onlineStock = Math.min(totalStock, Math.max(0, onlineStock));
+                } else if (channel === 'Online') {
+                    // In 'Online' mode, all stock is online
+                    onlineStock = totalStock;
+                }
+                onlineInput.value = onlineStock;
+            }
+
+            // 3. Recalculate based on channel rules if total stock changed
+            if (isTotalStockChange) {
+                 if (channel === 'Online') {
+                    onlineInput.value = totalStock;
+                    onlineStock = totalStock;
+                } else if (channel === 'Shop') {
+                    // If total stock increases, nothing happens automatically.
+                    // If total stock decreases, cap shop allocation
+                    const newShopStocks = {};
+                    let remainingStock = totalStock;
+
+                    // Redistribute proportionally or simply cap
+                    MOCK_SHOPS.forEach(shop => {
+                        const currentStock = shopStocks[shop.id] || 0;
+                        const allocated = Math.min(currentStock, remainingStock);
+                        newShopStocks[shop.id] = allocated;
+                        remainingStock -= allocated;
+                    });
+                    shopStocks = newShopStocks;
+                    renderShopInputs();
+                } else if (channel === 'Both') {
+                    // Cap both online and shop stock proportionally if total decreases
+                    if (onlineStock + shopTotalStock > totalStock) {
+                        const ratioOnline = onlineStock / (onlineStock + shopTotalStock);
+                        const ratioShop = shopTotalStock / (onlineStock + shopTotalStock);
+                        
+                        onlineStock = Math.floor(totalStock * ratioOnline);
+                        let remainingForShop = totalStock - onlineStock;
+                        
+                        // Redistribute shop stock
+                        const newShopStocks = {};
+                        let shopTotalCap = 0;
+                        MOCK_SHOPS.forEach(shop => {
+                            const currentStock = shopStocks[shop.id] || 0;
+                            let allocated = Math.floor(currentStock / shopTotalStock * remainingForShop);
+                            // Adjust for rounding: ensure the sum doesn't exceed the total allowed for shops
+                            allocated = Math.max(0, allocated);
+                            newShopStocks[shop.id] = allocated;
+                            shopTotalCap += allocated;
+                        });
+
+                        // Final correction for potential rounding errors
+                        const error = remainingForShop - shopTotalCap;
+                        if (error > 0) {
+                            newShopStocks[MOCK_SHOPS[0].id] += error; // Add remainder to first shop
+                        }
+                        
+                        onlineInput.value = onlineStock;
+                        shopStocks = newShopStocks;
+                        renderShopInputs();
+                    }
+                }
+                // Recalculate shop total after any potential capping
+                shopTotalStock = MOCK_SHOPS.reduce((sum, shop) => sum + shopStocks[shop.id], 0);
+            }
+            
+            // 4. Calculate final values
+            const allocatedStock = onlineStock + shopTotalStock;
+            const unallocatedStock = totalStock - allocatedStock;
+            
+            // 5. Update Summary UI
+            document.getElementById('summaryTotal').textContent = totalStock;
+            document.getElementById('summaryAllocated').textContent = allocatedStock;
+            const unallocatedSpan = document.getElementById('summaryUnallocated');
+            unallocatedSpan.textContent = `Unallocated: ${unallocatedStock} units`;
+            
+            // Update Validation and Color
+            const submitButton = document.getElementById('submitButton');
+
+            if (unallocatedStock === 0 && totalStock > 0) {
+                unallocatedSpan.classList.remove('bg-red-500', 'bg-yellow-500');
+                unallocatedSpan.classList.add('bg-green-600');
+                submitButton.disabled = false;
+                submitButton.classList.remove('bg-gray-400');
+                submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
+            } else if (unallocatedStock < 0) {
+                unallocatedSpan.classList.remove('bg-green-600', 'bg-yellow-500');
+                unallocatedSpan.classList.add('bg-red-500');
+                unallocatedSpan.textContent = `OVER-ALLOCATED: ${Math.abs(unallocatedStock)} units`;
+                submitButton.disabled = true;
+                submitButton.classList.add('bg-gray-400');
+                submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+            } else {
+                unallocatedSpan.classList.remove('bg-green-600', 'bg-red-500');
+                unallocatedSpan.classList.add('bg-yellow-500');
+                submitButton.disabled = true;
+                submitButton.classList.add('bg-gray-400');
+                submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+            }
+        }
+
+        /** Handles the final submission of the product data */
+        function submitProduct() {
+            const productName = document.getElementById('productName').value;
+            const totalStock = parseInt(document.getElementById('totalStock').value) || 0;
+            const channel = document.getElementById('salesChannel').value;
+            const onlineStock = parseInt(document.getElementById('onlineStock').value) || 0;
+            
+            const shopAllocation = MOCK_SHOPS.map(shop => ({
+                id: shop.id,
+                name: shop.name,
+                stock: shopStocks[shop.id] || 0
+            })).filter(s => s.stock > 0);
+
+            const totalAllocated = onlineStock + shopAllocation.reduce((sum, s) => sum + s.stock, 0);
+
+            if (totalAllocated !== totalStock) {
+                showModal("Validation Error", "Total allocated stock does not match the total inventory. Please correct the allocation.");
+                return;
+            }
+
+            const productData = {
+                name: productName,
+                totalStock: totalStock,
+                salesChannel: channel,
+                onlineStock: onlineStock,
+                shopAllocation: shopAllocation,
+                timestamp: new Date().toISOString()
+            };
+
+            console.log("Product Data Submitted:", productData);
+            
+            showModal("Success!", `Product "${productName}" saved successfully with stock allocation.`, true);
+            // In a real application, you would send productData to a backend API here.
+        }
+
+        // --- Initialization ---
+        window.onload = () => {
+            // Set initial state
+            setChannel(document.getElementById('salesChannel').value);
+            // Manually set initial online stock for the 'Both' example
+            document.getElementById('onlineStock').value = 4;
+            // Manually set initial shop stocks for the 'Both' example
+            shopStocks = { shop1: 3, shop2: 2, shop3: 1 };
+            renderShopInputs(); // Render shops with initial values
+            updateAllocation(); // Run initial calculation and validation
+        };
+
+    </script>
+</body>
+</html>
