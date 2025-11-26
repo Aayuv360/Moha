@@ -16,18 +16,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { z } from "zod";
-import { Card } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Store {
   id: string;
   name: string;
-}
-
-interface AllocationItem {
-  storeName: string;
-  quantity: number;
 }
 
 const productSchema = z.object({
@@ -46,12 +44,15 @@ const productSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>;
 
+type ChannelType = "Online" | "Shop" | "Both";
+
 export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) {
   const { toast } = useToast();
-  const [step, setStep] = useState(1);
-  const [channel, setChannel] = useState<"online" | "physical" | "both">("both");
-  const [allocations, setAllocations] = useState<AllocationItem[]>([]);
-  const [unallocated, setUnallocated] = useState(0);
+  const [channel, setChannel] = useState<ChannelType>("Both");
+  const [shopStocks, setShopStocks] = useState<{ [key: string]: number }>({});
+  const [onlineStock, setOnlineStock] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackData, setFeedbackData] = useState({ title: "", message: "" });
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -74,25 +75,108 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
     queryKey: ["/api/inventory/all-stores"],
   });
 
-  useEffect(() => {
-    if (step === 3 && channel !== "online" && allStores.length > 0) {
-      if (allocations.length === 0) {
-        setAllocations(
-          allStores.map((store) => ({
-            storeName: store.name,
-            quantity: 0,
-          }))
-        );
-      }
-    }
-  }, [step, channel, allStores, allocations.length]);
-
-  const totalAllocated = allocations.reduce((sum, a) => sum + a.quantity, 0);
   const totalStock = form.watch("totalStock");
 
+  // Initialize shop stocks when stores load
   useEffect(() => {
-    setUnallocated(totalStock - totalAllocated);
-  }, [totalStock, totalAllocated]);
+    if (allStores.length > 0 && Object.keys(shopStocks).length === 0) {
+      const initialShopStocks = allStores.reduce(
+        (acc, store) => ({ ...acc, [store.id]: 0 }),
+        {}
+      );
+      setShopStocks(initialShopStocks);
+    }
+  }, [allStores, shopStocks]);
+
+  // Handle channel change
+  const handleChannelChange = (newChannel: ChannelType) => {
+    setChannel(newChannel);
+
+    if (newChannel === "Online") {
+      setOnlineStock(totalStock);
+      const resetShops = allStores.reduce(
+        (acc, store) => ({ ...acc, [store.id]: 0 }),
+        {}
+      );
+      setShopStocks(resetShops);
+    } else if (newChannel === "Shop") {
+      setOnlineStock(0);
+    } else if (newChannel === "Both") {
+      // Keep existing values
+    }
+  };
+
+  // Handle total stock change
+  const handleTotalStockChange = (newTotal: number) => {
+    if (newTotal < 1) newTotal = 1;
+
+    if (channel === "Online") {
+      setOnlineStock(newTotal);
+    } else if (channel === "Shop") {
+      // Proportionally redistribute
+      const currentShopTotal = Object.values(shopStocks).reduce((a, b) => a + b, 0);
+      if (currentShopTotal > newTotal) {
+        const ratio = newTotal / currentShopTotal;
+        const newShopStocks = Object.entries(shopStocks).reduce(
+          (acc, [storeId, stock]) => ({
+            ...acc,
+            [storeId]: Math.floor(stock * ratio),
+          }),
+          {}
+        );
+        setShopStocks(newShopStocks);
+      }
+    } else if (channel === "Both") {
+      // Proportionally redistribute both
+      const currentTotal = onlineStock + Object.values(shopStocks).reduce((a, b) => a + b, 0);
+      if (currentTotal > newTotal) {
+        const onlineRatio = onlineStock / currentTotal;
+        const shopRatio = 1 - onlineRatio;
+
+        const newOnlineStock = Math.floor(newTotal * onlineRatio);
+        const remainingForShops = newTotal - newOnlineStock;
+
+        const currentShopTotal = Object.values(shopStocks).reduce((a, b) => a + b, 0);
+        const newShopStocks = Object.entries(shopStocks).reduce(
+          (acc, [storeId, stock]) => ({
+            ...acc,
+            [storeId]: currentShopTotal > 0
+              ? Math.floor(stock / currentShopTotal * remainingForShops)
+              : 0,
+          }),
+          {}
+        );
+
+        setOnlineStock(newOnlineStock);
+        setShopStocks(newShopStocks);
+      }
+    }
+  };
+
+  // Update shop stock
+  const updateShopStock = (storeId: string, value: number) => {
+    value = Math.max(0, value);
+    setShopStocks({ ...shopStocks, [storeId]: value });
+  };
+
+  // Calculate allocation
+  const shopTotal = Object.values(shopStocks).reduce((a, b) => a + b, 0);
+  const totalAllocated = onlineStock + shopTotal;
+  const unallocated = totalStock - totalAllocated;
+  const isValid = unallocated === 0 && totalStock > 0;
+  const isOverAllocated = unallocated < 0;
+
+  const getStatusColor = () => {
+    if (isValid) return "bg-green-600";
+    if (isOverAllocated) return "bg-red-500";
+    return "bg-yellow-500";
+  };
+
+  const getStatusText = () => {
+    if (isOverAllocated) return `OVER-ALLOCATED: ${Math.abs(unallocated)} units`;
+    if (isValid) return `Unallocated: 0 units`;
+    return `Unallocated: ${unallocated} units`;
+  };
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
@@ -121,14 +205,11 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
 
   const allocateInventoryMutation = useMutation({
     mutationFn: async (productId: string) => {
-      const storeInventory = allocations
-        .map((a) => {
-          const store = allStores.find((s) => s.name === a.storeName);
-          return store ? { storeId: store.id, quantity: a.quantity } : null;
-        })
+      const storeInventory = Object.entries(shopStocks)
+        .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
         .filter((x) => x !== null) as { storeId: string; quantity: number }[];
 
-      if (storeInventory.length === 0 && channel !== "online") {
+      if (storeInventory.length === 0 && channel !== "Online") {
         throw new Error("No stores selected for allocation");
       }
 
@@ -139,122 +220,131 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
   });
 
   const onSubmit = async (data: ProductFormData) => {
-    if (step === 1) {
-      setStep(2);
-    } else if (step === 2) {
-      if (channel === "physical" && allocations.every((a) => a.quantity === 0)) {
-        toast({
-          title: "Invalid allocation",
-          description: "Please allocate at least some stock to physical stores",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (channel === "online") {
-        setAllocations([]);
-      }
-      setStep(3);
-    } else if (step === 3) {
-      if (channel === "both" && unallocated !== 0) {
-        toast({
-          title: "Invalid allocation",
-          description: "All stock must be allocated",
-          variant: "destructive",
-        });
-        return;
-      }
+    if (!isValid) {
+      setFeedbackData({
+        title: "Validation Error",
+        message: "Total allocated stock does not match the total inventory. Please correct the allocation.",
+      });
+      setShowFeedback(true);
+      return;
+    }
 
-      try {
-        const product = await createProductMutation.mutateAsync(data);
-        await allocateInventoryMutation.mutateAsync(product.id);
-        queryClient.invalidateQueries({ queryKey: ["/api/inventory/products"] });
-        form.reset();
-        setStep(1);
-        setChannel("both");
-        setAllocations([]);
-        toast({ title: "Product added successfully with allocations" });
+    try {
+      const product = await createProductMutation.mutateAsync(data);
+      await allocateInventoryMutation.mutateAsync(product.id);
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/products"] });
+      form.reset();
+      setChannel("Both");
+      setOnlineStock(0);
+      const resetShops = allStores.reduce(
+        (acc, store) => ({ ...acc, [store.id]: 0 }),
+        {}
+      );
+      setShopStocks(resetShops);
+      setFeedbackData({
+        title: "Success!",
+        message: `Product "${data.name}" saved successfully with stock allocation.`,
+      });
+      setShowFeedback(true);
+      setTimeout(() => {
+        setShowFeedback(false);
         onSuccess();
-      } catch (error: any) {
-        toast({
-          title: "Failed to create product",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+      }, 1500);
+    } catch (error: any) {
+      setFeedbackData({
+        title: "Error",
+        message: error.message || "Failed to create product",
+      });
+      setShowFeedback(true);
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Step 1: Product Info */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-              <h3 className="font-semibold text-lg mb-2">1. Product Core Information</h3>
-              <p className="text-sm text-muted-foreground">Enter basic product details</p>
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* SECTION 1: PRODUCT CORE INFORMATION */}
+          <section className="p-6 bg-gray-50 rounded-lg border">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              1. Product Core Information
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Product name"
+                        {...field}
+                        data-testid="input-product-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="totalStock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Stock Quantity</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="10"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          field.onChange(Math.max(1, val));
+                          handleTotalStockChange(Math.max(1, val));
+                        }}
+                        data-testid="input-total-stock"
+                      />
+                    </FormControl>
+                    <p className="text-xs text-gray-500 mt-1">
+                      This is the total inventory you have.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="9999"
+                        {...field}
+                        value={field.value || ""}
+                        data-testid="input-product-price"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Product name" {...field} data-testid="input-product-name" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="totalStock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Total Stock Quantity</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="10"
-                      {...field}
-                      value={field.value || ""}
-                      data-testid="input-total-stock"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="9999"
-                      {...field}
-                      value={field.value || ""}
-                      data-testid="input-product-price"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="mt-6">
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
@@ -268,233 +358,256 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="fabric"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fabric</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Silk, Cotton..." {...field} data-testid="input-fabric" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <FormField
+                control={form.control}
+                name="fabric"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fabric</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Silk, Cotton..." {...field} data-testid="input-fabric" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Color</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Red, Blue..." {...field} data-testid="input-color" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Red, Blue..." {...field} data-testid="input-color" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="occasion"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Occasion</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Wedding, Party..." {...field} data-testid="input-occasion" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="occasion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Occasion</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Wedding, Party..."
+                        {...field}
+                        data-testid="input-occasion"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Category name" {...field} data-testid="input-category" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Category name"
+                        {...field}
+                        data-testid="input-category"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
               name="imageUrl"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="mt-6">
                   <FormLabel>Main Image URL</FormLabel>
                   <FormControl>
-                    <Input type="url" placeholder="https://..." {...field} data-testid="input-image-url" />
+                    <Input
+                      type="url"
+                      placeholder="https://..."
+                      {...field}
+                      data-testid="input-image-url"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
-        )}
+          </section>
 
-        {/* Step 2: Sales Channels */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-              <h3 className="font-semibold text-lg mb-2">2. Select Sales Channels</h3>
-              <p className="text-sm text-muted-foreground">Choose where to sell this product</p>
-            </div>
+          {/* SECTION 2: SALES CHANNELS */}
+          <section className="p-6 bg-blue-50 rounded-lg border border-blue-200">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              2. Select Sales Channels
+            </h2>
 
-            <div className="space-y-2">
-              <Button
-                type="button"
-                variant={channel === "online" ? "default" : "outline"}
-                className="w-full justify-start h-auto py-3"
-                onClick={() => setChannel("online")}
-                data-testid="button-channel-online"
-              >
-                <div className="text-left">
-                  <div className="font-semibold">Sell Online Only</div>
-                  <div className="text-xs text-muted-foreground">Available in online warehouse</div>
-                </div>
-              </Button>
-
-              <Button
-                type="button"
-                variant={channel === "physical" ? "default" : "outline"}
-                className="w-full justify-start h-auto py-3"
-                onClick={() => setChannel("physical")}
-                data-testid="button-channel-physical"
-              >
-                <div className="text-left">
-                  <div className="font-semibold">Sell In Physical Shops Only</div>
-                  <div className="text-xs text-muted-foreground">Available in physical stores</div>
-                </div>
-              </Button>
-
-              <Button
-                type="button"
-                variant={channel === "both" ? "default" : "outline"}
-                className="w-full justify-start h-auto py-3"
-                onClick={() => setChannel("both")}
-                data-testid="button-channel-both"
-              >
-                <div className="text-left">
-                  <div className="font-semibold">Sell Both Online & In Shops</div>
-                  <div className="text-xs text-muted-foreground">Split inventory between channels</div>
-                </div>
-              </Button>
-            </div>
-
-            {channel === "both" && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Stock must be split between the online warehouse and physical shops.
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Stock Allocation */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-              <h3 className="font-semibold text-lg mb-2">3. Stock Allocation</h3>
-              <p className="text-sm text-muted-foreground">Allocate stock to locations</p>
-            </div>
-
-            <Card className="p-4 bg-muted">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-semibold">Total Stock: {totalStock} units</span>
-                <span className="font-semibold">Allocated: {totalAllocated} units</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 bg-gray-300 rounded-full flex-1 overflow-hidden">
-                  <div
-                    className={`h-full transition-all ${unallocated > 0 ? "bg-yellow-500" : "bg-green-500"}`}
-                    style={{ width: `${(totalAllocated / totalStock) * 100}%` }}
-                  />
-                </div>
-                <span
-                  className={`font-bold text-sm ${unallocated > 0 ? "text-yellow-600" : "text-green-600"}`}
+            <div className="flex flex-wrap gap-4 mb-4">
+              {(["Online", "Shop", "Both"] as const).map((ch) => (
+                <button
+                  key={ch}
+                  type="button"
+                  onClick={() => handleChannelChange(ch)}
+                  className={`px-6 py-3 rounded-xl transition duration-150 ease-in-out font-medium ${
+                    channel === ch
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                  }`}
+                  data-testid={`button-channel-${ch}`}
                 >
-                  {unallocated > 0 ? `${unallocated} unallocated` : "All allocated!"}
-                </span>
-              </div>
-            </Card>
+                  {ch === "Online"
+                    ? "Sell Online Only"
+                    : ch === "Shop"
+                      ? "Sell In Physical Shops Only"
+                      : "Sell Both Online & In Shops"}
+                </button>
+              ))}
+            </div>
 
-            {channel === "online" && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>All stock is in the online warehouse.</AlertDescription>
-              </Alert>
+            <p className="text-sm text-blue-700 font-medium" data-testid="text-channel-info">
+              {channel === "Online"
+                ? "All stock will be allocated to the Online Warehouse."
+                : channel === "Shop"
+                  ? totalStock > 1
+                    ? "Stock must be distributed across the physical shops."
+                    : `Product will be sold in physical shops. Stock must be assigned to one shop. (Total stock: ${totalStock})`
+                  : totalStock > 1
+                    ? "Stock must be split between the Online Warehouse and physical shops."
+                    : "Since total stock is 1, it must be assigned entirely to either Online or a single Shop."}
+            </p>
+          </section>
+
+          {/* SECTION 3: STOCK ALLOCATION */}
+          <section className="p-6 bg-white rounded-lg border border-gray-300 shadow-md">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              3. Stock Allocation
+            </h2>
+
+            {/* Allocation Summary */}
+            <div
+              className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 mb-4 rounded-lg text-sm font-semibold bg-gray-100"
+              data-testid="allocation-summary"
+            >
+              <div className="flex flex-col sm:flex-row sm:space-x-4 w-full sm:w-auto">
+                <p className="text-gray-600">
+                  Total Stock: <span className="text-gray-900">{totalStock}</span> units
+                </p>
+                <p className="text-gray-600">
+                  Allocated:{" "}
+                  <span className="text-green-600">{totalAllocated}</span> units
+                </p>
+              </div>
+              <p
+                className={`p-2 rounded-lg text-white font-bold transition duration-300 ${getStatusColor()}`}
+                data-testid="allocation-status"
+              >
+                {getStatusText()}
+              </p>
+            </div>
+
+            {/* Online Allocation */}
+            {(channel === "Online" || channel === "Both") && (
+              <div className="mb-6 p-4 border border-indigo-200 bg-indigo-50 rounded-lg">
+                <h3 className="text-lg font-medium text-indigo-700 mb-3">
+                  Online Sales Stock
+                </h3>
+                <label htmlFor="onlineStock" className="block text-sm font-medium text-gray-700 mb-1">
+                  Stock for Online Warehouse
+                </label>
+                <Input
+                  id="onlineStock"
+                  type="number"
+                  min="0"
+                  value={onlineStock}
+                  onChange={(e) => setOnlineStock(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full md:w-1/2"
+                  data-testid="input-online-stock"
+                />
+              </div>
             )}
 
-            {(channel === "physical" || channel === "both") && (
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm">Physical Shop Allocation</h4>
+            {/* Shop Allocation */}
+            {(channel === "Shop" || channel === "Both") && (
+              <div className="mb-6 p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
+                <h3 className="text-lg font-medium text-yellow-700 mb-3">
+                  Physical Shop Allocation
+                </h3>
                 {allStores.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No physical stores available</p>
+                  <p className="text-sm text-gray-600">No physical stores available</p>
                 ) : (
-                  <div className="space-y-3 bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg">
-                    {allocations.map((allocation, idx) => (
-                      <div key={idx} className="flex gap-2 items-end">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{allocation.storeName}</p>
-                        </div>
+                  <div className="space-y-3">
+                    {allStores.map((store) => (
+                      <div
+                        key={store.id}
+                        className="flex items-center space-x-3 p-3 bg-yellow-100 rounded-lg"
+                      >
+                        <label htmlFor={store.id} className="flex-1 text-sm font-medium text-gray-700">
+                          {store.name}
+                        </label>
                         <Input
+                          id={store.id}
                           type="number"
                           min="0"
-                          max={totalStock}
-                          value={allocation.quantity}
-                          onChange={(e) => {
-                            const newAllocations = [...allocations];
-                            newAllocations[idx].quantity = parseInt(e.target.value) || 0;
-                            setAllocations(newAllocations);
-                          }}
-                          className="w-20"
-                          placeholder="0"
-                          data-testid={`input-allocation-${idx}`}
+                          value={shopStocks[store.id] || 0}
+                          onChange={(e) =>
+                            updateShopStock(store.id, parseInt(e.target.value) || 0)
+                          }
+                          className="w-20 text-center"
+                          data-testid={`input-store-${store.id}`}
                         />
-                        <span className="text-sm text-muted-foreground">units</span>
+                        <span className="text-sm text-gray-500">units</span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
             )}
+          </section>
+
+          {/* SUBMIT BUTTON */}
+          <div className="pt-4 border-t flex justify-end">
+            <Button
+              type="submit"
+              disabled={
+                !isValid ||
+                createProductMutation.isPending ||
+                allocateInventoryMutation.isPending
+              }
+              className={`px-8 py-3 font-bold rounded-xl shadow-lg transition duration-300 ${
+                isValid
+                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  : "bg-gray-400 text-white"
+              }`}
+              data-testid="button-save-product"
+            >
+              {createProductMutation.isPending || allocateInventoryMutation.isPending
+                ? "Saving..."
+                : "Save Product & Allocation"}
+            </Button>
           </div>
-        )}
+        </form>
+      </Form>
 
-        {/* Navigation Buttons */}
-        <div className="flex gap-2 justify-between pt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setStep(step - 1)}
-            disabled={step === 1}
-            data-testid="button-previous"
-          >
-            Previous
+      {/* Feedback Modal */}
+      <Dialog open={showFeedback} onOpenChange={setShowFeedback}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{feedbackData.title}</DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-600">{feedbackData.message}</p>
+          <Button onClick={() => setShowFeedback(false)} className="w-full">
+            Close
           </Button>
-
-          <Button
-            type="submit"
-            disabled={
-              createProductMutation.isPending ||
-              allocateInventoryMutation.isPending
-            }
-            data-testid="button-next-or-submit"
-          >
-            {step === 3 ? "Save Product & Allocation" : "Next"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
