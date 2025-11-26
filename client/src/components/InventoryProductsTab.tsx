@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -12,7 +11,6 @@ import { ProductAllocationForm } from "./ProductAllocationForm";
 
 interface StoreInventory {
   storeId: string;
-  storeName: string;
   quantity: number;
   channel: string;
 }
@@ -42,6 +40,7 @@ export function ProductsTab({
   setSelectedProducts,
 }: ProductsTabProps) {
   const { toast } = useToast();
+
   const categories = Array.from(
     new Set(products.map((p: any) => p.category || "Uncategorized")),
   ).sort();
@@ -49,49 +48,15 @@ export function ProductsTab({
   const [selectedCategory, setSelectedCategory] = useState<string>(
     categories.length > 0 ? categories[0] : "Uncategorized",
   );
-  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
 
   const { data: allStores = [] } = useQuery<Store[]>({
     queryKey: ["/api/inventory/all-stores"],
   });
 
   const storeMap = allStores.reduce(
-    (acc, store) => {
-      return { ...acc, [store.id]: store.name };
-    },
-    {} as { [key: string]: string },
+    (acc, store) => ({ ...acc, [store.id]: store.name }),
+    { online: "online" } as { [key: string]: string },
   );
-
-  const { data: storeInventoryMap = {} } = useQuery({
-    queryKey: ["/api/inventory/stores"],
-    queryFn: async () => {
-      const map: { [key: string]: StoreInventory[] } = {};
-      const token = localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      for (const product of products) {
-        try {
-          const res = await fetch(
-            `/api/inventory/products/${product.id}/stores`,
-            {
-              headers,
-              credentials: "include",
-            },
-          );
-          if (res.ok) {
-            map[product.id] = await res.json();
-          }
-        } catch (error) {
-          console.error(
-            `Failed to fetch stores for product ${product.id}:`,
-            error,
-          );
-        }
-      }
-      return map;
-    },
-    enabled: products.length > 0,
-  });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -105,7 +70,7 @@ export function ProductsTab({
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/products"] });
       toast({ title: "Product deleted successfully" });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({ title: "Failed to delete product", variant: "destructive" });
     },
   });
@@ -136,9 +101,7 @@ export function ProductsTab({
 
   const handleDialogOpenChange = (open: boolean) => {
     setShowProductDialog(open);
-    if (!open) {
-      setEditingProduct(null);
-    }
+    if (!open) setEditingProduct(null);
   };
 
   const handleEditProduct = (product: Product) => {
@@ -156,6 +119,7 @@ export function ProductsTab({
         <h2 className="text-lg font-semibold">
           Your Products ({products.length})
         </h2>
+
         <div className="flex gap-2">
           {selectedProducts.size > 0 && (
             <Button
@@ -164,10 +128,10 @@ export function ProductsTab({
               onClick={handleBulkDelete}
               data-testid="button-bulk-delete"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete {selectedProducts.size}
+              <Trash2 className="h-4 w-4 mr-2" /> Delete {selectedProducts.size}
             </Button>
           )}
+
           <Dialog
             open={showProductDialog}
             onOpenChange={handleDialogOpenChange}
@@ -177,10 +141,10 @@ export function ProductsTab({
                 onClick={handleAddProduct}
                 data-testid="button-add-product-modal"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
+                <Plus className="h-4 w-4 mr-2" /> Add Product
               </Button>
             </DialogTrigger>
+
             <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
               <ProductAllocationForm
                 editingProduct={editingProduct || undefined}
@@ -239,10 +203,9 @@ export function ProductsTab({
                         }
                         onChange={(e) => {
                           if (e.target.checked) {
-                            const newSelected = new Set(
-                              categoryProducts.map((p) => p.id),
+                            setSelectedProducts(
+                              new Set(categoryProducts.map((p) => p.id)),
                             );
-                            setSelectedProducts(newSelected);
                           } else {
                             setSelectedProducts(new Set());
                           }
@@ -253,7 +216,6 @@ export function ProductsTab({
                       Product Name
                     </th>
                     <th className="px-4 py-3 text-left font-semibold">ID</th>
-
                     <th className="px-4 py-3 text-left font-semibold">
                       Fabric
                     </th>
@@ -271,111 +233,81 @@ export function ProductsTab({
                     </th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {categoryProducts.map((product) => (
-                    <>
-                      <tr
-                        key={product.id}
-                        className="border-b hover:bg-muted/30 transition-colors"
-                        data-testid={`card-product-${product.id}`}
-                      >
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.has(product.id)}
-                            onChange={(e) => {
-                              const newSelected = new Set(selectedProducts);
-                              if (e.target.checked) {
-                                newSelected.add(product.id);
-                              } else {
-                                newSelected.delete(product.id);
-                              }
-                              setSelectedProducts(newSelected);
-                            }}
-                            data-testid={`checkbox-product-${product.id}`}
-                          />
-                        </td>
-                        <td className="px-4 py-3 font-semibold">
-                          {product.name}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {product.trackingId}
-                        </td>
+                    <tr
+                      key={product.id}
+                      className="border-b hover:bg-muted/30 transition-colors"
+                      data-testid={`card-product-${product.id}`}
+                    >
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.has(product.id)}
+                          onChange={(e) => {
+                            const updated = new Set(selectedProducts);
+                            if (e.target.checked) updated.add(product.id);
+                            else updated.delete(product.id);
+                            setSelectedProducts(updated);
+                          }}
+                        />
+                      </td>
 
-                        <td className="px-4 py-3">{product.fabric}</td>
-                        <td className="px-4 py-3">{product.color}</td>
-                        <td className="px-4 py-3">{product.occasion}</td>
-                        <td className="px-4 py-3 font-bold text-primary">
-                          ₹
-                          {parseFloat(product.price.toString()).toLocaleString(
-                            "en-IN",
-                          )}
-                        </td>
-                        <td className="px-4 py-3 font-medium">
-                          {product.inStock}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {storeInventoryMap[product.id] ? (
-                            <div className="space-y-1">
-                              {Array.from(
-                                new Set(
-                                  storeInventoryMap[product.id].map(
-                                    (inv) => inv.channel,
-                                  ),
-                                ),
-                              ).map((channel) => {
-                                const channelInventory = storeInventoryMap[
-                                  product.id
-                                ].filter((inv) => inv.channel === channel);
-                                const total = channelInventory.reduce(
-                                  (sum, inv) => sum + inv.quantity,
-                                  0,
-                                );
-                                return (
-                                  <div
-                                    key={channel}
-                                    className="flex justify-between gap-2"
-                                    data-testid={`text-allocation-${product.id}-${channel}`}
-                                  >
-                                    <span className="capitalize font-medium">
-                                      {channel}:
-                                    </span>
-                                    <span className="font-semibold">
-                                      {total}
-                                    </span>
-                                  </div>
-                                );
-                              })}
+                      <td className="px-4 py-3 font-semibold">
+                        {product.name}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {product.trackingId}
+                      </td>
+
+                      <td className="px-4 py-3">{product.fabric}</td>
+                      <td className="px-4 py-3">{product.color}</td>
+                      <td className="px-4 py-3">{product.occasion}</td>
+                      <td className="px-4 py-3 font-bold text-primary">
+                        ₹
+                        {parseFloat(product.price.toString()).toLocaleString(
+                          "en-IN",
+                        )}
+                      </td>
+
+                      <td className="px-4 py-3 font-medium">
+                        {product.inStock}
+                      </td>
+
+                      {/* ✅ STOCK ALLOCATION */}
+                      <td className="px-4 py-3 font-medium">
+                        {(product.storeInventory || []).map((item, idx) => {
+                          const storeName =
+                            storeMap[item.storeId] || storeMap["online"];
+                          return (
+                            <div key={idx}>
+                              {storeName}: {item.quantity}
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">
-                              No allocation
-                            </span>
-                          )}
-                        </td>
+                          );
+                        })}
+                      </td>
 
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEditProduct(product)}
-                              data-testid={`button-edit-product-${product.id}`}
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteProduct(product.id)}
-                              data-testid={`button-delete-product-${product.id}`}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    </>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditProduct(product)}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
