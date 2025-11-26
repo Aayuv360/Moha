@@ -733,16 +733,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const products = await storage.getAllProducts(filters);
       
-      // Enrich products with stock allocation details (same as inventory API)
+      // Enrich products with online stock allocation details only
       const productsWithAllocations = await Promise.all(
         products.map(async (product) => {
           try {
             const allocations = await storage.getProductInventoryByProduct(product.id);
-            const storeInventory = allocations.map((alloc) => ({
-              storeId: alloc.storeId,
-              quantity: alloc.quantity,
-              channel: alloc.channel,
-            }));
+            // Filter to only show online stock for customer dashboard
+            const storeInventory = allocations
+              .filter((alloc) => alloc.channel === "online")
+              .map((alloc) => ({
+                storeId: alloc.storeId,
+                quantity: alloc.quantity,
+                channel: alloc.channel,
+              }));
             
             return {
               ...product,
@@ -772,13 +775,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Product not found" });
       }
       
-      // Enrich product with stock allocation details (same as inventory API)
+      // Enrich product with online stock allocation details only
       const allocations = await storage.getProductInventoryByProduct(product.id);
-      const storeInventory = allocations.map((alloc) => ({
-        storeId: alloc.storeId,
-        quantity: alloc.quantity,
-        channel: alloc.channel,
-      }));
+      // Filter to only show online stock for customer dashboard
+      const storeInventory = allocations
+        .filter((alloc) => alloc.channel === "online")
+        .map((alloc) => ({
+          storeId: alloc.storeId,
+          quantity: alloc.quantity,
+          channel: alloc.channel,
+        }));
       
       res.json({
         ...product,
