@@ -69,7 +69,7 @@ export default function Products() {
       return response.json();
     },
   });
-  console.log(products);
+
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
       return await apiRequest("POST", "/api/cart", item);
