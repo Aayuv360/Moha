@@ -131,7 +131,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
         <a className="block">
           <Card className="group overflow-hidden hover-elevate transition-all duration-300">
             <div
-              className="aspect-[3/4] overflow-hidden bg-muted relative"
+              className="aspect-[2/3] overflow-hidden bg-muted relative"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
@@ -179,20 +179,20 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
               )}
             </div>
 
-            <div className="p-4 md:p-5">
-              <div className="mb-2">
+            <div className="p-2 md:p-3">
+              <div className="mb-1">
                 <Badge variant="secondary" className="text-xs">
                   {product.fabric}
                 </Badge>
               </div>
-              <h3 className="text-lg md:text-xl font-serif font-medium mb-2 line-clamp-1">
+              <h3 className="text-base md:text-lg font-serif font-medium mb-1 line-clamp-1">
                 {product.name}
               </h3>
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+              <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
                 {product.description}
               </p>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-2xl md:text-3xl font-semibold">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-lg md:text-xl font-semibold">
                   ₹{parseFloat(product.price).toLocaleString("en-IN")}
                 </p>
                 <Button
