@@ -452,14 +452,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           inventoryId: user.inventoryId,
         });
 
-        // If allocation data provided, allocate inventory immediately
-        if (storeInventory && Array.isArray(storeInventory) && storeInventory.length > 0) {
-          for (const allocation of storeInventory) {
+        // Allocate inventory based on channel and provided allocation data
+        if (channel === "Online") {
+          // For online-only, we need to find or create an online warehouse store
+          const stores = await storage.getAllInventories();
+          // Use a special marker for online warehouse, or create one if needed
+          // For now, we'll get the first store as online warehouse placeholder
+          if (stores.length > 0) {
+            const onlineStore = stores[0]; // Primary store acts as online warehouse
             await storage.updateStoreProductInventory(
               product.id,
-              allocation.storeId,
-              allocation.quantity
+              onlineStore.id,
+              product.inStock,
+              "online"
             );
+          }
+        } else if (channel === "Shop" || channel === "Both") {
+          // For physical shop allocation
+          if (storeInventory && Array.isArray(storeInventory) && storeInventory.length > 0) {
+            for (const allocation of storeInventory) {
+              await storage.updateStoreProductInventory(
+                product.id,
+                allocation.storeId,
+                allocation.quantity,
+                "physical"
+              );
+            }
           }
         }
 

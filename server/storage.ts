@@ -513,13 +513,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(storeProductInventory.productId, productId));
   }
 
-  async updateStoreProductInventory(productId: string, storeId: string, quantity: number): Promise<StoreProductInventory> {
+  async updateStoreProductInventory(productId: string, storeId: string, quantity: number, channel: string = "physical"): Promise<StoreProductInventory> {
     const existing = await this.getProductInventoryByStore(productId, storeId);
     
     if (existing) {
       const [updated] = await db
         .update(storeProductInventory)
-        .set({ quantity })
+        .set({ quantity, channel })
         .where(
           and(
             eq(storeProductInventory.productId, productId),
@@ -531,7 +531,7 @@ export class DatabaseStorage implements IStorage {
     } else {
       const [created] = await db
         .insert(storeProductInventory)
-        .values({ productId, storeId, quantity, channel: "physical" })
+        .values({ productId, storeId, quantity, channel })
         .returning();
       return created;
     }
