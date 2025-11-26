@@ -234,7 +234,7 @@ export default function Products() {
           <div className="lg:col-span-3">
             {isLoading ? (
               <LoadingSpinner />
-            ) : products.length === 0 ? (
+            ) : onlineProducts.length === 0 ? (
               <EmptyState
                 icon={
                   <ShoppingBag className="h-12 w-12 text-muted-foreground" />
