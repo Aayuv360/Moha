@@ -26,14 +26,14 @@ const adminAuthMiddleware = async (req: any, res: any, next: any) => {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "No token provided" });
   }
-  
+
   try {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
     if (!decoded) {
       return res.status(401).json({ error: "Invalid or expired token" });
     }
-    
+
     req.userId = decoded.userId;
     const user = await storage.getUserById(decoded.userId);
     if (user && user.isAdmin) {
@@ -52,14 +52,14 @@ const inventoryAuthMiddleware = async (req: any, res: any, next: any) => {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "No token provided" });
   }
-  
+
   try {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
     if (!decoded) {
       return res.status(401).json({ error: "Invalid or expired token" });
     }
-    
+
     req.userId = decoded.userId;
     const user = await storage.getUserById(decoded.userId);
     if (user && user.isInventoryOwner) {
@@ -405,24 +405,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const products = await storage.getInventoryProducts(user.inventoryId);
-        
-        // Enrich products with allocation details
+
         const productsWithAllocations = await Promise.all(
           products.map(async (product) => {
-            const allocations = await storage.getProductInventoryByProduct(product.id);
+            const allocations = await storage.getProductInventoryByProduct(
+              product.id,
+            );
             const storeInventory = allocations.map((alloc) => ({
               storeId: alloc.storeId,
               quantity: alloc.quantity,
               channel: alloc.channel,
             }));
-            
+
             return {
               ...product,
               storeInventory,
             };
-          })
+          }),
         );
-        
+
         res.json(productsWithAllocations);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products" });
@@ -459,7 +460,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const requestData = {
           ...req.body,
           trackingId,
-          images: req.body.images && Array.isArray(req.body.images) ? req.body.images : [],
+          images:
+            req.body.images && Array.isArray(req.body.images)
+              ? req.body.images
+              : [],
           videoUrl: req.body.videoUrl || null,
         };
 
@@ -480,20 +484,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               product.id,
               onlineStore.id,
               onlineStock,
-              "online"
+              "online",
             );
           }
         }
 
         if (channel === "Shop" || channel === "Both") {
           // For physical shop allocation
-          if (storeInventory && Array.isArray(storeInventory) && storeInventory.length > 0) {
+          if (
+            storeInventory &&
+            Array.isArray(storeInventory) &&
+            storeInventory.length > 0
+          ) {
             for (const allocation of storeInventory) {
               await storage.updateStoreProductInventory(
                 product.id,
                 allocation.storeId,
                 allocation.quantity,
-                "physical"
+                "physical",
               );
             }
           }
@@ -505,7 +513,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: error.errors });
         }
         console.error("Product creation error:", error);
-        res.status(500).json({ error: "Failed to create product", details: String(error) });
+        res
+          .status(500)
+          .json({ error: "Failed to create product", details: String(error) });
       }
     },
   );
@@ -547,15 +557,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         // Clear existing allocations for this product
-        const existingAllocations = await storage.getProductInventoryByProduct(req.params.id);
+        const existingAllocations = await storage.getProductInventoryByProduct(
+          req.params.id,
+        );
         for (const alloc of existingAllocations) {
           const stores = await storage.getAllInventories();
-          const storeToDelete = stores.find(s => s.id === alloc.storeId);
+          const storeToDelete = stores.find((s) => s.id === alloc.storeId);
           if (storeToDelete) {
             await storage.updateStoreProductInventory(
               req.params.id,
               alloc.storeId,
-              0
+              0,
             );
           }
         }
@@ -570,20 +582,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               req.params.id,
               onlineStore.id,
               onlineStock,
-              "online"
+              "online",
             );
           }
         }
 
         if (channel === "Shop" || channel === "Both") {
           // For physical shop allocation
-          if (storeInventory && Array.isArray(storeInventory) && storeInventory.length > 0) {
+          if (
+            storeInventory &&
+            Array.isArray(storeInventory) &&
+            storeInventory.length > 0
+          ) {
             for (const allocation of storeInventory) {
               await storage.updateStoreProductInventory(
                 req.params.id,
                 allocation.storeId,
                 allocation.quantity,
-                "physical"
+                "physical",
               );
             }
           }
@@ -732,39 +748,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof maxPrice === "string") filters.maxPrice = parseFloat(maxPrice);
 
       const products = await storage.getAllProducts(filters);
-      
-      // Enrich products with online stock allocation details only
+      console.log("Fetched products:", products);
       const productsWithAllocations = await Promise.all(
         products.map(async (product) => {
-          try {
-            const allocations = await storage.getProductInventoryByProduct(product.id);
-            // Filter to only show online stock for customer dashboard
-            const storeInventory = allocations
-              .filter((alloc) => alloc.channel === "online")
-              .map((alloc) => ({
-                storeId: alloc.storeId,
-                quantity: alloc.quantity,
-                channel: alloc.channel,
-              }));
-            
-            return {
-              ...product,
-              storeInventory,
-            };
-          } catch (err) {
-            console.error(`Error fetching allocations for product ${product.id}:`, err);
-            return {
-              ...product,
-              storeInventory: [],
-            };
-          }
-        })
+          const allocations = await storage.getProductInventoryByProduct(
+            product.id,
+          );
+          const storeInventory = allocations.map((alloc) => ({
+            storeId: alloc.storeId,
+            quantity: alloc.quantity,
+            channel: alloc.channel,
+          }));
+
+          return {
+            ...product,
+            storeInventory,
+          };
+        }),
       );
-      
+
       res.json(productsWithAllocations);
     } catch (error) {
       console.error("Error fetching products:", error);
-      res.status(500).json({ error: "Failed to fetch products", details: String(error) });
+      res
+        .status(500)
+        .json({ error: "Failed to fetch products", details: String(error) });
     }
   });
 
@@ -774,29 +782,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
-      
-      // Enrich product with online stock allocation details only
-      const allocations = await storage.getProductInventoryByProduct(product.id);
-      // Filter to only show online stock for customer dashboard
-      const storeInventory = allocations
-        .filter((alloc) => alloc.channel === "online")
-        .map((alloc) => ({
-          storeId: alloc.storeId,
-          quantity: alloc.quantity,
-          channel: alloc.channel,
-        }));
-      
+
+      const allocations = await storage.getProductInventoryByProduct(
+        product.id,
+      );
+
+      const storeInventory = allocations.map((alloc) => ({
+        storeId: alloc.storeId,
+        quantity: alloc.quantity,
+        channel: alloc.channel,
+      }));
+
       res.json({
         ...product,
         storeInventory,
       });
     } catch (error) {
       console.error("Error fetching product:", error);
-      res.status(500).json({ error: "Failed to fetch product", details: String(error) });
+      res
+        .status(500)
+        .json({ error: "Failed to fetch product", details: String(error) });
     }
   });
 
-  // Cart endpoints
   app.get("/api/cart/:sessionId", async (req, res) => {
     try {
       const cartItems = await storage.getCartItems(req.params.sessionId);
@@ -890,9 +898,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: AuthRequest, res) => {
       try {
         const validatedData = insertOrderSchema.parse(req.body);
-        const orderItems = typeof validatedData.items === "string" 
-          ? JSON.parse(validatedData.items) 
-          : validatedData.items;
+        const orderItems =
+          typeof validatedData.items === "string"
+            ? JSON.parse(validatedData.items)
+            : validatedData.items;
         const sessionId =
           orderItems && orderItems.length > 0 ? orderItems[0].sessionId : null;
 
@@ -941,22 +950,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (item.productId && item.quantity) {
             const product = await storage.getProduct(item.productId);
             if (product) {
-              const newStock = Math.max(0, product.inStock - (item.quantity || 1));
+              const newStock = Math.max(
+                0,
+                product.inStock - (item.quantity || 1),
+              );
               await storage.updateProduct(item.productId, {
                 inStock: newStock,
               });
-              
+
               // Also reduce store inventory
               if (inventoryId) {
-                const storeInventories = await storage.getProductInventoryByProduct(item.productId);
+                const storeInventories =
+                  await storage.getProductInventoryByProduct(item.productId);
                 for (const storeInv of storeInventories) {
                   if (storeInv.channel === "online") {
-                    const newStoreStock = Math.max(0, storeInv.quantity - (item.quantity || 1));
+                    const newStoreStock = Math.max(
+                      0,
+                      storeInv.quantity - (item.quantity || 1),
+                    );
                     await storage.updateStoreProductInventory(
                       item.productId,
                       storeInv.storeId,
                       newStoreStock,
-                      storeInv.channel
+                      storeInv.channel,
                     );
                   }
                 }
@@ -975,7 +991,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error instanceof z.ZodError) {
           return res.status(400).json({ error: error.errors });
         }
-        res.status(500).json({ error: "Failed to create order", details: String(error) });
+        res
+          .status(500)
+          .json({ error: "Failed to create order", details: String(error) });
       }
     },
   );
@@ -1148,7 +1166,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const user = await storage.getUserById(req.userId!);
         if (!user?.isInventoryOwner) {
-          return res.status(403).json({ error: "Inventory owner access required" });
+          return res
+            .status(403)
+            .json({ error: "Inventory owner access required" });
         }
 
         const inventories = await storage.getAllInventories();
@@ -1172,12 +1192,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const product = await storage.getProduct(req.params.productId);
         if (!product || product.inventoryId !== user.inventoryId) {
-          return res.status(404).json({ error: "Product not found or unauthorized" });
+          return res
+            .status(404)
+            .json({ error: "Product not found or unauthorized" });
         }
 
-        const storeInventory = await storage.getProductInventoryByProduct(req.params.productId);
+        const storeInventory = await storage.getProductInventoryByProduct(
+          req.params.productId,
+        );
         const inventories = await storage.getAllInventories();
-        
+
         const result = inventories.map((inv) => {
           const storeInv = storeInventory.find((si) => si.storeId === inv.id);
           return {
@@ -1207,20 +1231,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const product = await storage.getProduct(req.params.productId);
         if (!product || product.inventoryId !== user.inventoryId) {
-          return res.status(404).json({ error: "Product not found or unauthorized" });
+          return res
+            .status(404)
+            .json({ error: "Product not found or unauthorized" });
         }
 
-        const { storeInventory } = z.object({
-          storeInventory: z.array(z.object({
-            storeId: z.string(),
-            quantity: z.number().min(0),
-          }))
-        }).parse(req.body);
+        const { storeInventory } = z
+          .object({
+            storeInventory: z.array(
+              z.object({
+                storeId: z.string(),
+                quantity: z.number().min(0),
+              }),
+            ),
+          })
+          .parse(req.body);
 
         const results = await Promise.all(
           storeInventory.map((si) =>
-            storage.updateStoreProductInventory(req.params.productId, si.storeId, si.quantity)
-          )
+            storage.updateStoreProductInventory(
+              req.params.productId,
+              si.storeId,
+              si.quantity,
+            ),
+          ),
         );
 
         res.json(results);
@@ -1245,22 +1279,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const product = await storage.getProduct(req.params.productId);
         if (!product || product.inventoryId !== user.inventoryId) {
-          return res.status(404).json({ error: "Product not found or unauthorized" });
+          return res
+            .status(404)
+            .json({ error: "Product not found or unauthorized" });
         }
 
-        const { fromStoreId, toStoreId, quantity } = z.object({
-          fromStoreId: z.string().optional(),
-          toStoreId: z.string(),
-          quantity: z.number().min(1),
-        }).parse(req.body);
+        const { fromStoreId, toStoreId, quantity } = z
+          .object({
+            fromStoreId: z.string().optional(),
+            toStoreId: z.string(),
+            quantity: z.number().min(1),
+          })
+          .parse(req.body);
 
         // If no fromStoreId provided, find the store with inventory
         let sourceStoreId = fromStoreId;
         if (!sourceStoreId) {
-          const storeInventories = await storage.getProductInventoryByProduct(req.params.productId);
-          const storeWithInventory = storeInventories.find((si) => si.quantity > 0);
+          const storeInventories = await storage.getProductInventoryByProduct(
+            req.params.productId,
+          );
+          const storeWithInventory = storeInventories.find(
+            (si) => si.quantity > 0,
+          );
           if (!storeWithInventory) {
-            return res.status(400).json({ error: "No inventory found to move" });
+            return res
+              .status(400)
+              .json({ error: "No inventory found to move" });
           }
           sourceStoreId = storeWithInventory.storeId;
         }
@@ -1269,11 +1313,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.params.productId,
           sourceStoreId,
           toStoreId,
-          quantity
+          quantity,
         );
 
         if (!success) {
-          return res.status(400).json({ error: "Insufficient inventory in source store" });
+          return res
+            .status(400)
+            .json({ error: "Insufficient inventory in source store" });
         }
 
         res.json({ success: true });
