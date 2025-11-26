@@ -22,11 +22,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Store {
   id: string;
   name: string;
 }
+
+const CATEGORIES = [
+  "Wedding Sarees",
+  "Party Sarees",
+  "Casual Sarees",
+  "Traditional Sarees",
+  "Designer Sarees",
+  "Festival Sarees",
+  "Silk Sarees",
+  "Cotton Sarees",
+];
 
 const productSchema = z.object({
   name: z.string().min(1, "Product name required"),
@@ -411,13 +429,20 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Category name"
-                        {...field}
-                        data-testid="input-category"
-                      />
-                    </FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-category">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -438,6 +463,50 @@ export function ProductAllocationForm({ onSuccess }: { onSuccess: () => void }) 
                       data-testid="input-image-url"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="multipleImages"
+              render={({ field }) => (
+                <FormItem className="mt-6">
+                  <FormLabel>Additional Images (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter image URLs, one per line"
+                      {...field}
+                      className="resize-none min-h-24"
+                      data-testid="input-multiple-images"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Each image URL on a new line
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="videoUrl"
+              render={({ field }) => (
+                <FormItem className="mt-6">
+                  <FormLabel>Product Video URL (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="url"
+                      placeholder="https://..."
+                      {...field}
+                      data-testid="input-video-url"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty to skip
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
