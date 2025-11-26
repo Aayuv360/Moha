@@ -98,7 +98,7 @@ export interface IStorage {
   // Store Product Inventory
   getProductInventoryByStore(productId: string, storeId: string): Promise<StoreProductInventory | undefined>;
   getProductInventoryByProduct(productId: string): Promise<StoreProductInventory[]>;
-  updateStoreProductInventory(productId: string, storeId: string, quantity: number): Promise<StoreProductInventory>;
+  updateStoreProductInventory(productId: string, storeId: string, quantity: number, channel?: string): Promise<StoreProductInventory>;
   moveProductInventory(productId: string, fromStoreId: string, toStoreId: string, quantity: number): Promise<boolean>;
 }
 
