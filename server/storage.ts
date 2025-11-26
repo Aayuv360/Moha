@@ -493,6 +493,71 @@ export class DatabaseStorage implements IStorage {
     return returnRecord || undefined;
   }
 
+  async getProductInventoryByStore(productId: string, storeId: string): Promise<StoreProductInventory | undefined> {
+    const [inventory] = await db
+      .select()
+      .from(storeProductInventory)
+      .where(
+        and(
+          eq(storeProductInventory.productId, productId),
+          eq(storeProductInventory.storeId, storeId),
+        ),
+      );
+    return inventory || undefined;
+  }
+
+  async getProductInventoryByProduct(productId: string): Promise<StoreProductInventory[]> {
+    return await db
+      .select()
+      .from(storeProductInventory)
+      .where(eq(storeProductInventory.productId, productId));
+  }
+
+  async updateStoreProductInventory(productId: string, storeId: string, quantity: number): Promise<StoreProductInventory> {
+    const existing = await this.getProductInventoryByStore(productId, storeId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(storeProductInventory)
+        .set({ quantity })
+        .where(
+          and(
+            eq(storeProductInventory.productId, productId),
+            eq(storeProductInventory.storeId, storeId),
+          ),
+        )
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(storeProductInventory)
+        .values({ productId, storeId, quantity, channel: "physical" })
+        .returning();
+      return created;
+    }
+  }
+
+  async moveProductInventory(productId: string, fromStoreId: string, toStoreId: string, quantity: number): Promise<boolean> {
+    try {
+      const fromInventory = await this.getProductInventoryByStore(productId, fromStoreId);
+      if (!fromInventory || fromInventory.quantity < quantity) {
+        return false;
+      }
+
+      const fromNewQuantity = fromInventory.quantity - quantity;
+      const toInventory = await this.getProductInventoryByStore(productId, toStoreId);
+      const toNewQuantity = (toInventory?.quantity || 0) + quantity;
+
+      await this.updateStoreProductInventory(productId, fromStoreId, fromNewQuantity);
+      await this.updateStoreProductInventory(productId, toStoreId, toNewQuantity);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to move product inventory:", error);
+      return false;
+    }
+  }
+
   async seedProducts(): Promise<void> {
     const existingProducts = await this.getAllProducts();
     if (existingProducts.length > 0) {
