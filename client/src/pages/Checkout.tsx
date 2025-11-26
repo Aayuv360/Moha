@@ -11,7 +11,14 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import type { CartItem, Product } from "@shared/schema";
@@ -43,7 +50,7 @@ export default function Checkout() {
   const sessionId = getOrCreateSessionId();
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
-    queryKey: ['/api/cart', sessionId],
+    queryKey: ["/api/cart", sessionId],
   });
 
   const form = useForm<CheckoutFormData>({
@@ -63,17 +70,17 @@ export default function Checkout() {
 
   const placeOrderMutation = useMutation({
     mutationFn: async (data: CheckoutFormData) => {
-      return await apiRequest('POST', '/api/orders', data);
+      return await apiRequest("POST", "/api/orders", data);
     },
     onSuccess: (data: any) => {
       setOrderId(data.id);
       setOrderPlaced(true);
-      queryClient.invalidateQueries({ queryKey: ['/api/cart', sessionId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
 
       toast({
         title: "Order placed successfully!",
-        description: "Thank you for your purchase. You will receive a confirmation email shortly.",
+        description:
+          "Thank you for your purchase. You will receive a confirmation email shortly.",
       });
     },
     onError: () => {
@@ -87,7 +94,7 @@ export default function Checkout() {
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + parseFloat(item.product.price) * item.quantity,
-    0
+    0,
   );
   const shipping = subtotal >= 5000 ? 0 : 200;
   const total = subtotal + shipping;
@@ -118,7 +125,7 @@ export default function Checkout() {
   }
 
   if (cartItems.length === 0 && !orderPlaced) {
-    setLocation('/cart');
+    setLocation("/cart");
     return null;
   }
 
@@ -137,13 +144,18 @@ export default function Checkout() {
             Order ID: <span className="font-mono font-medium">{orderId}</span>
           </p>
           <p className="text-muted-foreground mb-8">
-            Thank you for your purchase. You will receive a confirmation email with order details shortly.
+            Thank you for your purchase. You will receive a confirmation email
+            with order details shortly.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button size="lg" onClick={() => setLocation('/products')}>
+            <Button size="lg" onClick={() => setLocation("/products")}>
               Continue Shopping
             </Button>
-            <Button variant="outline" size="lg" onClick={() => setLocation('/')}>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setLocation("/")}
+            >
               Go to Home
             </Button>
           </div>
@@ -164,10 +176,15 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <Card className="p-6 md:p-8">
-              <h2 className="text-xl font-serif font-medium mb-6">Shipping Information</h2>
+              <h2 className="text-xl font-serif font-medium mb-6">
+                Shipping Information
+              </h2>
 
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
                   <FormField
                     control={form.control}
                     name="customerName"
@@ -175,7 +192,11 @@ export default function Checkout() {
                       <FormItem>
                         <FormLabel>Full Name</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Enter your full name" data-testid="input-name" />
+                          <Input
+                            {...field}
+                            placeholder="Enter your full name"
+                            data-testid="input-name"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -190,7 +211,12 @@ export default function Checkout() {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" placeholder="your@email.com" data-testid="input-email" />
+                            <Input
+                              {...field}
+                              type="email"
+                              placeholder="your@email.com"
+                              data-testid="input-email"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -204,7 +230,11 @@ export default function Checkout() {
                         <FormItem>
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="10-digit phone number" data-testid="input-phone" />
+                            <Input
+                              {...field}
+                              placeholder="10-digit phone number"
+                              data-testid="input-phone"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -219,7 +249,11 @@ export default function Checkout() {
                       <FormItem>
                         <FormLabel>Address</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Street address" data-testid="input-address" />
+                          <Input
+                            {...field}
+                            placeholder="Street address"
+                            data-testid="input-address"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -234,7 +268,11 @@ export default function Checkout() {
                         <FormItem>
                           <FormLabel>City</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="City" data-testid="input-city" />
+                            <Input
+                              {...field}
+                              placeholder="City"
+                              data-testid="input-city"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -248,7 +286,11 @@ export default function Checkout() {
                         <FormItem>
                           <FormLabel>State</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="State" data-testid="input-state" />
+                            <Input
+                              {...field}
+                              placeholder="State"
+                              data-testid="input-state"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -262,7 +304,11 @@ export default function Checkout() {
                         <FormItem>
                           <FormLabel>Pincode</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="6-digit pincode" data-testid="input-pincode" />
+                            <Input
+                              {...field}
+                              placeholder="6-digit pincode"
+                              data-testid="input-pincode"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -277,7 +323,9 @@ export default function Checkout() {
                     disabled={placeOrderMutation.isPending}
                     data-testid="button-place-order"
                   >
-                    {placeOrderMutation.isPending ? 'Placing Order...' : 'Place Order'}
+                    {placeOrderMutation.isPending
+                      ? "Placing Order..."
+                      : "Place Order"}
                   </Button>
                 </form>
               </Form>
@@ -286,7 +334,9 @@ export default function Checkout() {
 
           <div className="lg:col-span-1">
             <Card className="p-6 sticky top-24">
-              <h2 className="text-xl font-serif font-medium mb-6">Order Summary</h2>
+              <h2 className="text-xl font-serif font-medium mb-6">
+                Order Summary
+              </h2>
 
               <div className="space-y-4 mb-6">
                 {cartItems.map((item) => (
@@ -299,10 +349,17 @@ export default function Checkout() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{item.product.name}</p>
-                      <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                      <p className="font-medium text-sm truncate">
+                        {item.product.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Qty: {item.quantity}
+                      </p>
                       <p className="text-sm font-medium mt-1">
-                        ₹{(parseFloat(item.product.price) * item.quantity).toLocaleString('en-IN')}
+                        ₹
+                        {(
+                          parseFloat(item.product.price) * item.quantity
+                        ).toLocaleString("en-IN")}
                       </p>
                     </div>
                   </div>
@@ -314,12 +371,16 @@ export default function Checkout() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">₹{subtotal.toLocaleString('en-IN')}</span>
+                  <span className="font-medium">
+                    ₹{subtotal.toLocaleString("en-IN")}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="font-medium">
-                    {shipping === 0 ? 'Free' : `₹${shipping.toLocaleString('en-IN')}`}
+                    {shipping === 0
+                      ? "Free"
+                      : `₹${shipping.toLocaleString("en-IN")}`}
                   </span>
                 </div>
               </div>
@@ -328,7 +389,9 @@ export default function Checkout() {
 
               <div className="flex justify-between">
                 <span className="font-medium">Total</span>
-                <span className="text-2xl font-semibold">₹{total.toLocaleString('en-IN')}</span>
+                <span className="text-2xl font-semibold">
+                  ₹{total.toLocaleString("en-IN")}
+                </span>
               </div>
             </Card>
           </div>

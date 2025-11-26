@@ -16,7 +16,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, quantity: number) => void;
   index: number;
 }
 
@@ -24,6 +24,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { user, token } = useAuth();
   const { toast } = useToast();
@@ -106,7 +107,20 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    onAddToCart(product);
+    onAddToCart(product, quantity);
+    setQuantity(1);
+  };
+
+  const handleIncreaseQuantity = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setQuantity(q => q + 1);
+  };
+
+  const handleDecreaseQuantity = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setQuantity(q => Math.max(1, q - 1));
   };
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
@@ -191,20 +205,47 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
               <p className="text-xs text-muted-foreground mb-1.5 line-clamp-1">
                 {product.description}
               </p>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-base md:text-lg font-semibold">
-                  ₹{parseFloat(product.price).toLocaleString("en-IN")}
-                </p>
-                <Button
-                  size="sm"
-                  onClick={handleAddToCart}
-                  disabled={product.inStock === 0}
-                  className="gap-2"
-                  data-testid={`button-add-to-cart-${product.id}`}
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  Add
-                </Button>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-base md:text-lg font-semibold">
+                    ₹{parseFloat(product.price).toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 border border-border rounded-md">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleDecreaseQuantity}
+                      disabled={product.inStock === 0}
+                      className="h-6 w-6 p-0"
+                      data-testid={`button-decrease-qty-${product.id}`}
+                    >
+                      −
+                    </Button>
+                    <span className="w-6 text-center text-sm font-medium">{quantity}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleIncreaseQuantity}
+                      disabled={product.inStock === 0}
+                      className="h-6 w-6 p-0"
+                      data-testid={`button-increase-qty-${product.id}`}
+                    >
+                      +
+                    </Button>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleAddToCart}
+                    disabled={product.inStock === 0}
+                    className="gap-2 flex-1"
+                    data-testid={`button-add-to-cart-${product.id}`}
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Add
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>

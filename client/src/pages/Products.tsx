@@ -93,7 +93,7 @@ export default function Products() {
     },
   });
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: Product, quantity: number) => {
     const sessionId = getOrCreateSessionId();
 
     const button = document.querySelector(
@@ -111,7 +111,7 @@ export default function Products() {
 
     addToCartMutation.mutate({
       productId: product.id,
-      quantity: 1,
+      quantity: quantity,
       sessionId,
     });
   };
