@@ -120,12 +120,14 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
   useEffect(() => {
     if (allStores.length > 0) {
       if (editingProduct && editingProduct.storeInventory) {
+        console.log("Edit mode - loading allocations:", editingProduct.storeInventory);
         const initialShopStocks = allStores.reduce((acc, store) => {
           const allocation = editingProduct.storeInventory.find(
             (inv: any) => inv.storeId === store.id && inv.channel === "physical"
           );
           return { ...acc, [store.id]: allocation?.quantity || 0 };
         }, {});
+        console.log("Loaded shop stocks:", initialShopStocks);
         setShopStocks(initialShopStocks);
 
         // Set online stock for edit mode
@@ -133,11 +135,13 @@ export function ProductAllocationForm({ onSuccess, editingProduct }: ProductAllo
           (inv: any) => inv.channel === "online"
         );
         const onlineQty = onlineAlloc?.quantity || 0;
+        console.log("Online allocation:", onlineQty);
         setOnlineStock(onlineQty);
 
         // Determine channel based on existing allocations
         const hasOnline = onlineQty > 0;
         const hasPhysical = Object.values(initialShopStocks).some(qty => qty > 0);
+        console.log("Has online:", hasOnline, "Has physical:", hasPhysical);
         
         if (hasOnline && hasPhysical) {
           setChannel("Both");
