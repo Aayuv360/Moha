@@ -321,18 +321,20 @@ export function ProductsTab({
                               {storeInventoryMap[product.id].some(
                                 (inv: StoreInventory) => inv.channel === "online"
                               ) && (
-                                <div>
+                                <div className="border-b pb-2">
                                   <p className="font-semibold text-blue-700 mb-1">Online</p>
-                                  {storeInventoryMap[product.id]
-                                    .filter((inv: StoreInventory) => inv.channel === "online")
-                                    .map((inv: StoreInventory) => (
-                                      <span
-                                        key={inv.storeId}
-                                        className="px-2 py-1 bg-blue-100 text-blue-700 rounded inline-block"
-                                      >
-                                        {inv.quantity} units
-                                      </span>
-                                    ))}
+                                  <div className="space-y-1">
+                                    {storeInventoryMap[product.id]
+                                      .filter((inv: StoreInventory) => inv.channel === "online")
+                                      .map((inv: StoreInventory) => (
+                                        <span
+                                          key={inv.storeId}
+                                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded inline-block"
+                                        >
+                                          {inv.quantity} units
+                                        </span>
+                                      ))}
+                                  </div>
                                 </div>
                               )}
                               {storeInventoryMap[product.id].some(
