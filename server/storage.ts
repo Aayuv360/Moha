@@ -564,6 +564,12 @@ export class DatabaseStorage implements IStorage {
       return;
     }
 
+    const generateTrackingId = () => {
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      return `PROD-${timestamp}-${random}`;
+    };
+
     const seedData: InsertProduct[] = [
       {
         name: "Royal Burgundy Silk Saree",
@@ -740,7 +746,10 @@ export class DatabaseStorage implements IStorage {
     ];
 
     for (const data of seedData) {
-      await this.createProduct(data);
+      await this.createProduct({
+        ...data,
+        trackingId: generateTrackingId(),
+      });
     }
   }
 }
