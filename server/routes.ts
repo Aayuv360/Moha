@@ -945,6 +945,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.updateProduct(item.productId, {
                 inStock: newStock,
               });
+              
+              // Also reduce store inventory
+              if (inventoryId) {
+                const storeInventories = await storage.getProductInventoryByProduct(item.productId);
+                for (const storeInv of storeInventories) {
+                  if (storeInv.channel === "online") {
+                    const newStoreStock = Math.max(0, storeInv.quantity - (item.quantity || 1));
+                    await storage.updateStoreProductInventory(
+                      item.productId,
+                      storeInv.storeId,
+                      newStoreStock,
+                      storeInv.channel
+                    );
+                  }
+                }
+              }
             }
           }
         }
