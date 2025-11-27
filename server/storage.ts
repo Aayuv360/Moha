@@ -538,6 +538,20 @@ export class DatabaseStorage implements IStorage {
   ): Promise<StoreProductInventory> {
     const existing = await this.getProductInventoryByStore(productId, storeId);
     console.log("Existing inventory:", existing);
+    
+    // Delete if quantity is 0
+    if (quantity === 0 && existing) {
+      await db
+        .delete(storeProductInventory)
+        .where(
+          and(
+            eq(storeProductInventory.productId, productId),
+            eq(storeProductInventory.storeId, storeId),
+          ),
+        );
+      return existing;
+    }
+    
     if (existing) {
       const [updated] = await db
         .update(storeProductInventory)

@@ -547,8 +547,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.params.id,
           updateData,
         );
-
-        // Clear all existing allocations for this product
         const existingAllocations = await storage.getProductInventoryByProduct(
           req.params.id,
         );
@@ -560,7 +558,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             allocation.channel,
           );
         }
-
         if (channel === "Online") {
           for (const allocation of storeInventory) {
             await storage.updateStoreProductInventory(
