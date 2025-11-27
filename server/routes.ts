@@ -928,6 +928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           items: JSON.stringify(enrichedItems),
           userId: req.userId || null,
           inventoryId: inventoryId || null,
+          channel: "online",
         };
         const order = await storage.createOrder(orderData);
 

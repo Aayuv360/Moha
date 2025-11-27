@@ -79,6 +79,7 @@ export const orders = pgTable("orders", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   items: text("items").notNull(),
   status: text("status").notNull().default("pending"),
+  channel: text("channel").notNull().default("online"),
   returnNotes: text("return_notes"),
   refundStatus: text("refund_status").default("none"),
   inventoryId: varchar("inventory_id"),
@@ -145,6 +146,7 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
   id: true,
   createdAt: true,
   status: true,
+  channel: true,
 });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems).omit({
   id: true,
