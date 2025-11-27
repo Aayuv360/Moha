@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Edit2, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Product, StoreProductInventory } from "@shared/schema";
+import type { Product, StoreProductInventory, Order } from "@shared/schema";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { ProductAllocationForm } from "./ProductAllocationForm";
@@ -49,14 +49,54 @@ export function ProductsTab({
     categories.length > 0 ? categories[0] : "Uncategorized",
   );
 
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+
   const { data: allStores = [] } = useQuery<Store[]>({
     queryKey: ["/api/inventory/all-stores"],
+  });
+
+  const { data: orders = [] } = useQuery<Order[]>({
+    queryKey: ["/api/inventory/orders"],
   });
 
   const storeMap = allStores.reduce(
     (acc, store) => ({ ...acc, [store.id]: store.name }),
     { online: "online" } as { [key: string]: string },
   );
+
+  const calculateSoldStock = (productId: string): number => {
+    let totalSold = 0;
+    orders.forEach((order) => {
+      try {
+        const items = JSON.parse(order.items);
+        items.forEach((item: any) => {
+          if (item.id === productId) {
+            totalSold += item.quantity || 0;
+          }
+        });
+      } catch {
+        // Skip malformed order items
+      }
+    });
+    return totalSold;
+  };
+
+  const calculateAllocatedStock = (product: any): number => {
+    if (!product.storeInventory || !Array.isArray(product.storeInventory)) {
+      return 0;
+    }
+    return product.storeInventory.reduce((sum: number, alloc: any) => sum + (alloc.quantity || 0), 0);
+  };
+
+  const toggleExpanded = (productId: string) => {
+    const updated = new Set(expandedProducts);
+    if (updated.has(productId)) {
+      updated.delete(productId);
+    } else {
+      updated.add(productId);
+    }
+    setExpandedProducts(updated);
+  };
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -225,7 +265,8 @@ export function ProductsTab({
                     </th>
                     <th className="px-4 py-3 text-left font-semibold">Price</th>
                     <th className="px-4 py-3 text-left font-semibold">Stock</th>
-
+                    <th className="px-4 py-3 text-left font-semibold">Sold</th>
+                    <th className="px-4 py-3 text-left font-semibold">Allocated</th>
                     <th className="px-4 py-3 text-left font-semibold">
                       Actions
                     </th>
@@ -234,65 +275,118 @@ export function ProductsTab({
 
                 <tbody>
                   {categoryProducts.map((product) => (
-                    <tr
-                      key={product.id}
-                      className="border-b hover:bg-muted/30 transition-colors"
-                      data-testid={`card-product-${product.id}`}
-                    >
-                      <td className="px-4 py-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.has(product.id)}
-                          onChange={(e) => {
-                            const updated = new Set(selectedProducts);
-                            if (e.target.checked) updated.add(product.id);
-                            else updated.delete(product.id);
-                            setSelectedProducts(updated);
-                          }}
-                        />
-                      </td>
+                    <>
+                      <tr
+                        key={product.id}
+                        className="border-b hover:bg-muted/30 transition-colors"
+                        data-testid={`card-product-${product.id}`}
+                      >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.has(product.id)}
+                            onChange={(e) => {
+                              const updated = new Set(selectedProducts);
+                              if (e.target.checked) updated.add(product.id);
+                              else updated.delete(product.id);
+                              setSelectedProducts(updated);
+                            }}
+                          />
+                        </td>
 
-                      <td className="px-4 py-3 font-semibold">
-                        {product.name}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {product.trackingId}
-                      </td>
+                        <td className="px-4 py-3 font-semibold">
+                          {product.name}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {product.trackingId}
+                        </td>
 
-                      <td className="px-4 py-3">{product.fabric}</td>
-                      <td className="px-4 py-3">{product.color}</td>
-                      <td className="px-4 py-3">{product.occasion}</td>
-                      <td className="px-4 py-3 font-bold text-primary">
-                        ₹
-                        {parseFloat(product.price.toString()).toLocaleString(
-                          "en-IN",
-                        )}
-                      </td>
+                        <td className="px-4 py-3">{product.fabric}</td>
+                        <td className="px-4 py-3">{product.color}</td>
+                        <td className="px-4 py-3">{product.occasion}</td>
+                        <td className="px-4 py-3 font-bold text-primary">
+                          ₹
+                          {parseFloat(product.price.toString()).toLocaleString(
+                            "en-IN",
+                          )}
+                        </td>
 
-                      <td className="px-4 py-3 font-medium">
-                        {product.inStock}
-                      </td>
+                        <td className="px-4 py-3 font-medium">
+                          {product.inStock}
+                        </td>
 
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1">
+                        <td className="px-4 py-3 font-medium">
+                          {calculateSoldStock(product.id)}
+                        </td>
+
+                        <td className="px-4 py-3 font-medium">
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => handleEditProduct(product)}
+                            variant="ghost"
+                            onClick={() => toggleExpanded(product.id)}
+                            data-testid={`button-expand-allocation-${product.id}`}
                           >
-                            <Edit2 className="h-3 w-3" />
+                            {calculateAllocatedStock(product)}
+                            {expandedProducts.has(product.id) ? (
+                              <ChevronUp className="h-4 w-4 ml-1" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 ml-1" />
+                            )}
                           </Button>
+                        </td>
 
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteProduct(product.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditProduct(product)}
+                              data-testid={`button-edit-product-${product.id}`}
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteProduct(product.id)}
+                              data-testid={`button-delete-product-${product.id}`}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {expandedProducts.has(product.id) && product.storeInventory && (
+                        <tr className="bg-muted/20 border-b">
+                          <td colSpan={10} className="px-4 py-4">
+                            <div className="space-y-3">
+                              <h4 className="font-semibold text-sm">Stock Allocation by Store:</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {product.storeInventory.map((allocation: any, idx: number) => (
+                                  <div 
+                                    key={idx} 
+                                    className="bg-white dark:bg-slate-900 p-3 rounded border"
+                                    data-testid={`allocation-item-${product.id}-${idx}`}
+                                  >
+                                    <div className="text-sm font-medium">
+                                      {storeMap[allocation.storeId] || allocation.storeId}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      Channel: {allocation.channel}
+                                    </div>
+                                    <div className="text-sm font-semibold mt-2">
+                                      Quantity: {allocation.quantity}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>
