@@ -930,7 +930,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
         const order = await storage.createOrder(orderData);
 
-        // Reduce stock immediately when order is created (pending status)
         for (const item of enrichedItems) {
           if (item.productId && item.quantity) {
             const product = await storage.getProduct(item.productId);
@@ -943,7 +942,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 inStock: newStock,
               });
 
-              // Also reduce store inventory
               if (inventoryId) {
                 const storeInventories =
                   await storage.getProductInventoryByProduct(item.productId);
