@@ -115,6 +115,7 @@ export function ProductAllocationForm({
   const { data: allStores = [] } = useQuery<Store[]>({
     queryKey: ["/api/inventory/all-stores"],
   });
+
   const totalStock = form.watch("totalStock");
   useEffect(() => {
     if (allStores.length > 0) {
@@ -242,7 +243,11 @@ export function ProductAllocationForm({
     if (isValid) return `Unallocated: 0 units`;
     return `Unallocated: ${unallocated} units`;
   };
-
+  const storeInventory = Object.entries(shopStocks)
+    .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
+    .filter((x) => x !== null) as { storeId: string; quantity: number }[];
+  console.log(storeInventory, "storeInventory");
+  console.log(shopStocks);
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
       const images = data.multipleImages
@@ -306,12 +311,7 @@ export function ProductAllocationForm({
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/products"] });
       form.reset();
       setChannel("Both");
-      setOnlineStock(0);
-      const resetShops = allStores.reduce(
-        (acc, store) => ({ ...acc, [store.id]: 0 }),
-        {},
-      );
-      setShopStocks(resetShops);
+
       setFeedbackData({
         title: "Success!",
         message: editingProduct

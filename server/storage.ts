@@ -109,12 +109,6 @@ export interface IStorage {
     quantity: number,
     channel?: string,
   ): Promise<StoreProductInventory>;
-  moveProductInventory(
-    productId: string,
-    fromStoreId: string,
-    toStoreId: string,
-    quantity: number,
-  ): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -543,7 +537,7 @@ export class DatabaseStorage implements IStorage {
     channel: string,
   ): Promise<StoreProductInventory> {
     const existing = await this.getProductInventoryByStore(productId, storeId);
-
+    console.log("Existing inventory:", existing);
     if (existing) {
       const [updated] = await db
         .update(storeProductInventory)
@@ -555,6 +549,7 @@ export class DatabaseStorage implements IStorage {
           ),
         )
         .returning();
+      console.log("Updated inventory:", updated);
       return updated;
     } else {
       const [created] = await db
