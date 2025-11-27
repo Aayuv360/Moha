@@ -35,7 +35,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     queryKey: [`/api/cart?sessionId=${sessionId}`],
   });
 
-  const cartItem = cart.find(item => item.productId === product.id);
+  const cartItem = cart.find((item) => item.productId === product.id);
   const cartQuantity = cartItem?.quantity || 0;
 
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
@@ -94,6 +94,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       });
     },
   });
+
   const images =
     Array.isArray(product.images) && product.images.length > 0
       ? product.images
@@ -134,9 +135,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     }
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isHovered, images.length]);
 
@@ -149,25 +148,20 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const handleIncreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (cartQuantity < product.inStock) {
+    if (cartQuantity < product.inStock)
       updateCartMutation.mutate(cartQuantity + 1);
-    }
   };
 
   const handleDecreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (cartQuantity > 1) {
-      updateCartMutation.mutate(cartQuantity - 1);
-    } else if (cartQuantity === 1) {
-      removeFromCartMutation.mutate();
-    }
+    if (cartQuantity > 1) updateCartMutation.mutate(cartQuantity - 1);
+    else if (cartQuantity === 1) removeFromCartMutation.mutate();
   };
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!user) {
       toast({
         title: "Login required",
@@ -176,155 +170,129 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       });
       return;
     }
-
     toggleWishlistMutation.mutate();
   };
 
   return (
     <div ref={cardRef} data-testid={`card-product-${product.id}`}>
-      <Link href={`/product/${product.id}`}>
-        <a className="block">
-          <Card className="group overflow-hidden hover-elevate transition-all duration-300">
-            <div
-              className="aspect-[2/3] overflow-hidden bg-muted relative"
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
+      <Link href={`/product/${product.id}`} className="block">
+        <Card className="group overflow-hidden hover-elevate transition-all duration-300">
+          <div
+            className="aspect-[2/3] overflow-hidden bg-muted relative"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            <img
+              src={images[currentImageIndex]}
+              alt={product.name}
+              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+            />
+
+            {images.length > 1 && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                {images.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === currentImageIndex
+                        ? "w-6 bg-white shadow-sm"
+                        : "w-1.5 bg-white/60"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm hover:bg-white"
+              onClick={handleWishlistToggle}
+              disabled={toggleWishlistMutation.isPending}
+              data-testid={`button-wishlist-${product.id}`}
             >
-              <img
-                src={images[currentImageIndex]}
-                alt={product.name}
-                className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+              <Heart
+                className={`h-4 w-4 transition-all ${isInWishlist ? "fill-red-500 text-red-500" : ""}`}
               />
+            </Button>
 
-              {images.length > 1 && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  {images.map((_, idx) => (
-                    <div
-                      key={idx}
-                      className={`h-1.5 rounded-full transition-all ${
-                        idx === currentImageIndex
-                          ? "w-6 bg-white shadow-sm"
-                          : "w-1.5 bg-white/60"
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm hover:bg-white"
-                onClick={handleWishlistToggle}
-                disabled={toggleWishlistMutation.isPending}
-                data-testid={`button-wishlist-${product.id}`}
-              >
-                <Heart
-                  className={`h-4 w-4 transition-all ${
-                    isInWishlist ? "fill-red-500 text-red-500" : ""
-                  }`}
-                />
-              </Button>
-              {product.inStock === 0 && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Badge variant="secondary" className="text-sm">
-                    Out of Stock
-                  </Badge>
-                </div>
-              )}
-            </div>
-
-            <div className="p-1.5 md:p-2">
-              <div className="mb-0.5">
-                <Badge variant="secondary" className="text-xs">
-                  {product.fabric}
+            {product.inStock === 0 && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <Badge variant="secondary" className="text-sm">
+                  Out of Stock
                 </Badge>
               </div>
-              <h3 className="text-sm md:text-base font-serif font-medium mb-0.5 line-clamp-1">
-                {product.name}
-              </h3>
-              <p className="text-xs text-muted-foreground mb-1.5 line-clamp-1">
-                {product.description}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-base md:text-lg font-semibold">
-                    ₹{parseFloat(product.price).toLocaleString("en-IN")}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {cartQuantity > 1 ? (
-                    <>
-                      <div className="flex items-center gap-1 border border-border rounded-md">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={handleDecreaseQuantity}
-                          disabled={updateCartMutation.isPending || removeFromCartMutation.isPending}
-                          className="h-6 w-6 p-0"
-                          data-testid={`button-decrease-qty-${product.id}`}
-                        >
-                          −
-                        </Button>
-                        <span className="w-6 text-center text-sm font-medium">
-                          {cartQuantity}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={handleIncreaseQuantity}
-                          disabled={cartQuantity >= product.inStock || updateCartMutation.isPending}
-                          className="h-6 w-6 p-0"
-                          data-testid={`button-increase-qty-${product.id}`}
-                        >
-                          +
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-1 border border-border rounded-md">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                          disabled={product.inStock === 0 || quantity <= 1}
-                          className="h-6 w-6 p-0"
-                          data-testid={`button-decrease-qty-selector-${product.id}`}
-                        >
-                          −
-                        </Button>
-                        <span className="w-6 text-center text-sm font-medium">
-                          {quantity}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setQuantity((q) => q + 1)}
-                          disabled={product.inStock === 0 || quantity >= product.inStock}
-                          className="h-6 w-6 p-0"
-                          data-testid={`button-increase-qty-selector-${product.id}`}
-                        >
-                          +
-                        </Button>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={handleAddToCart}
-                        disabled={product.inStock === 0}
-                        className="gap-2 flex-1"
-                        data-testid={`button-add-to-cart-${product.id}`}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                        Add
-                      </Button>
-                    </>
-                  )}
-                </div>
+            )}
+          </div>
+
+          <div className="p-1.5 md:p-2">
+            <div className="mb-0.5">
+              <Badge variant="secondary" className="text-xs">
+                {product.fabric}
+              </Badge>
+            </div>
+            <h3 className="text-sm md:text-base font-serif font-medium mb-0.5 line-clamp-1">
+              {product.name}
+            </h3>
+            <p className="text-xs text-muted-foreground mb-1.5 line-clamp-1">
+              {product.description}
+            </p>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-base md:text-lg font-semibold">
+                  ₹{Number(product.price).toLocaleString("en-IN")}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {cartQuantity > 0 ? (
+                  <div className="flex items-center gap-1 border border-border rounded-md">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleDecreaseQuantity}
+                      disabled={
+                        updateCartMutation.isPending ||
+                        removeFromCartMutation.isPending
+                      }
+                      className="h-6 w-6 p-0"
+                      data-testid={`button-decrease-qty-${product.id}`}
+                    >
+                      −
+                    </Button>
+                    <span className="w-6 text-center text-sm font-medium">
+                      {cartQuantity}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleIncreaseQuantity}
+                      disabled={
+                        cartQuantity >= product.inStock ||
+                        updateCartMutation.isPending
+                      }
+                      className="h-6 w-6 p-0"
+                      data-testid={`button-increase-qty-${product.id}`}
+                    >
+                      +
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleAddToCart}
+                    disabled={product.inStock === 0}
+                    className="gap-2 flex-1"
+                    data-testid={`button-add-to-cart-${product.id}`}
+                  >
+                    <ShoppingCart className="h-4 w-4" /> Add
+                  </Button>
+                )}
               </div>
             </div>
-          </Card>
-        </a>
+          </div>
+        </Card>
       </Link>
     </div>
   );
