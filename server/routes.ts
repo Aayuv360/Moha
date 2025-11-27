@@ -912,7 +912,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }),
         );
 
-        // Get inventoryId from first product in order
         let inventoryId: string | undefined = undefined;
         if (enrichedItems.length > 0 && enrichedItems[0].productId) {
           const firstProduct = await storage.getProduct(
@@ -928,7 +927,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           items: JSON.stringify(enrichedItems),
           userId: req.userId || null,
           inventoryId: inventoryId || null,
-          channel: "online",
         };
         const order = await storage.createOrder(orderData);
 
