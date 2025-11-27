@@ -892,7 +892,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const sessionId =
           orderItems && orderItems.length > 0 ? orderItems[0].sessionId : null;
 
-        // Enrich items with product details
         const enrichedItems = await Promise.all(
           orderItems.map(async (item: any) => {
             if (item.productId) {

@@ -49,7 +49,9 @@ export function ProductsTab({
     categories.length > 0 ? categories[0] : "Uncategorized",
   );
 
-  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(
+    new Set(),
+  );
 
   const { data: allStores = [] } = useQuery<Store[]>({
     queryKey: ["/api/inventory/all-stores"],
@@ -85,7 +87,10 @@ export function ProductsTab({
     if (!product.storeInventory || !Array.isArray(product.storeInventory)) {
       return 0;
     }
-    return product.storeInventory.reduce((sum: number, alloc: any) => sum + (alloc.quantity || 0), 0);
+    return product.storeInventory.reduce(
+      (sum: number, alloc: any) => sum + (alloc.quantity || 0),
+      0,
+    );
   };
 
   const toggleExpanded = (productId: string) => {
@@ -266,7 +271,9 @@ export function ProductsTab({
                     <th className="px-4 py-3 text-left font-semibold">Price</th>
                     <th className="px-4 py-3 text-left font-semibold">Stock</th>
                     <th className="px-4 py-3 text-left font-semibold">Sold</th>
-                    <th className="px-4 py-3 text-left font-semibold">Allocated</th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Allocated
+                    </th>
                     <th className="px-4 py-3 text-left font-semibold">
                       Actions
                     </th>
@@ -357,35 +364,41 @@ export function ProductsTab({
                           </div>
                         </td>
                       </tr>
-                      
-                      {expandedProducts.has(product.id) && product.storeInventory && (
-                        <tr className="bg-muted/20 border-b">
-                          <td colSpan={10} className="px-4 py-4">
-                            <div className="space-y-3">
-                              <h4 className="font-semibold text-sm">Stock Allocation by Store:</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {product.storeInventory.map((allocation: any, idx: number) => (
-                                  <div 
-                                    key={idx} 
-                                    className="bg-white dark:bg-slate-900 p-3 rounded border"
-                                    data-testid={`allocation-item-${product.id}-${idx}`}
-                                  >
-                                    <div className="text-sm font-medium">
-                                      {storeMap[allocation.storeId] || allocation.storeId}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mt-1">
-                                      Channel: {allocation.channel}
-                                    </div>
-                                    <div className="text-sm font-semibold mt-2">
-                                      Quantity: {allocation.quantity}
-                                    </div>
-                                  </div>
-                                ))}
+
+                      {expandedProducts.has(product.id) &&
+                        product.storeInventory && (
+                          <tr className="bg-muted/20 border-b">
+                            <td colSpan={10} className="px-4 py-4">
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-sm">
+                                  Stock Allocation by Store:
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                  {product.storeInventory.map(
+                                    (allocation: any, idx: number) => (
+                                      <div
+                                        key={idx}
+                                        className="bg-white dark:bg-slate-900 p-3 rounded border"
+                                        data-testid={`allocation-item-${product.id}-${idx}`}
+                                      >
+                                        <div className="text-sm font-medium">
+                                          {storeMap[allocation.storeId] ||
+                                            allocation.storeId}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          Channel: {allocation.channel}
+                                        </div>
+                                        <div className="text-sm font-semibold mt-2">
+                                          Quantity: {allocation.quantity}
+                                        </div>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
+                            </td>
+                          </tr>
+                        )}
                     </>
                   ))}
                 </tbody>
