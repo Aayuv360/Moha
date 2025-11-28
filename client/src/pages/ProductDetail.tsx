@@ -94,10 +94,9 @@ export default function ProductDetail() {
         user ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
       ),
     onSuccess: () => {
-      const cacheKey = user?.id
-        ? `/api/cart/user/${user.id}`
-        : `/api/cart/${getOrCreateSessionId()}`;
-      queryClient.invalidateQueries({ queryKey: [cacheKey] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/cart", cartIdentifier],
+      });
 
       if (buttonRef.current) {
         gsap
