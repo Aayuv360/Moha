@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import { FABRICS, OCCASIONS } from "@/lib/filterDropdowns";
 import { X } from "lucide-react";
 
 interface FilterSidebarProps {
@@ -23,15 +24,6 @@ export function FilterSidebar({
   isMobile = false,
   onClose,
 }: FilterSidebarProps) {
-  const fabricOptions = [
-    "All",
-    "Silk",
-    "Cotton Silk",
-    "Banarasi",
-    "Chiffon",
-    "Kanjivaram",
-  ];
-  const occasionOptions = ["All", "Wedding", "Festive", "Casual", "Party"];
   const priceRangeOptions = [
     { label: "All", value: "all" },
     { label: "Under ₹5,000", value: "0-5000" },
@@ -78,7 +70,7 @@ export function FilterSidebar({
             value={filters.fabric}
             onValueChange={(value) => onFilterChange("fabric", value)}
           >
-            {fabricOptions.map((option) => (
+            {["All", ...FABRICS]?.map((option) => (
               <div key={option} className="flex items-center space-x-2 mb-3">
                 <RadioGroupItem
                   value={option}
@@ -104,7 +96,7 @@ export function FilterSidebar({
             value={filters.occasion}
             onValueChange={(value) => onFilterChange("occasion", value)}
           >
-            {occasionOptions.map((option) => (
+            {["All", ...OCCASIONS].map((option) => (
               <div key={option} className="flex items-center space-x-2 mb-3">
                 <RadioGroupItem
                   value={option}

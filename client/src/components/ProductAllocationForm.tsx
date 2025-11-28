@@ -29,27 +29,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CATEGORIES, FABRICS, OCCASIONS } from "@/lib/filterDropdowns";
 
 interface Store {
   id: string;
   name: string;
 }
 
-const CATEGORIES = [
-  "Wedding Sarees",
-  "Party Sarees",
-  "Casual Sarees",
-  "Traditional Sarees",
-  "Designer Sarees",
-  "Festival Sarees",
-  "Silk Sarees",
-  "Cotton Sarees",
-];
-
 const productSchema = z.object({
   name: z.string().min(1, "Product name required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  price: z.coerce.number().min(0, "Price must be valid"),
+  price: z.coerce
+    .number({ invalid_type_error: "Price must be a number" })
+    .min(0.01, "Price must be greater than 0"),
   fabric: z.string().min(1, "Fabric required"),
   color: z.string().min(1, "Color required"),
   occasion: z.string().min(1, "Occasion required"),
@@ -75,22 +67,6 @@ export function ProductAllocationForm({
   const [shopStocks, setShopStocks] = useState<{ [key: string]: number }>({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackData, setFeedbackData] = useState({ title: "", message: "" });
-  const onChangeChannel = (newChannel: ChannelType) => {
-    setChannel(newChannel);
-    if (newChannel === "Online") {
-      const onlineStore = allStores.find(
-        (store) => store.name === "Online Store",
-      );
-      if (onlineStore) {
-        setShopStocks({
-          [onlineStore.id]: totalStock,
-        });
-      }
-    } else {
-      const reset = Object.fromEntries(allStores.map((store) => [store.id, 0]));
-      setShopStocks(reset);
-    }
-  };
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -116,68 +92,54 @@ export function ProductAllocationForm({
           fabric: "Silk",
           color: "",
           occasion: "Wedding",
-          category: "",
+          category: "Wedding Sarees",
           totalStock: 1,
           images: "",
           videoUrl: "",
         },
   });
 
-  // Reset form when editingProduct changes
-  useEffect(() => {
-    if (editingProduct) {
-      form.reset({
-        name: editingProduct.name,
-        description: editingProduct.description,
-        price: parseFloat(editingProduct.price.toString()),
-        fabric: editingProduct.fabric,
-        color: editingProduct.color,
-        occasion: editingProduct.occasion,
-        category: editingProduct.category,
-        totalStock: editingProduct.inStock,
-        images: Array.isArray(editingProduct.images)
-          ? editingProduct.images.join("\n")
-          : "",
-        videoUrl: editingProduct.videoUrl || "",
-      });
-    }
-  }, [editingProduct, form]);
+  const totalStock = form.watch("totalStock");
 
   const { data: allStores = [] } = useQuery<Store[]>({
     queryKey: ["/api/inventory/all-stores"],
   });
 
-  const totalStock = form.watch("totalStock");
-
+  // Initialize shopStocks when stores or editingProduct change
   useEffect(() => {
-    if (allStores.length > 0) {
-      if (editingProduct && editingProduct.storeInventory) {
-        const initialShopStocks = allStores.reduce((acc, store) => {
+    if (allStores.length === 0) return;
+
+    if (editingProduct && editingProduct.storeInventory) {
+      const initialStocks = allStores.reduce(
+        (acc, store) => {
           const allocation = editingProduct.storeInventory.find(
             (inv: any) => inv.storeId === store.id,
           );
           return { ...acc, [store.id]: allocation?.quantity || 0 };
-        }, {});
-        setShopStocks(initialShopStocks);
+        },
+        {} as Record<string, number>,
+      );
 
-        const hasOnline = editingProduct.storeInventory.some(
-          (item: any) => item.channel === "online" && item.quantity > 0,
-        );
-        const hasPhysical = editingProduct.storeInventory.some(
-          (item: any) => item.channel === "physical" && item.quantity > 0,
-        );
+      setShopStocks(initialStocks);
 
-        if (hasOnline && hasPhysical) setChannel("Both");
-        else if (hasOnline) setChannel("Online");
-        else if (hasPhysical) setChannel("Shop");
-        else setChannel("Both");
-      } else if (Object.keys(shopStocks).length === 0) {
-        const initialShopStocks = allStores.reduce(
-          (acc, store) => ({ ...acc, [store.id]: 0 }),
-          {},
-        );
-        setShopStocks(initialShopStocks);
-      }
+      const hasOnline = editingProduct.storeInventory.some(
+        (inv: any) => inv.channel === "online" && inv.quantity > 0,
+      );
+      const hasPhysical = editingProduct.storeInventory.some(
+        (inv: any) => inv.channel === "physical" && inv.quantity > 0,
+      );
+
+      if (hasOnline && hasPhysical) setChannel("Both");
+      else if (hasOnline) setChannel("Online");
+      else if (hasPhysical) setChannel("Shop");
+      else setChannel("Both");
+    } else if (Object.keys(shopStocks).length === 0) {
+      // Default to zero allocation
+      const zeroStocks = allStores.reduce(
+        (acc, store) => ({ ...acc, [store.id]: 0 }),
+        {} as Record<string, number>,
+      );
+      setShopStocks(zeroStocks);
     }
   }, [allStores, editingProduct]);
 
@@ -191,11 +153,31 @@ export function ProductAllocationForm({
     } else {
       setStores(allStores);
     }
-  }, [channel]);
+  }, [channel, allStores]);
 
   const updateShopStock = (storeId: string, value: number) => {
     value = Math.max(0, value);
     setShopStocks({ ...shopStocks, [storeId]: value });
+  };
+
+  const onChangeChannel = (newChannel: ChannelType) => {
+    if (allStores.length === 0) return;
+
+    setChannel(newChannel);
+
+    if (newChannel === "Online") {
+      const onlineStore = allStores.find((s) => s.name === "Online Store");
+      if (onlineStore) {
+        setShopStocks({ [onlineStore.id]: totalStock });
+      }
+    } else if (newChannel === "Shop") {
+      const shopStores = allStores.filter((s) => s.name !== "Online Store");
+      const reset = Object.fromEntries(shopStores.map((s) => [s.id, 0]));
+      setShopStocks(reset);
+    } else {
+      const reset = Object.fromEntries(allStores.map((s) => [s.id, 0]));
+      setShopStocks(reset);
+    }
   };
 
   const totalAllocated = Object.values(shopStocks).reduce((a, b) => a + b, 0);
@@ -219,7 +201,7 @@ export function ProductAllocationForm({
 
   const storeInventory = Object.entries(shopStocks)
     .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
-    .filter((x) => x !== null) as { storeId: string; quantity: number }[];
+    .filter(Boolean) as { storeId: string; quantity: number }[];
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
@@ -237,13 +219,12 @@ export function ProductAllocationForm({
         occasion: data.occasion,
         category: data.category,
         inStock: data.totalStock,
-        images: images.length > 0 ? images : [],
+        images: images.length ? images : [],
         videoUrl:
           data.videoUrl && data.videoUrl.startsWith("http")
             ? data.videoUrl
             : null,
         storeInventory,
-        onlineStock: 0,
         channel,
       };
 
@@ -275,7 +256,6 @@ export function ProductAllocationForm({
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/products"] });
       form.reset();
       setChannel("Both");
-
       setFeedbackData({
         title: "Success!",
         message: editingProduct
@@ -290,7 +270,7 @@ export function ProductAllocationForm({
     } catch (error: any) {
       setFeedbackData({
         title: "Error",
-        message: error.message || "Failed to create product",
+        message: error?.message || "Failed to create product",
       });
       setShowFeedback(true);
     }
@@ -300,14 +280,13 @@ export function ProductAllocationForm({
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {/* SECTION 1: PRODUCT CORE INFORMATION */}
-          <section className="p-6 bg-gray-50 rounded-lg border">
+          {/* PRODUCT CORE INFORMATION */}
+          <section className="mt-6 p-4 bg-gray-50 rounded-lg border">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               1. Product Core Information
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* PRODUCT NAME */}
               <FormField
                 control={form.control}
                 name="name"
@@ -322,7 +301,6 @@ export function ProductAllocationForm({
                 )}
               />
 
-              {/* TOTAL STOCK */}
               <FormField
                 control={form.control}
                 name="totalStock"
@@ -332,12 +310,11 @@ export function ProductAllocationForm({
                     <FormControl>
                       <Input
                         type="number"
-                        min="1"
-                        {...field}
+                        min={1}
                         value={field.value || ""}
                         onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          field.onChange(Math.max(1, val)); // only update form
+                          const val = parseInt(e.target.value) || 1;
+                          field.onChange(val);
                         }}
                       />
                     </FormControl>
@@ -346,7 +323,6 @@ export function ProductAllocationForm({
                 )}
               />
 
-              {/* PRICE */}
               <FormField
                 control={form.control}
                 name="price"
@@ -354,7 +330,27 @@ export function ProductAllocationForm({
                   <FormItem>
                     <FormLabel>Price</FormLabel>
                     <FormControl>
-                      <Input type="number" min="0" {...field} />
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val >= 0.01) {
+                            field.onChange(val);
+                          } else {
+                            field.onChange("");
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (["e", "E", "+", "-"].includes(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                        className="no-spinner"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -362,7 +358,6 @@ export function ProductAllocationForm({
               />
             </div>
 
-            {/* DESCRIPTION */}
             <FormField
               control={form.control}
               name="description"
@@ -377,7 +372,6 @@ export function ProductAllocationForm({
               )}
             />
 
-            {/* FABRIC / COLOR / OCCASION / CATEGORY */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <FormField
                 control={form.control}
@@ -385,9 +379,20 @@ export function ProductAllocationForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fabric</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select fabric" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {FABRICS.map((fab) => (
+                          <SelectItem key={fab} value={fab}>
+                            {fab}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -413,9 +418,20 @@ export function ProductAllocationForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Occasion</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select occasion" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {OCCASIONS.map((occ) => (
+                          <SelectItem key={occ} value={occ}>
+                            {occ}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -447,7 +463,6 @@ export function ProductAllocationForm({
               />
             </div>
 
-            {/* PRODUCT IMAGES */}
             <FormField
               control={form.control}
               name="images"
@@ -458,7 +473,7 @@ export function ProductAllocationForm({
                     <Textarea
                       {...field}
                       className="resize-none min-h-32"
-                      placeholder="Paste image URLs (one per line)&#10;Example:&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/image3.jpg"
+                      placeholder="Paste image URLs (one per line)"
                     />
                   </FormControl>
                   <FormMessage />
@@ -466,7 +481,6 @@ export function ProductAllocationForm({
               )}
             />
 
-            {/* VIDEO URL */}
             <FormField
               control={form.control}
               name="videoUrl"
@@ -487,7 +501,6 @@ export function ProductAllocationForm({
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               2. Select Sales Channels
             </h2>
-
             <div className="flex flex-wrap gap-4 mb-4">
               {(["Online", "Shop", "Both"] as const).map((ch) => (
                 <button
@@ -509,7 +522,7 @@ export function ProductAllocationForm({
               {channel === "Online"
                 ? "All stock will be allocated to the Online Warehouse."
                 : channel === "Shop"
-                  ? `Product will be sold in physical shops.`
+                  ? "Product will be sold in physical shops."
                   : "Stock must be split between the Online Warehouse and physical shops."}
             </p>
           </section>
@@ -537,12 +550,12 @@ export function ProductAllocationForm({
                   <label className="flex-1">{store.name}</label>
                   <Input
                     type="number"
-                    min="0"
+                    min={0}
                     value={shopStocks[store.id] || 0}
                     onChange={(e) =>
                       updateShopStock(store.id, parseInt(e.target.value) || 0)
                     }
-                    className="w-20 text-center"
+                    className="no-spinner w-20 text-center"
                   />
                   <span>units</span>
                 </div>
@@ -574,7 +587,7 @@ export function ProductAllocationForm({
             <DialogTitle>{feedbackData.title}</DialogTitle>
           </DialogHeader>
           <p className="text-gray-600">{feedbackData.message}</p>
-          <Button onClick={() => setShowFeedback(false)} className="w-full">
+          <Button onClick={() => setShowFeedback(false)} className="mt-4">
             Close
           </Button>
         </DialogContent>

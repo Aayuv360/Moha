@@ -124,6 +124,21 @@ export const storeProductInventory = pgTable("store_product_inventory", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const addresses = pgTable("addresses", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  pincode: text("pincode").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -163,6 +178,11 @@ export const insertStoreProductInventorySchema = createInsertSchema(
   createdAt: true,
 });
 
+export const insertAddressSchema = createInsertSchema(addresses).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertInventory = z.infer<typeof insertInventorySchema>;
@@ -181,3 +201,5 @@ export type InsertStoreProductInventory = z.infer<
   typeof insertStoreProductInventorySchema
 >;
 export type StoreProductInventory = typeof storeProductInventory.$inferSelect;
+export type InsertAddress = z.infer<typeof insertAddressSchema>;
+export type Address = typeof addresses.$inferSelect;

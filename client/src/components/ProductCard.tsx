@@ -290,7 +290,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
                 data-testid={`button-wishlist-${product.id}`}
               >
                 <Heart
-                  className={`h-4 w-4 transition-all ${isInWishlist ? "fill-red-500 text-red-500" : ""}`}
+                  className={`h-4 w-4 transition-all ${isInWishlist ? "fill-primary text-primary" : ""}`}
                 />
               </Button>
             </div>

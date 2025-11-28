@@ -9,6 +9,7 @@ import {
   insertProductSchema,
   insertInventorySchema,
   insertReturnSchema,
+  insertAddressSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import {

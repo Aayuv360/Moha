@@ -15,6 +15,8 @@ import {
   type InsertReturn,
   type StoreProductInventory,
   type InsertStoreProductInventory,
+  type Address,
+  type InsertAddress,
   products,
   cartItems,
   orders,
@@ -23,6 +25,7 @@ import {
   inventories,
   returns,
   storeProductInventory,
+  addresses,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, ilike, sql, gte, lte } from "drizzle-orm";
@@ -111,6 +114,13 @@ export interface IStorage {
     quantity: number,
     channel?: string,
   ): Promise<StoreProductInventory>;
+
+  // Addresses
+  createAddress(address: InsertAddress): Promise<Address>;
+  getUserAddresses(userId: string): Promise<Address[]>;
+  getAddress(id: string): Promise<Address | undefined>;
+  updateAddress(id: string, updates: Partial<Address>): Promise<Address | undefined>;
+  deleteAddress(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -662,6 +672,46 @@ export class DatabaseStorage implements IStorage {
       console.error("Failed to move product inventory:", error);
       return false;
     }
+  }
+
+  async createAddress(insertAddress: InsertAddress): Promise<Address> {
+    const [address] = await db
+      .insert(addresses)
+      .values(insertAddress)
+      .returning();
+    return address;
+  }
+
+  async getUserAddresses(userId: string): Promise<Address[]> {
+    return await db
+      .select()
+      .from(addresses)
+      .where(eq(addresses.userId, userId));
+  }
+
+  async getAddress(id: string): Promise<Address | undefined> {
+    const [address] = await db
+      .select()
+      .from(addresses)
+      .where(eq(addresses.id, id));
+    return address || undefined;
+  }
+
+  async updateAddress(
+    id: string,
+    updates: Partial<Address>,
+  ): Promise<Address | undefined> {
+    const [address] = await db
+      .update(addresses)
+      .set(updates)
+      .where(eq(addresses.id, id))
+      .returning();
+    return address || undefined;
+  }
+
+  async deleteAddress(id: string): Promise<boolean> {
+    const result = await db.delete(addresses).where(eq(addresses.id, id));
+    return !!result;
   }
 }
 

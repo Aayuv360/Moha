@@ -55,15 +55,19 @@ export default function Checkout() {
   const isUserCart = !!user?.id;
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
-    queryKey: ['/api/cart', cartIdentifier],
+    queryKey: ["/api/cart", cartIdentifier],
     queryFn: async () => {
-      const endpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
-      const options = isUserCart ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : undefined;
-      return await apiRequest('GET', endpoint, undefined, options);
+      const endpoint = isUserCart
+        ? `/api/cart/user/${user.id}`
+        : `/api/cart/${sessionId}`;
+      const options = isUserCart
+        ? {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        : undefined;
+      return await apiRequest("GET", endpoint, undefined, options);
     },
   });
 
@@ -89,7 +93,9 @@ export default function Checkout() {
     onSuccess: (data: any) => {
       setOrderId(data.id);
       setOrderPlaced(true);
-      queryClient.invalidateQueries({ queryKey: ['/api/cart', cartIdentifier] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/cart", cartIdentifier],
+      });
 
       toast({
         title: "Order placed successfully!",
@@ -165,11 +171,7 @@ export default function Checkout() {
             <Button size="lg" onClick={() => navigate("/products")}>
               Continue Shopping
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => navigate("/")}
-            >
+            <Button variant="outline" size="lg" onClick={() => navigate("/")}>
               Go to Home
             </Button>
           </div>
@@ -357,7 +359,12 @@ export default function Checkout() {
                   <div key={item.id} className="flex gap-3">
                     <div className="w-16 h-20 bg-muted rounded overflow-hidden flex-shrink-0">
                       <img
-                        src={item.product.imageUrl}
+                        src={
+                          item.product.images
+                            .replace(/[{}]/g, "")
+                            .split(",")
+                            .map((s: string) => s.replace(/"/g, ""))[0]
+                        }
                         alt={item.product.name}
                         className="w-full h-full object-cover"
                       />
@@ -411,14 +418,6 @@ export default function Checkout() {
           </div>
         </div>
       </div>
-
-      <footer className="bg-card border-t border-border py-8 md:py-12 px-4 md:px-6 mt-12 md:mt-20">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-sm text-muted-foreground">
-            © 2024 Moha. Celebrating India's textile heritage.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
