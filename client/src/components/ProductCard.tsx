@@ -4,7 +4,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Heart, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -37,7 +36,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
   const cartItem = cart.find((item) => item.productId === product.id);
   const cartQuantity = cartItem?.quantity || 0;
-
+  console.log(cartItem);
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
     queryKey: [`/api/wishlist/check/${product.id}`],
     enabled: !!token,
@@ -176,16 +175,16 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   return (
     <div ref={cardRef} data-testid={`card-product-${product.id}`}>
       <Link href={`/product/${product.id}`} className="block">
-        <Card className="group overflow-hidden hover-elevate transition-all duration-300">
+        <div>
           <div
-            className="aspect-[2/3] overflow-hidden bg-muted relative"
+            className="overflow-hidden bg-muted relative rounded-lg"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
             <img
               src={images[currentImageIndex]}
               alt={product.name}
-              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+              className="w-full h-80 object-cover object-center transition-all duration-500 group-hover:scale-102 "
             />
 
             {images.length > 1 && (
@@ -203,42 +202,50 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
               </div>
             )}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm hover:bg-white"
-              onClick={handleWishlistToggle}
-              disabled={toggleWishlistMutation.isPending}
-              data-testid={`button-wishlist-${product.id}`}
-            >
-              <Heart
-                className={`h-4 w-4 transition-all ${isInWishlist ? "fill-red-500 text-red-500" : ""}`}
-              />
-            </Button>
-
             {product.inStock === 0 && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <Badge variant="secondary" className="text-sm">
-                  Out of Stock
+              <div className="absolute top-2 right-2">
+                <Badge
+                  variant="secondary"
+                  className="bg-black/75 text-white text-sm"
+                >
+                  Sold out
                 </Badge>
               </div>
             )}
           </div>
 
-          <div className="p-1.5 md:p-2">
-            <div className="mb-0.5">
-              <Badge variant="secondary" className="text-xs">
-                {product.fabric}
-              </Badge>
-            </div>
-            <h3 className="text-sm md:text-base font-serif font-medium mb-0.5 line-clamp-1">
-              {product.name}
-            </h3>
-            <p className="text-xs text-muted-foreground mb-1.5 line-clamp-1">
-              {product.description}
-            </p>
+          <div className="p-1.5 md:p-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <h3
+                className="
+                  text-sm leading-snug h-[2.2rem]
+                  sm:text-base sm:h-[2.6rem]
+                  md:text-lg md:h-[3rem]
+                  lg:text-xl lg:h-[3.4rem]
+                  font-medium
+                  line-clamp-2
+                "
+              >
+                {product.name}
+              </h3>
 
-            <div className="space-y-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="bg-white"
+                onClick={handleWishlistToggle}
+                disabled={toggleWishlistMutation.isPending}
+                data-testid={`button-wishlist-${product.id}`}
+              >
+                <Heart
+                  className={`h-4 w-4 transition-all ${
+                    isInWishlist ? "fill-red-500 text-red-500" : ""
+                  }`}
+                />
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between">
               <div className="flex items-center justify-between">
                 <p className="text-base md:text-lg font-semibold">
                   ₹{Number(product.price).toLocaleString("en-IN")}
@@ -292,7 +299,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       </Link>
     </div>
   );

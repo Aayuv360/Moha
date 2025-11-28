@@ -61,7 +61,6 @@ const productSchema = z.object({
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
-
 type ChannelType = "Online" | "Shop" | "Both";
 
 interface ProductAllocationFormProps {
@@ -75,9 +74,24 @@ export function ProductAllocationForm({
 }: ProductAllocationFormProps) {
   const [channel, setChannel] = useState<ChannelType>("Both");
   const [shopStocks, setShopStocks] = useState<{ [key: string]: number }>({});
-  const [onlineStock, setOnlineStock] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackData, setFeedbackData] = useState({ title: "", message: "" });
+  const onChangeChannel = (newChannel: ChannelType) => {
+    setChannel(newChannel);
+    if (newChannel === "Online") {
+      const onlineStore = allStores.find(
+        (store) => store.name === "Online Store",
+      );
+      if (onlineStore) {
+        setShopStocks({
+          [onlineStore.id]: totalStock,
+        });
+      }
+    } else {
+      const reset = Object.fromEntries(allStores.map((store) => [store.id, 0]));
+      setShopStocks(reset);
+    }
+  };
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -117,6 +131,7 @@ export function ProductAllocationForm({
   });
 
   const totalStock = form.watch("totalStock");
+
   useEffect(() => {
     if (allStores.length > 0) {
       if (editingProduct && editingProduct.storeInventory) {
@@ -135,15 +150,10 @@ export function ProductAllocationForm({
           (item) => item.channel === "physical" && item.quantity > 0,
         );
 
-        if (hasOnline && hasPhysical) {
-          setChannel("Both");
-        } else if (hasOnline) {
-          setChannel("Online");
-        } else if (hasPhysical) {
-          setChannel("Shop");
-        } else {
-          setChannel("Both");
-        }
+        if (hasOnline && hasPhysical) setChannel("Both");
+        else if (hasOnline) setChannel("Online");
+        else if (hasPhysical) setChannel("Shop");
+        else setChannel("Both");
       } else if (Object.keys(shopStocks).length === 0) {
         const initialShopStocks = allStores.reduce(
           (acc, store) => ({ ...acc, [store.id]: 0 }),
@@ -154,9 +164,6 @@ export function ProductAllocationForm({
     }
   }, [allStores, editingProduct]);
 
-  const handleChannelChange = (newChannel: ChannelType) => {
-    setChannel(newChannel);
-  };
   const [stores, setStores] = useState<Store[]>([]);
 
   useEffect(() => {
@@ -164,70 +171,19 @@ export function ProductAllocationForm({
       setStores(allStores.filter((store) => store.name === "Online Store"));
     } else if (channel === "Shop") {
       setStores(allStores.filter((store) => store.name !== "Online Store"));
-    } else if (channel === "Both") {
+    } else {
       setStores(allStores);
     }
   }, [channel]);
-
-  const handleTotalStockChange = (newTotal: number) => {
-    if (newTotal < 1) newTotal = 1;
-
-    if (channel === "Online") {
-      setOnlineStock(newTotal);
-    } else if (channel === "Shop") {
-      const currentShopTotal = Object.values(shopStocks).reduce(
-        (a, b) => a + b,
-        0,
-      );
-      if (currentShopTotal > newTotal) {
-        const ratio = newTotal / currentShopTotal;
-        const newShopStocks = Object.entries(shopStocks).reduce(
-          (acc, [storeId, stock]) => ({
-            ...acc,
-            [storeId]: Math.floor(stock * ratio),
-          }),
-          {},
-        );
-        setShopStocks(newShopStocks);
-      }
-    } else if (channel === "Both") {
-      // Proportionally redistribute both
-      const currentTotal =
-        onlineStock + Object.values(shopStocks).reduce((a, b) => a + b, 0);
-      if (currentTotal > newTotal) {
-        const onlineRatio = onlineStock / currentTotal;
-
-        const newOnlineStock = Math.floor(newTotal * onlineRatio);
-        const remainingForShops = newTotal - newOnlineStock;
-
-        const currentShopTotal = Object.values(shopStocks).reduce(
-          (a, b) => a + b,
-          0,
-        );
-        const newShopStocks = Object.entries(shopStocks).reduce(
-          (acc, [storeId, stock]) => ({
-            ...acc,
-            [storeId]:
-              currentShopTotal > 0
-                ? Math.floor((stock / currentShopTotal) * remainingForShops)
-                : 0,
-          }),
-          {},
-        );
-
-        setOnlineStock(newOnlineStock);
-        setShopStocks(newShopStocks);
-      }
-    }
-  };
 
   const updateShopStock = (storeId: string, value: number) => {
     value = Math.max(0, value);
     setShopStocks({ ...shopStocks, [storeId]: value });
   };
-  const shopTotal = Object.values(shopStocks).reduce((a, b) => a + b, 0);
-  const totalAllocated = onlineStock + shopTotal;
+
+  const totalAllocated = Object.values(shopStocks).reduce((a, b) => a + b, 0);
   const unallocated = totalStock - totalAllocated;
+
   const isValid = unallocated === 0 && totalStock > 0;
   const isOverAllocated = unallocated < 0;
 
@@ -243,11 +199,11 @@ export function ProductAllocationForm({
     if (isValid) return `Unallocated: 0 units`;
     return `Unallocated: ${unallocated} units`;
   };
+
   const storeInventory = Object.entries(shopStocks)
     .map(([storeId, quantity]) => (quantity > 0 ? { storeId, quantity } : null))
     .filter((x) => x !== null) as { storeId: string; quantity: number }[];
-  console.log(storeInventory, "storeInventory");
-  console.log(shopStocks);
+
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
       const images = data.multipleImages
@@ -257,11 +213,6 @@ export function ProductAllocationForm({
             .filter((url) => url && url.startsWith("http"))
         : [];
 
-      const storeInventory = Object.entries(shopStocks)
-        .map(([storeId, quantity]) =>
-          quantity > 0 ? { storeId, quantity } : null,
-        )
-        .filter((x) => x !== null) as { storeId: string; quantity: number }[];
       const payload = {
         name: data.name,
         description: data.description,
@@ -277,10 +228,9 @@ export function ProductAllocationForm({
           data.videoUrl && data.videoUrl.startsWith("http")
             ? data.videoUrl
             : null,
-        storeInventory: storeInventory,
-        onlineStock:
-          channel === "Online" || channel === "Both" ? onlineStock : 0,
-        channel: channel,
+        storeInventory,
+        onlineStock: 0,
+        channel,
       };
 
       if (editingProduct) {
@@ -343,6 +293,7 @@ export function ProductAllocationForm({
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* PRODUCT NAME */}
               <FormField
                 control={form.control}
                 name="name"
@@ -350,17 +301,14 @@ export function ProductAllocationForm({
                   <FormItem>
                     <FormLabel>Product Name</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Product name"
-                        {...field}
-                        data-testid="input-product-name"
-                      />
+                      <Input placeholder="Product name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* TOTAL STOCK */}
               <FormField
                 control={form.control}
                 name="totalStock"
@@ -371,25 +319,20 @@ export function ProductAllocationForm({
                       <Input
                         type="number"
                         min="1"
-                        placeholder="10"
                         {...field}
                         value={field.value || ""}
                         onChange={(e) => {
                           const val = parseInt(e.target.value) || 0;
-                          field.onChange(Math.max(1, val));
-                          handleTotalStockChange(Math.max(1, val));
+                          field.onChange(Math.max(1, val)); // only update form
                         }}
-                        data-testid="input-total-stock"
                       />
                     </FormControl>
-                    <p className="text-xs text-gray-500 mt-1">
-                      This is the total inventory you have.
-                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* PRICE */}
               <FormField
                 control={form.control}
                 name="price"
@@ -397,15 +340,7 @@ export function ProductAllocationForm({
                   <FormItem>
                     <FormLabel>Price</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="9999"
-                        {...field}
-                        value={field.value || ""}
-                        data-testid="input-product-price"
-                      />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -413,6 +348,7 @@ export function ProductAllocationForm({
               />
             </div>
 
+            {/* DESCRIPTION */}
             <FormField
               control={form.control}
               name="description"
@@ -420,17 +356,14 @@ export function ProductAllocationForm({
                 <FormItem className="mt-6">
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Product description"
-                      {...field}
-                      data-testid="input-product-description"
-                    />
+                    <Textarea {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* FABRIC / COLOR / OCCASION / CATEGORY */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <FormField
                 control={form.control}
@@ -439,11 +372,7 @@ export function ProductAllocationForm({
                   <FormItem>
                     <FormLabel>Fabric</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Silk, Cotton..."
-                        {...field}
-                        data-testid="input-fabric"
-                      />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -457,11 +386,7 @@ export function ProductAllocationForm({
                   <FormItem>
                     <FormLabel>Color</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Red, Blue..."
-                        {...field}
-                        data-testid="input-color"
-                      />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -475,11 +400,7 @@ export function ProductAllocationForm({
                   <FormItem>
                     <FormLabel>Occasion</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Wedding, Party..."
-                        {...field}
-                        data-testid="input-occasion"
-                      />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -494,7 +415,7 @@ export function ProductAllocationForm({
                     <FormLabel>Category</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-category">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
@@ -512,6 +433,7 @@ export function ProductAllocationForm({
               />
             </div>
 
+            {/* IMAGE URL */}
             <FormField
               control={form.control}
               name="imageUrl"
@@ -519,18 +441,14 @@ export function ProductAllocationForm({
                 <FormItem className="mt-6">
                   <FormLabel>Main Image URL</FormLabel>
                   <FormControl>
-                    <Input
-                      type="url"
-                      placeholder="https://..."
-                      {...field}
-                      data-testid="input-image-url"
-                    />
+                    <Input type="url" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* MULTIPLE IMAGES */}
             <FormField
               control={form.control}
               name="multipleImages"
@@ -538,21 +456,14 @@ export function ProductAllocationForm({
                 <FormItem className="mt-6">
                   <FormLabel>Additional Images (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Enter image URLs, one per line"
-                      {...field}
-                      className="resize-none min-h-24"
-                      data-testid="input-multiple-images"
-                    />
+                    <Textarea {...field} className="resize-none min-h-24" />
                   </FormControl>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Each image URL on a new line
-                  </p>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* VIDEO URL */}
             <FormField
               control={form.control}
               name="videoUrl"
@@ -560,22 +471,15 @@ export function ProductAllocationForm({
                 <FormItem className="mt-6">
                   <FormLabel>Product Video URL (Optional)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="url"
-                      placeholder="https://..."
-                      {...field}
-                      data-testid="input-video-url"
-                    />
+                    <Input type="url" {...field} />
                   </FormControl>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Leave empty to skip
-                  </p>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </section>
 
+          {/* SALES CHANNEL SECTION */}
           <section className="p-6 bg-blue-50 rounded-lg border border-blue-200">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               2. Select Sales Channels
@@ -586,101 +490,60 @@ export function ProductAllocationForm({
                 <button
                   key={ch}
                   type="button"
-                  onClick={() => handleChannelChange(ch)}
+                  onClick={() => onChangeChannel(ch)}
                   className={`px-6 py-3 rounded-xl transition duration-150 ease-in-out font-medium ${
                     channel === ch
                       ? "bg-blue-600 text-white shadow-md"
-                      : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                      : "bg-white text-gray-700 border"
                   }`}
-                  data-testid={`button-channel-${ch}`}
                 >
-                  {ch === "Online"
-                    ? "Sell Online Only"
-                    : ch === "Shop"
-                      ? "Sell In Physical Shops Only"
-                      : "Sell Both Online & In Shops"}
+                  {ch}
                 </button>
               ))}
             </div>
 
-            <p
-              className="text-sm text-blue-700 font-medium"
-              data-testid="text-channel-info"
-            >
+            <p className="text-sm text-blue-700 font-medium">
               {channel === "Online"
                 ? "All stock will be allocated to the Online Warehouse."
                 : channel === "Shop"
-                  ? `Product will be sold in physical shops. Stock must be assigned to one shop. (Total stock: ${totalStock})`
-                  : totalStock > 1
-                    ? "Stock must be split between the Online Warehouse and physical shops."
-                    : "Since total stock is 1, it must be assigned entirely to either Online or a single Shop."}
+                  ? `Product will be sold in physical shops.`
+                  : "Stock must be split between the Online Warehouse and physical shops."}
             </p>
           </section>
 
+          {/* STOCK ALLOCATION */}
           <section className="p-6 bg-white rounded-lg border border-gray-300 shadow-md">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               3. Stock Allocation
             </h2>
 
-            <div
-              className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 mb-4 rounded-lg text-sm font-semibold bg-gray-100"
-              data-testid="allocation-summary"
-            >
-              <div className="flex flex-col sm:flex-row sm:space-x-4 w-full sm:w-auto">
-                <p className="text-gray-600">
-                  Total Stock:{" "}
-                  <span className="text-gray-900">{totalStock}</span> units
-                </p>
-                <p className="text-gray-600">
-                  Allocated:{" "}
-                  <span className="text-green-600">{totalAllocated}</span> units
-                </p>
-              </div>
-              <p
-                className={`p-2 rounded-lg text-white font-bold transition duration-300 ${getStatusColor()}`}
-                data-testid="allocation-status"
-              >
+            <div className="flex justify-between p-4 mb-4 rounded-lg text-sm bg-gray-100">
+              <p>Total Stock: {totalStock} units</p>
+              <p>Allocated: {totalAllocated} units</p>
+              <p className={`p-2 rounded text-white ${getStatusColor()}`}>
                 {getStatusText()}
               </p>
             </div>
 
-            <div className="mb-6 p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
-              {stores.length === 0 ? (
-                <p className="text-sm text-gray-600">
-                  No physical stores available
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {stores.map((store) => (
-                    <div
-                      key={store.id}
-                      className="flex items-center space-x-3 p-3 bg-yellow-100 rounded-lg"
-                    >
-                      <label
-                        htmlFor={store.id}
-                        className="flex-1 text-sm font-medium text-gray-700"
-                      >
-                        {store.name}
-                      </label>
-                      <Input
-                        id={store.id}
-                        type="number"
-                        min="0"
-                        value={shopStocks[store.id] || 0}
-                        onChange={(e) =>
-                          updateShopStock(
-                            store.id,
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        className="w-20 text-center"
-                        data-testid={`input-store-${store.id}`}
-                      />
-                      <span className="text-sm text-gray-500">units</span>
-                    </div>
-                  ))}
+            <div className="space-y-3">
+              {stores.map((store) => (
+                <div
+                  key={store.id}
+                  className="flex items-center space-x-3 p-3 bg-yellow-100 rounded-lg"
+                >
+                  <label className="flex-1">{store.name}</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={shopStocks[store.id] || 0}
+                    onChange={(e) =>
+                      updateShopStock(store.id, parseInt(e.target.value) || 0)
+                    }
+                    className="w-20 text-center"
+                  />
+                  <span>units</span>
                 </div>
-              )}
+              ))}
             </div>
           </section>
 
@@ -688,12 +551,11 @@ export function ProductAllocationForm({
             <Button
               type="submit"
               disabled={!isValid || createProductMutation.isPending}
-              className={`px-8 py-3 font-bold rounded-xl shadow-lg transition duration-300 ${
+              className={`px-8 py-3 font-bold rounded-xl shadow-lg transition ${
                 isValid
                   ? "bg-green-600 hover:bg-green-700 text-white"
                   : "bg-gray-400 text-white"
               }`}
-              data-testid="button-save-product"
             >
               {createProductMutation.isPending
                 ? "Saving..."

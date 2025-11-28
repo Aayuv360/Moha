@@ -65,14 +65,14 @@ export function ProductsTab({
     (acc, store) => ({ ...acc, [store.id]: store.name }),
     { online: "online" } as { [key: string]: string },
   );
-
   const calculateSoldStock = (productId: string): number => {
     let totalSold = 0;
+
     orders.forEach((order) => {
       try {
         const items = JSON.parse(order.items);
         items.forEach((item: any) => {
-          if (item.id === productId) {
+          if (item.productId === productId) {
             totalSold += item.quantity || 0;
           }
         });
@@ -80,6 +80,7 @@ export function ProductsTab({
         // Skip malformed order items
       }
     });
+
     return totalSold;
   };
 
@@ -269,8 +270,15 @@ export function ProductsTab({
                       Occasion
                     </th>
                     <th className="px-4 py-3 text-left font-semibold">Price</th>
-                    <th className="px-4 py-3 text-left font-semibold">Stock</th>
-                    <th className="px-4 py-3 text-left font-semibold">Sold</th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Initial Stock
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Current Stock
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Sold Stock
+                    </th>
                     <th className="px-4 py-3 text-left font-semibold">
                       Allocated
                     </th>
@@ -317,7 +325,9 @@ export function ProductsTab({
                             "en-IN",
                           )}
                         </td>
-
+                        <td className="px-4 py-3 font-medium">
+                          {product.inStock + calculateSoldStock(product.id)}
+                        </td>
                         <td className="px-4 py-3 font-medium">
                           {product.inStock}
                         </td>
