@@ -819,6 +819,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/cart/user/:userId", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (req.userId !== req.params.userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const cartItems = await storage.getCartItemsByUserId(req.params.userId);
+
+      const cartItemsWithProducts = await Promise.all(
+        cartItems.map(async (item) => {
+          const product = await storage.getProduct(item.productId);
+          return { ...item, product };
+        }),
+      );
+
+      res.json(cartItemsWithProducts.filter((item) => item.product));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cart items" });
+    }
+  });
+
+  app.post("/api/cart/merge-on-login", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const { sessionId } = req.body;
+
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+
+      await storage.mergeCartsOnLogin(sessionId, req.userId!);
+
+      const mergedCartItems = await storage.getCartItemsByUserId(req.userId!);
+      const cartItemsWithProducts = await Promise.all(
+        mergedCartItems.map(async (item) => {
+          const product = await storage.getProduct(item.productId);
+          return { ...item, product };
+        }),
+      );
+
+      res.json(cartItemsWithProducts.filter((item) => item.product));
+    } catch (error) {
+      console.error("Cart merge error:", error);
+      res.status(500).json({ error: "Failed to merge carts" });
+    }
+  });
+
   app.post("/api/cart", async (req, res) => {
     try {
       const validatedData = insertCartItemSchema.parse(req.body);

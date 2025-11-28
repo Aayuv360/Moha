@@ -65,6 +65,7 @@ export interface IStorage {
 
   // Cart
   getCartItems(sessionId: string): Promise<CartItem[]>;
+  getCartItemsByUserId(userId: string): Promise<CartItem[]>;
   addToCart(item: InsertCartItem): Promise<CartItem>;
   updateCartItemQuantity(
     id: string,
@@ -72,6 +73,7 @@ export interface IStorage {
   ): Promise<CartItem | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(sessionId: string): Promise<void>;
+  mergeCartsOnLogin(sessionId: string, userId: string): Promise<void>;
 
   // Orders
   createOrder(order: InsertOrder): Promise<Order>;
@@ -290,16 +292,26 @@ export class DatabaseStorage implements IStorage {
       .where(eq(cartItems.sessionId, sessionId));
   }
 
+  async getCartItemsByUserId(userId: string): Promise<CartItem[]> {
+    return await db
+      .select()
+      .from(cartItems)
+      .where(eq(cartItems.userId, userId));
+  }
+
   async addToCart(insertItem: InsertCartItem): Promise<CartItem> {
+    const whereConditions = [eq(cartItems.productId, insertItem.productId)];
+    
+    if (insertItem.sessionId) {
+      whereConditions.push(eq(cartItems.sessionId, insertItem.sessionId));
+    } else if (insertItem.userId) {
+      whereConditions.push(eq(cartItems.userId, insertItem.userId));
+    }
+
     const [existingItem] = await db
       .select()
       .from(cartItems)
-      .where(
-        and(
-          eq(cartItems.productId, insertItem.productId),
-          eq(cartItems.sessionId, insertItem.sessionId),
-        ),
-      );
+      .where(and(...whereConditions));
 
     if (existingItem) {
       const [updatedItem] = await db
@@ -315,6 +327,36 @@ export class DatabaseStorage implements IStorage {
       .values(insertItem)
       .returning();
     return cartItem;
+  }
+
+  async mergeCartsOnLogin(sessionId: string, userId: string): Promise<void> {
+    const sessionCartItems = await this.getCartItems(sessionId);
+    const userCartItems = await this.getCartItemsByUserId(userId);
+
+    const userCartMap = new Map(
+      userCartItems.map((item) => [item.productId, item]),
+    );
+
+    for (const sessionItem of sessionCartItems) {
+      const existingUserItem = userCartMap.get(sessionItem.productId);
+
+      if (existingUserItem) {
+        await db
+          .update(cartItems)
+          .set({
+            quantity:
+              existingUserItem.quantity + sessionItem.quantity,
+          })
+          .where(eq(cartItems.id, existingUserItem.id));
+      } else {
+        await db
+          .update(cartItems)
+          .set({ userId, sessionId: null })
+          .where(eq(cartItems.id, sessionItem.id));
+      }
+    }
+
+    await db.delete(cartItems).where(eq(cartItems.sessionId, sessionId));
   }
 
   async updateCartItemQuantity(

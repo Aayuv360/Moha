@@ -71,6 +71,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
     setToken(response.token);
     localStorage.setItem("token", response.token);
+
+    const sessionId = localStorage.getItem("sessionId");
+    if (sessionId && response.token) {
+      try {
+        await apiRequest("POST", "/api/cart/merge-on-login", {
+          sessionId,
+        }, {
+          headers: {
+            Authorization: `Bearer ${response.token}`,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to merge carts:", error);
+      }
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -83,6 +98,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
     setToken(response.token);
     localStorage.setItem("token", response.token);
+
+    const sessionId = localStorage.getItem("sessionId");
+    if (sessionId && response.token) {
+      try {
+        await apiRequest("POST", "/api/cart/merge-on-login", {
+          sessionId,
+        }, {
+          headers: {
+            Authorization: `Bearer ${response.token}`,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to merge carts:", error);
+      }
+    }
   };
 
   const logout = () => {

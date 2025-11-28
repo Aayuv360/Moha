@@ -61,7 +61,8 @@ export const cartItems = pgTable("cart_items", {
     .default(sql`gen_random_uuid()`),
   productId: varchar("product_id").notNull(),
   quantity: integer("quantity").notNull().default(1),
-  sessionId: text("session_id").notNull(),
+  sessionId: text("session_id"),
+  userId: varchar("user_id"),
 });
 
 export const orders = pgTable("orders", {
@@ -141,7 +142,13 @@ export const insertProductSchema = createInsertSchema(products).omit({
 });
 export const insertCartItemSchema = createInsertSchema(cartItems).omit({
   id: true,
-});
+}).refine(
+  (data) => data.sessionId || data.userId,
+  {
+    message: "Either sessionId or userId must be provided",
+    path: ["sessionId"],
+  }
+);
 export const insertOrderSchema = createInsertSchema(orders).omit({
   id: true,
   createdAt: true,
