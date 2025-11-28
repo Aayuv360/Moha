@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,15 +11,15 @@ import type { User, Order } from "@shared/schema";
 import { Shield, LogOut } from "lucide-react";
 
 export default function AdminDashboard() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!user?.isAdmin) {
-      navigate("/admin/login");
+      navigate("/admin/login", { replace: true });
     }
-  }, [user, setLocation]);
+  }, [user, navigate]);
 
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   if (!user?.isAdmin) {

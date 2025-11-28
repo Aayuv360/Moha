@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ import { InventoryReturnsTab } from "@/components/InventoryReturnsTab";
 import InventoryProductDetail from "@/pages/InventoryProductDetail";
 
 export default function InventoryDashboard() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<
@@ -48,9 +48,9 @@ export default function InventoryDashboard() {
 
   useEffect(() => {
     if (!user?.isInventoryOwner) {
-      navigate("/inventory/login");
+      navigate("/inventory/login", { replace: true });
     }
-  }, [user, setLocation]);
+  }, [user, navigate]);
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/inventory/products"],
@@ -69,7 +69,7 @@ export default function InventoryDashboard() {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   const totalSales = orders.length;
