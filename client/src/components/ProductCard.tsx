@@ -30,8 +30,12 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const { toast } = useToast();
   const sessionId = getOrCreateSessionId();
 
+  const cartIdentifier = user?.id || sessionId;
+  const isUserCart = !!user?.id;
+  const cartEndpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
+
   const { data: cart = [] } = useQuery<CartItem[]>({
-    queryKey: [`/api/cart?sessionId=${sessionId}`],
+    queryKey: ['/api/cart', cartIdentifier],
   });
 
   const cartItem = cart.find((item) => item.productId === product.id);
@@ -49,11 +53,15 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       if (!cartItem) return;
       return await apiRequest("PATCH", `/api/cart/${cartItem.id}`, {
         quantity: newQuantity,
-      });
+      }, isUserCart ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : undefined);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/cart?sessionId=${sessionId}`],
+        queryKey: ['/api/cart', cartIdentifier],
       });
     },
   });
@@ -61,11 +69,15 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const removeFromCartMutation = useMutation({
     mutationFn: async () => {
       if (!cartItem) return;
-      return await apiRequest("DELETE", `/api/cart/${cartItem.id}`);
+      return await apiRequest("DELETE", `/api/cart/${cartItem.id}`, {}, isUserCart ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : undefined);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/cart?sessionId=${sessionId}`],
+        queryKey: ['/api/cart', cartIdentifier],
       });
     },
   });
