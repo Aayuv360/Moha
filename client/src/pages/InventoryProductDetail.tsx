@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,7 +19,7 @@ export default function InventoryProductDetail({
   product,
   onBack,
 }: InventoryProductDetailProps) {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -39,7 +39,7 @@ export default function InventoryProductDetail({
       if (onBack) {
         onBack();
       } else {
-        navigate("/inventory/dashboard?tab=products");
+        navigate("/inventory/dashboard?tab=products", { replace: true });
       }
     },
     onError: () => {

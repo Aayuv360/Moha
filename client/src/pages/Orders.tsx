@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +40,7 @@ interface ReturnRequest {
 
 export default function Orders() {
   const { user, token, isLoading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [tab, setTab] = useState<"orders" | "returns">("orders");
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
@@ -77,9 +77,9 @@ export default function Orders() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/login');
+      navigate('/login', { replace: true });
     }
-  }, [user, authLoading, setLocation]);
+  }, [user, authLoading, navigate]);
 
   if (authLoading || !user) {
     return (

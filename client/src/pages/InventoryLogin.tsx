@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,16 +32,16 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function InventoryLogin() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { user, setUser, setToken } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (user?.isInventoryOwner) {
-      navigate("/inventory/dashboard");
+      navigate("/inventory/dashboard", { replace: true });
     }
-  }, [user, setLocation]);
+  }, [user, navigate]);
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -62,7 +62,7 @@ export default function InventoryLogin() {
       setUser(response.user);
       setToken(response.token);
       localStorage.setItem("token", response.token);
-      navigate("/inventory/dashboard");
+      navigate("/inventory/dashboard", { replace: true });
       toast({
         title: "Login successful",
         description: "Welcome to inventory panel",

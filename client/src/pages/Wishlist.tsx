@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { ProductCard } from "@/components/ProductCard";
@@ -15,7 +15,7 @@ import { getOrCreateSessionId } from "@/lib/session";
 
 export default function Wishlist() {
   const { user, token, isLoading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const sessionId = getOrCreateSessionId();
 
@@ -28,9 +28,9 @@ export default function Wishlist() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
-  }, [user, authLoading, setLocation]);
+  }, [user, authLoading, navigate]);
 
   const { data: products = [], isLoading: loadingProducts } = useQuery<
     Product[]
