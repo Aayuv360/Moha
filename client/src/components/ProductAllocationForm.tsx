@@ -55,8 +55,7 @@ const productSchema = z.object({
   occasion: z.string().min(1, "Occasion required"),
   category: z.string().min(1, "Category required"),
   totalStock: z.coerce.number().min(1, "Stock must be at least 1"),
-  imageUrl: z.string().url("Valid image URL required"),
-  multipleImages: z.string().optional().default(""),
+  images: z.string().min(1, "At least one image URL required"),
   videoUrl: z.string().url("Valid video URL").optional().or(z.literal("")),
 });
 
@@ -105,8 +104,7 @@ export function ProductAllocationForm({
           occasion: editingProduct.occasion,
           category: editingProduct.category,
           totalStock: editingProduct.inStock,
-          imageUrl: editingProduct.imageUrl,
-          multipleImages: Array.isArray(editingProduct.images)
+          images: Array.isArray(editingProduct.images)
             ? editingProduct.images.join("\n")
             : "",
           videoUrl: editingProduct.videoUrl || "",
@@ -120,8 +118,7 @@ export function ProductAllocationForm({
           occasion: "Wedding",
           category: "",
           totalStock: 1,
-          imageUrl: "",
-          multipleImages: "",
+          images: "",
           videoUrl: "",
         },
   });
@@ -206,12 +203,10 @@ export function ProductAllocationForm({
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const images = data.multipleImages
-        ? data.multipleImages
-            .split("\n")
-            .map((url) => url.trim())
-            .filter((url) => url && url.startsWith("http"))
-        : [];
+      const images = data.images
+        .split("\n")
+        .map((url) => url.trim())
+        .filter((url) => url && url.startsWith("http"));
 
       const payload = {
         name: data.name,
@@ -222,7 +217,6 @@ export function ProductAllocationForm({
         occasion: data.occasion,
         category: data.category,
         inStock: data.totalStock,
-        imageUrl: data.imageUrl,
         images: images.length > 0 ? images : [],
         videoUrl:
           data.videoUrl && data.videoUrl.startsWith("http")
@@ -433,30 +427,19 @@ export function ProductAllocationForm({
               />
             </div>
 
-            {/* IMAGE URL */}
+            {/* PRODUCT IMAGES */}
             <FormField
               control={form.control}
-              name="imageUrl"
+              name="images"
               render={({ field }) => (
                 <FormItem className="mt-6">
-                  <FormLabel>Main Image URL</FormLabel>
+                  <FormLabel>Product Images (URLs)</FormLabel>
                   <FormControl>
-                    <Input type="url" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* MULTIPLE IMAGES */}
-            <FormField
-              control={form.control}
-              name="multipleImages"
-              render={({ field }) => (
-                <FormItem className="mt-6">
-                  <FormLabel>Additional Images (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} className="resize-none min-h-24" />
+                    <Textarea 
+                      {...field} 
+                      className="resize-none min-h-32"
+                      placeholder="Paste image URLs (one per line)&#10;Example:&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/image3.jpg"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

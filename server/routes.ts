@@ -449,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const schema = insertProductSchema.extend({
           trackingId: z.string(),
-          images: z.array(z.string()).optional(),
+          images: z.array(z.string()).min(1, "At least one image required"),
           videoUrl: z.string().nullable().optional(),
         });
 

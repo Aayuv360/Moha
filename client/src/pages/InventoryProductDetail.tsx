@@ -53,17 +53,17 @@ export default function InventoryProductDetail({
     }
   };
 
-  if (!product) {
+  const allImages = Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : [];
+
+  if (!product || allImages.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Product not found</p>
+        <p className="text-muted-foreground">Product not found or has no images</p>
       </div>
     );
   }
-
-  const allImages = [product.imageUrl, ...(product.images || [])].filter(
-    Boolean,
-  );
 
   return (
     <div>
