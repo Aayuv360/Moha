@@ -19,13 +19,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { insertOrderSchema } from "@shared/schema";
+import { insertOrderSchema, insertAddressSchema } from "@shared/schema";
 import { z } from "zod";
-import type { CartItem, Product } from "@shared/schema";
+import type { CartItem, Product, Address } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Edit2, Trash2, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface CartItemWithProduct extends CartItem {
   product: Product;
@@ -43,11 +50,144 @@ const checkoutSchema = insertOrderSchema.extend({
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
+const addressFormSchema = insertAddressSchema.extend({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  address: z.string().min(10, "Address must be at least 10 characters"),
+  city: z.string().min(2, "City is required"),
+  state: z.string().min(2, "State is required"),
+  pincode: z.string().regex(/^\d{6}$/, "Pincode must be 6 digits"),
+});
+
+type AddressFormData = z.infer<typeof addressFormSchema>;
+
+function AddressForm({
+  addressId,
+  onSave,
+  isLoading,
+  defaultValues,
+}: {
+  addressId: string | null;
+  onSave: (data: AddressFormData) => void;
+  isLoading: boolean;
+  defaultValues?: Address;
+}) {
+  const form = useForm<AddressFormData>({
+    resolver: zodResolver(addressFormSchema),
+    defaultValues: defaultValues || {
+      name: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      pincode: "",
+      isDefault: false,
+    },
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSave)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Full name" data-testid="input-address-name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Phone number" data-testid="input-address-phone" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Street address" data-testid="input-address-street" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="city"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>City</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="City" data-testid="input-address-city" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="state"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>State</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="State" data-testid="input-address-state" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="pincode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Pincode</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="6-digit pincode" data-testid="input-address-pincode" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-save-address">
+          {isLoading ? "Saving..." : "Save Address"}
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
 export default function Checkout() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
   const sessionId = getOrCreateSessionId();
   const { user, token } = useAuth();
 
@@ -71,6 +211,11 @@ export default function Checkout() {
     },
   });
 
+  const { data: addresses = [] } = useQuery<Address[]>({
+    queryKey: ["/api/addresses"],
+    enabled: !!token,
+  });
+
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -83,6 +228,50 @@ export default function Checkout() {
       pincode: "",
       totalAmount: "0",
       items: "",
+    },
+  });
+
+  const saveAddressMutation = useMutation({
+    mutationFn: async (data: AddressFormData) => {
+      if (editingAddressId) {
+        return await apiRequest("PATCH", `/api/addresses/${editingAddressId}`, data);
+      }
+      return await apiRequest("POST", "/api/addresses", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/addresses"] });
+      setEditingAddressId(null);
+      setShowAddressDialog(false);
+      toast({
+        title: "Address saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save address",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAddressMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/addresses/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/addresses"] });
+      if (selectedAddressId) setSelectedAddressId(null);
+      toast({
+        title: "Address deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete address",
+        variant: "destructive",
+      });
     },
   });
 
@@ -197,7 +386,106 @@ export default function Checkout() {
               </h2>
 
               <Form {...form}>
-                <form
+                {token && addresses.length > 0 && (
+              <>
+                <h3 className="text-lg font-medium mb-4">Saved Addresses</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {addresses.map((addr) => (
+                    <Card
+                      key={addr.id}
+                      className={`p-4 cursor-pointer transition-all ${
+                        selectedAddressId === addr.id
+                          ? "ring-2 ring-primary"
+                          : "hover-elevate"
+                      }`}
+                      onClick={() => {
+                        setSelectedAddressId(addr.id);
+                        form.setValue("customerName", addr.name);
+                        form.setValue("phone", addr.phone);
+                        form.setValue("address", addr.address);
+                        form.setValue("city", addr.city);
+                        form.setValue("state", addr.state);
+                        form.setValue("pincode", addr.pincode);
+                      }}
+                      data-testid={`card-address-${addr.id}`}
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="font-medium">{addr.name}</h4>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingAddressId(addr.id);
+                              setShowAddressDialog(true);
+                            }}
+                            className="p-1 hover-elevate"
+                            data-testid={`button-edit-address-${addr.id}`}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteAddressMutation.mutate(addr.id);
+                            }}
+                            className="p-1 hover-elevate text-destructive"
+                            data-testid={`button-delete-address-${addr.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{addr.address}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {addr.city}, {addr.state} {addr.pincode}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2">{addr.phone}</p>
+                    </Card>
+                  ))}
+                </div>
+                <Separator className="my-6" />
+              </>
+            )}
+
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-serif font-medium">
+                {selectedAddressId ? "Delivery Address" : "Shipping Information"}
+              </h2>
+              {token && (
+                <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingAddressId(null)}
+                      data-testid="button-add-new-address"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Address
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingAddressId ? "Edit Address" : "Add New Address"}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <AddressForm
+                      addressId={editingAddressId}
+                      onSave={(data) => saveAddressMutation.mutate(data)}
+                      isLoading={saveAddressMutation.isPending}
+                      defaultValues={
+                        editingAddressId
+                          ? addresses.find((a) => a.id === editingAddressId)
+                          : undefined
+                      }
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+
+            <form
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-6"
                 >

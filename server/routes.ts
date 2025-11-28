@@ -1205,6 +1205,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Address endpoints
+  app.get("/api/addresses", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const addresses = await storage.getUserAddresses(req.userId!);
+      res.json(addresses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch addresses" });
+    }
+  });
+
+  app.post("/api/addresses", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertAddressSchema.parse({
+        userId: req.userId!,
+        name: req.body.name,
+        phone: req.body.phone,
+        address: req.body.address,
+        city: req.body.city,
+        state: req.body.state,
+        pincode: req.body.pincode,
+        isDefault: req.body.isDefault || false,
+      });
+      const address = await storage.createAddress(validatedData);
+      res.status(201).json(address);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create address" });
+    }
+  });
+
+  app.patch(
+    "/api/addresses/:id",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const address = await storage.getAddress(req.params.id);
+        if (!address) {
+          return res.status(404).json({ error: "Address not found" });
+        }
+
+        if (address.userId !== req.userId!) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+
+        const validatedData = insertAddressSchema.partial().parse(req.body);
+        const updated = await storage.updateAddress(req.params.id, validatedData);
+        res.json(updated);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ error: error.errors });
+        }
+        res.status(500).json({ error: "Failed to update address" });
+      }
+    },
+  );
+
+  app.delete(
+    "/api/addresses/:id",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const address = await storage.getAddress(req.params.id);
+        if (!address) {
+          return res.status(404).json({ error: "Address not found" });
+        }
+
+        if (address.userId !== req.userId!) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+
+        await storage.deleteAddress(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        res.status(500).json({ error: "Failed to delete address" });
+      }
+    },
+  );
+
   // Store endpoints
   app.get(
     "/api/inventory/all-stores",
