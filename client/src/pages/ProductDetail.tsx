@@ -20,6 +20,7 @@ import {
 import type { Product, InsertCartItem } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
+import { useAuth } from "@/lib/auth";
 const features = [
   {
     icon: <Truck className="h-6 w-6" />,
@@ -40,6 +41,7 @@ const features = [
 export default function ProductDetail() {
   const [, params] = useRoute("/product/:id");
   const { toast } = useToast();
+  const { user, token } = useAuth();
 
   const zoomRef = useRef<HTMLImageElement>(null);
 
@@ -70,11 +72,15 @@ export default function ProductDetail() {
   /** ADD TO CART */
   // @ts-ignore
   const addToCartMutation = useMutation({
-    mutationFn: async (item) => await apiRequest("POST", "/api/cart", item),
+    mutationFn: async (item) => await apiRequest("POST", "/api/cart", item, user ? {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    } : undefined),
 
     onSuccess: () => {
-      const sessionId = getOrCreateSessionId();
-      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+      const cacheKey = user?.id ? `/api/cart/user/${user.id}` : `/api/cart/${getOrCreateSessionId()}`;
+      queryClient.invalidateQueries({ queryKey: [cacheKey] });
 
       if (buttonRef.current) {
         // GSAP Animation for Add to Cart button feedback
@@ -124,13 +130,15 @@ export default function ProductDetail() {
 
   const handleAddToCart = useCallback(() => {
     if (!product) return;
+    const sessionId = getOrCreateSessionId();
     // @ts-ignore
     addToCartMutation.mutate({
       productId: product.id,
       quantity: 1,
-      sessionId: getOrCreateSessionId(),
+      sessionId: user ? undefined : sessionId,
+      userId: user?.id,
     });
-  }, [product, addToCartMutation]);
+  }, [product, addToCartMutation, user]);
 
   const handleImageMove = useCallback((e) => {
     if (!zoomRef.current) return;

@@ -13,6 +13,7 @@ import { Filter, ShoppingBag, Search as SearchIcon } from "lucide-react";
 import type { Product, InsertCartItem } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
+import { useAuth } from "@/lib/auth";
 import gsap from "gsap";
 
 interface ProductFilters {
@@ -41,6 +42,7 @@ function parseProductParams(location: string): ProductFilters {
 export default function Products() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, token } = useAuth();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const filters = parseProductParams(location);
@@ -72,12 +74,16 @@ export default function Products() {
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
-      return await apiRequest("POST", "/api/cart", item);
+      return await apiRequest("POST", "/api/cart", item, user ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : undefined);
     },
     onSuccess: () => {
-      const sessionId = getOrCreateSessionId();
+      const cacheKey = user?.id ? `/api/cart/user/${user.id}` : `/api/cart?sessionId=${getOrCreateSessionId()}`;
       queryClient.invalidateQueries({
-        queryKey: [`/api/cart?sessionId=${sessionId}`],
+        queryKey: [cacheKey],
       });
       toast({
         title: "Added to cart",
@@ -112,7 +118,8 @@ export default function Products() {
     addToCartMutation.mutate({
       productId: product.id,
       quantity: quantity,
-      sessionId,
+      sessionId: user ? undefined : sessionId,
+      userId: user?.id,
     });
   };
 
