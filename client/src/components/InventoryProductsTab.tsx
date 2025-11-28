@@ -153,7 +153,8 @@ export function ProductsTab({
   };
 
   const handleEditProduct = (product: Product) => {
-    setLocation(`/inventory/product/${product.id}`);
+    setEditingProduct(product);
+    setShowProductDialog(true);
   };
 
   const categoryProducts = products.filter(
@@ -314,7 +315,13 @@ export function ProductsTab({
                           {product.name}
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {product.trackingId}
+                          <button
+                            onClick={() => setLocation(`/inventory/product/${product.id}`)}
+                            className="text-primary hover:underline cursor-pointer"
+                            data-testid={`link-product-id-${product.id}`}
+                          >
+                            {product.trackingId}
+                          </button>
                         </td>
 
                         <td className="px-4 py-3">{product.fabric}</td>
@@ -361,8 +368,7 @@ export function ProductsTab({
                               onClick={() => handleEditProduct(product)}
                               data-testid={`button-edit-product-${product.id}`}
                             >
-                              <Edit2 className="h-3 w-3 mr-1" />
-                              Edit
+                              <Edit2 className="h-3 w-3" />
                             </Button>
 
                             <Button
