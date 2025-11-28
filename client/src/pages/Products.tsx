@@ -88,7 +88,7 @@ export default function Products() {
       );
     },
     onSuccess: () => {
-      const cartIdentifier = user?.id || sessionId;
+      const cartIdentifier = user?.id;
       queryClient.invalidateQueries({
         queryKey: ["/api/cart", cartIdentifier],
       });

@@ -44,7 +44,12 @@ export default function ProductDetail() {
     queryKey: ["/api/onlineProducts", params?.id],
     enabled: !!params?.id,
   });
+  const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
+    queryKey: [`/api/wishlist/check/${product?.id}`],
+    enabled: !!token,
+  });
 
+  const isInWishlist = wishlistData?.isInWishlist || false;
   const { data: cart = [] } = useQuery<CartItem[]>({
     queryKey: ["/api/cart", cartIdentifier],
     queryFn: async () => {
@@ -225,6 +230,42 @@ export default function ProductDetail() {
       </div>
     );
   }
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please login to add items to wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+    toggleWishlistMutation.mutate();
+  };
+  const toggleWishlistMutation = useMutation({
+    mutationFn: async () => {
+      if (isInWishlist) {
+        return await apiRequest("DELETE", `/api/wishlist/${product.id}`);
+      } else {
+        return await apiRequest("POST", "/api/wishlist", {
+          productId: product.id,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/wishlist/check/${product.id}`],
+      });
+      toast({
+        title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
+        description: isInWishlist
+          ? "Item removed from your wishlist"
+          : "Item added to your wishlist successfully.",
+      });
+    },
+  });
 
   const specs = [
     { label: "Fabric", value: product.fabric },
@@ -363,9 +404,9 @@ export default function ProductDetail() {
             </div>
 
             {/* ACTION BUTTONS */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full">
+            <div className="flex flex-col sm:flex-row gap-3 mt-4 items-center sm:items-start">
               {cartQuantity > 0 ? (
-                <div className="flex items-center gap-2 border border-border rounded-md overflow-hidden flex-1">
+                <div className="flex items-center gap-2 border border-border rounded-md overflow-hidden">
                   <Button
                     size="lg"
                     variant="ghost"
@@ -374,12 +415,12 @@ export default function ProductDetail() {
                       updateCartMutation.isPending ||
                       removeFromCartMutation.isPending
                     }
-                    className="flex-1"
+                    className="h-10 w-10 p-0 text-lg sm:text-xl"
                     data-testid={`button-decrease-qty-${product.id}`}
                   >
                     −
                   </Button>
-                  <span className="px-4 text-center text-lg font-medium">
+                  <span className="w-10 text-center text-lg font-medium">
                     {cartQuantity}
                   </span>
                   <Button
@@ -390,7 +431,7 @@ export default function ProductDetail() {
                       cartQuantity >= product.inStock ||
                       updateCartMutation.isPending
                     }
-                    className="flex-1"
+                    className="h-10 w-10 p-0 text-lg sm:text-xl"
                     data-testid={`button-increase-qty-${product.id}`}
                   >
                     +
@@ -400,7 +441,7 @@ export default function ProductDetail() {
                 <Button
                   ref={buttonRef}
                   size="lg"
-                  className="flex-1 gap-2 transition-transform duration-200 hover:shadow-xl hover:shadow-primary/30"
+                  className="flex-1 gap-2 text-lg py-3 transition-transform duration-200 hover:shadow-xl hover:shadow-primary/30"
                   onClick={handleAddToCart}
                   disabled={
                     product.inStock === 0 || addToCartMutation.isPending
@@ -418,8 +459,9 @@ export default function ProductDetail() {
               <Button
                 variant="outline"
                 size="lg"
-                className="gap-2 flex-1 sm:flex-none hover:bg-primary/5 hover:text-primary/60 border-primary/30"
-                data-testid="button-wishlist"
+                className="gap-2 w-full sm:w-auto hover:bg-primary/5 hover:text-primary/60 border-primary/30"
+                onClick={handleWishlistToggle}
+                disabled={toggleWishlistMutation.isPending}
               >
                 <Heart className="h-5 w-5 fill-primary text-primary" />
                 Wishlist
