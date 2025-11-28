@@ -36,6 +36,15 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
   const { data: cart = [] } = useQuery<CartItem[]>({
     queryKey: ['/api/cart', cartIdentifier],
+    queryFn: async () => {
+      const endpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
+      const options = isUserCart ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : undefined;
+      return await apiRequest('GET', endpoint, undefined, options);
+    },
   });
 
   const cartItem = cart.find((item) => item.productId === product.id);

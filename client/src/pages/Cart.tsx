@@ -29,6 +29,15 @@ export default function Cart() {
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ['/api/cart', cartIdentifier],
+    queryFn: async () => {
+      const endpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
+      const options = isUserCart ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : undefined;
+      return await apiRequest('GET', endpoint, undefined, options);
+    },
   });
 
   const updateQuantityMutation = useMutation({
