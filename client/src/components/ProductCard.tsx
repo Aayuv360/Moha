@@ -121,11 +121,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       });
     },
   });
-
-  const images =
-    Array.isArray(product.images) && product.images.length > 0
-      ? product.images
-      : [product.imageUrl];
+  const images = Array.isArray(product.images) ? product.images : [];
 
   // Scroll animation for card
   useEffect(() => {
@@ -167,7 +163,6 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     };
   }, [isHovered, images.length]);
 
-  // Low-stock badge animation
   useEffect(() => {
     if (product.inStock > 0 && product.inStock <= 5 && badgeRef.current) {
       const tl = gsap.timeline({ repeat: -1, yoyo: true });
@@ -232,7 +227,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
             {/* Image indicators */}
             {images.length > 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                {images.map((_, idx) => (
+                {images.map((_: any, idx: number) => (
                   <div
                     key={idx}
                     className={`h-1.5 rounded-full transition-all ${

@@ -11,7 +11,7 @@ import type { Product } from "@shared/schema";
 import { ProductAllocationForm } from "@/components/ProductAllocationForm";
 
 interface InventoryProductDetailProps {
-  productId: Product;
+  product: Product;
   onBack?: () => void;
 }
 
@@ -53,14 +53,17 @@ export default function InventoryProductDetail({
     }
   };
 
-  const allImages = Array.isArray(product.images) && product.images.length > 0
-    ? product.images
-    : [];
+  const allImages = product.images
+    .replace(/[{}]/g, "")
+    .split(",")
+    .map((s: any) => s.replace(/"/g, ""));
 
   if (!product || allImages.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Product not found or has no images</p>
+        <p className="text-muted-foreground">
+          Product not found or has no images
+        </p>
       </div>
     );
   }
@@ -80,7 +83,7 @@ export default function InventoryProductDetail({
 
             {allImages.length > 1 && (
               <div className="grid grid-cols-4 sm:grid-cols-5 gap-1 sm:gap-2">
-                {allImages.map((img, idx) => (
+                {allImages.map((img: any, idx: any) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
@@ -104,7 +107,9 @@ export default function InventoryProductDetail({
 
           <div className="space-y-4 sm:space-y-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2">{product.name}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                {product.name}
+              </h1>
               <p className="text-xl sm:text-2xl font-semibold text-primary">
                 ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
               </p>
@@ -113,40 +118,56 @@ export default function InventoryProductDetail({
             <Card className="p-3 sm:p-6 space-y-4">
               <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Fabric</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Fabric
+                  </p>
                   <p className="font-medium text-sm">{product.fabric}</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Color</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Color
+                  </p>
                   <p className="font-medium text-sm">{product.color}</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Occasion</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Occasion
+                  </p>
                   <p className="font-medium text-sm">{product.occasion}</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Category</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Category
+                  </p>
                   <p className="font-medium text-sm">{product.category}</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Stock</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Stock
+                  </p>
                   <p className="font-medium text-sm">{product.inStock} units</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">SKU</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    SKU
+                  </p>
                   <p className="font-medium text-xs">{product.trackingId}</p>
                 </div>
               </div>
             </Card>
 
             <Card className="p-3 sm:p-6">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-2">Description</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                Description
+              </p>
               <p className="text-sm leading-relaxed">{product.description}</p>
             </Card>
 
             {product.videoUrl && (
               <Card className="p-3 sm:p-6">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-2">Video</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                  Video
+                </p>
                 <a
                   href={product.videoUrl}
                   target="_blank"
@@ -193,7 +214,7 @@ export default function InventoryProductDetail({
             onSuccess={() => {
               setShowEditDialog(false);
               queryClient.invalidateQueries({
-                queryKey: ["/api/inventory/products", productId],
+                queryKey: ["/api/inventory/products", product.id],
               });
             }}
           />
