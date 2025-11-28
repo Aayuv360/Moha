@@ -156,36 +156,39 @@ export default function InventoryDashboard() {
               />
             )}
 
-            {tab === "products" && !viewingProductId && (
-              <ProductsTab
-                products={products}
-                editingProduct={editingProduct}
-                setEditingProduct={setEditingProduct}
-                showProductDialog={showProductDialog}
-                setShowProductDialog={setShowProductDialog}
-                selectedProducts={selectedProducts}
-                setSelectedProducts={setSelectedProducts}
-                onProductIdClick={setViewingProductId}
-              />
-            )}
-
-            {tab === "products" && viewingProductId && (
-              <>
-                <div className="border-b pb-4 mb-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setViewingProductId(null)}
-                    data-testid="button-back-to-products"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Products
-                  </Button>
+            {tab === "products" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                  <ProductsTab
+                    products={products}
+                    editingProduct={editingProduct}
+                    setEditingProduct={setEditingProduct}
+                    showProductDialog={showProductDialog}
+                    setShowProductDialog={setShowProductDialog}
+                    selectedProducts={selectedProducts}
+                    setSelectedProducts={setSelectedProducts}
+                    onProductIdClick={setViewingProductId}
+                    viewingProductId={viewingProductId}
+                  />
                 </div>
-                <InventoryProductDetail
-                  productId={viewingProductId}
-                  onBack={() => setViewingProductId(null)}
-                />
-              </>
+                {viewingProductId && (
+                  <div className="lg:col-span-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setViewingProductId(null)}
+                      className="mb-4"
+                      data-testid="button-back-to-products"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Products
+                    </Button>
+                    <InventoryProductDetail
+                      productId={viewingProductId}
+                      onBack={() => setViewingProductId(null)}
+                    />
+                  </div>
+                )}
+              </div>
             )}
 
             {tab === "orders" && (

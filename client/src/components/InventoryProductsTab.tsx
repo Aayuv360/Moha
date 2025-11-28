@@ -30,6 +30,7 @@ interface ProductsTabProps {
   selectedProducts: Set<string>;
   setSelectedProducts: (products: Set<string>) => void;
   onProductIdClick?: (productId: string) => void;
+  viewingProductId?: string | null;
 }
 
 export function ProductsTab({
@@ -41,6 +42,7 @@ export function ProductsTab({
   selectedProducts,
   setSelectedProducts,
   onProductIdClick,
+  viewingProductId,
 }: ProductsTabProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -164,13 +166,13 @@ export function ProductsTab({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">
           Your Products ({products.length})
         </h2>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {selectedProducts.size > 0 && (
             <Button
               variant="destructive"
@@ -213,7 +215,7 @@ export function ProductsTab({
           <p className="text-muted-foreground">No products yet</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex gap-2 flex-wrap">
             {categories.map((category) => (
               <Button
@@ -233,14 +235,16 @@ export function ProductsTab({
             ))}
           </div>
 
-          {categoryProducts.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                No products in this category
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto border rounded-lg">
+          {!viewingProductId && (
+            <>
+              {categoryProducts.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    No products in this category
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border rounded-lg">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
@@ -423,7 +427,9 @@ export function ProductsTab({
                   ))}
                 </tbody>
               </table>
-            </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
