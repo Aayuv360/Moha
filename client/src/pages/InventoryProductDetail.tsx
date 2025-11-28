@@ -12,9 +12,10 @@ import { ProductAllocationForm } from "@/components/ProductAllocationForm";
 
 interface InventoryProductDetailProps {
   productId: string;
+  onBack?: () => void;
 }
 
-export default function InventoryProductDetail({ productId }: InventoryProductDetailProps) {
+export default function InventoryProductDetail({ productId, onBack }: InventoryProductDetailProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -35,7 +36,11 @@ export default function InventoryProductDetail({ productId }: InventoryProductDe
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/products"] });
       toast({ title: "Product deleted successfully" });
-      setLocation("/inventory/dashboard?tab=products");
+      if (onBack) {
+        onBack();
+      } else {
+        setLocation("/inventory/dashboard?tab=products");
+      }
     },
     onError: () => {
       toast({ title: "Failed to delete product", variant: "destructive" });
@@ -50,24 +55,16 @@ export default function InventoryProductDetail({ productId }: InventoryProductDe
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading product details...</p>
-        </div>
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Loading product details...</p>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <Button variant="ghost" onClick={() => setLocation("/inventory/dashboard?tab=products")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Products
-        </Button>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Product not found</p>
-        </div>
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Product not found</p>
       </div>
     );
   }
@@ -75,16 +72,7 @@ export default function InventoryProductDetail({ productId }: InventoryProductDe
   const allImages = [product.imageUrl, ...(product.images || [])].filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => setLocation("/inventory/dashboard?tab=products")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Products
-          </Button>
-        </div>
-      </div>
-
+    <div>
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">

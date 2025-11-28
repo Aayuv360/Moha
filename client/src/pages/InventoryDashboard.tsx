@@ -4,13 +4,14 @@ import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Store, LogOut, BarChart3, Settings, RotateCw } from "lucide-react";
+import { Store, LogOut, BarChart3, Settings, RotateCw, ArrowLeft } from "lucide-react";
 import type { Product, Order, Return } from "@shared/schema";
 import { DashboardTab } from "@/components/InventoryDashboardTab";
 import { ProductsTab } from "@/components/InventoryProductsTab";
 import { OrdersTab } from "@/components/InventoryOrdersTab";
 import { SettingsTab } from "@/components/InventorySettingsTab";
 import { InventoryReturnsTab } from "@/components/InventoryReturnsTab";
+import InventoryProductDetail from "@/pages/InventoryProductDetail";
 
 export default function InventoryDashboard() {
   const [, setLocation] = useLocation();
@@ -28,6 +29,7 @@ export default function InventoryDashboard() {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(
     new Set(),
   );
+  const [viewingProductId, setViewingProductId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.isInventoryOwner) {
@@ -154,7 +156,7 @@ export default function InventoryDashboard() {
               />
             )}
 
-            {tab === "products" && (
+            {tab === "products" && !viewingProductId && (
               <ProductsTab
                 products={products}
                 editingProduct={editingProduct}
@@ -163,7 +165,27 @@ export default function InventoryDashboard() {
                 setShowProductDialog={setShowProductDialog}
                 selectedProducts={selectedProducts}
                 setSelectedProducts={setSelectedProducts}
+                onProductIdClick={setViewingProductId}
               />
+            )}
+
+            {tab === "products" && viewingProductId && (
+              <>
+                <div className="border-b pb-4 mb-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setViewingProductId(null)}
+                    data-testid="button-back-to-products"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Products
+                  </Button>
+                </div>
+                <InventoryProductDetail
+                  productId={viewingProductId}
+                  onBack={() => setViewingProductId(null)}
+                />
+              </>
             )}
 
             {tab === "orders" && (

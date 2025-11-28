@@ -29,6 +29,7 @@ interface ProductsTabProps {
   setShowProductDialog: (show: boolean) => void;
   selectedProducts: Set<string>;
   setSelectedProducts: (products: Set<string>) => void;
+  onProductIdClick?: (productId: string) => void;
 }
 
 export function ProductsTab({
@@ -39,6 +40,7 @@ export function ProductsTab({
   setShowProductDialog,
   selectedProducts,
   setSelectedProducts,
+  onProductIdClick,
 }: ProductsTabProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -316,7 +318,7 @@ export function ProductsTab({
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           <button
-                            onClick={() => setLocation(`/inventory/product/${product.id}`)}
+                            onClick={() => onProductIdClick?.(product.id)}
                             className="text-primary hover:underline cursor-pointer"
                             data-testid={`link-product-id-${product.id}`}
                           >
