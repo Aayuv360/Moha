@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,7 +26,7 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (user?.isAdmin) {
-      setLocation("/admin/dashboard");
+      navigate("/admin/dashboard");
     }
   }, [user, setLocation]);
 
@@ -45,7 +45,7 @@ export default function AdminLogin() {
       setUser(response.user);
       setToken(response.token);
       localStorage.setItem("token", response.token);
-      setLocation("/admin/dashboard");
+      navigate("/admin/dashboard");
       toast({
         title: "Login successful",
         description: "Welcome to admin panel",

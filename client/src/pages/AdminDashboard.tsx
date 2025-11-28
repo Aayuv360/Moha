@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!user?.isAdmin) {
-      setLocation("/admin/login");
+      navigate("/admin/login");
     }
   }, [user, setLocation]);
 
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     logout();
-    setLocation("/");
+    navigate("/");
   };
 
   if (!user?.isAdmin) {

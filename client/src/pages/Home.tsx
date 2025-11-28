@@ -5,7 +5,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Sparkles, Truck, Shield, Clock } from "lucide-react";
 import heritageImage from "@assets/generated_images/Zari_embroidery_close-up_detail_f166f911.png";
 
@@ -160,7 +160,7 @@ export default function Home() {
               <p className="text-muted-foreground leading-relaxed mb-8">
                 From the intricate zari work of Banarasi silk to the vibrant colors of Kanjivaram, every piece tells a unique story of skill, patience, and artistic excellence.
               </p>
-              <Link href="/products">
+              <Link to="/products">
                 <a data-testid="link-view-collection">
                   <Button size="lg">View Full Collection</Button>
                 </a>

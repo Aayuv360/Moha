@@ -1,5 +1,5 @@
 import { ShoppingCart, Heart, User, Search, LogOut, Package } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Navigation() {
-  const [location, setLocation] = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const sessionId = getOrCreateSessionId();
   const { user, token, logout } = useAuth();
 
@@ -47,14 +48,14 @@ export function Navigation() {
 
   const handleLogout = () => {
     logout();
-    setLocation("/");
+    navigate("/");
   };
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between h-16 md:h-20">
-          <Link href="/" data-testid="link-home">
+          <Link to="/" data-testid="link-home">
             <div className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2 cursor-pointer">
               <h1 className="text-2xl md:text-3xl font-serif font-light tracking-wide">
                 <span style={{ color: '#9b083a' }}>Moha</span>
@@ -64,30 +65,30 @@ export function Navigation() {
 
           <nav className="hidden md:flex items-center gap-6">
             <Link
-              href="/products"
+              to="/products"
               className={`text-sm font-medium tracking-wide uppercase hover:text-primary transition-colors ${
-                location === '/products' ? 'text-primary' : 'text-foreground'
+                location.pathname === '/products' ? 'text-primary' : 'text-foreground'
               }`}
               data-testid="link-products"
             >
               Shop
             </Link>
             <Link
-              href="/products?occasion=Wedding"
+              to="/products?occasion=Wedding"
               className="text-sm font-medium tracking-wide uppercase hover:text-primary transition-colors"
               data-testid="link-wedding"
             >
               Wedding
             </Link>
             <Link
-              href="/products?occasion=Festive"
+              to="/products?occasion=Festive"
               className="text-sm font-medium tracking-wide uppercase hover:text-primary transition-colors"
               data-testid="link-festive"
             >
               Festive
             </Link>
             <Link
-              href="/products?occasion=Casual"
+              to="/products?occasion=Casual"
               className="text-sm font-medium tracking-wide uppercase hover:text-primary transition-colors"
               data-testid="link-casual"
             >
@@ -99,7 +100,7 @@ export function Navigation() {
             <Button variant="ghost" size="icon" className="hidden md:flex" data-testid="button-search">
               <Search className="h-5 w-5" />
             </Button>
-            <Link href="/wishlist" asChild>
+            <Link to="/wishlist" asChild>
               <Button variant="ghost" size="icon" className="relative" data-testid="link-wishlist">
                 <Heart className="h-5 w-5" />
                 {wishlistCount > 0 && (
@@ -112,7 +113,7 @@ export function Navigation() {
                 )}
               </Button>
             </Link>
-            <Link href="/cart" asChild>
+            <Link to="/cart" asChild>
               <Button variant="ghost" size="icon" className="relative" data-testid="link-cart">
                 <ShoppingCart className="h-5 w-5" />
                 {cartCount > 0 && (
@@ -142,7 +143,7 @@ export function Navigation() {
                     {user.email}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setLocation('/orders')} data-testid="link-orders">
+                  <DropdownMenuItem onClick={() => navigate('/orders')} data-testid="link-orders">
                     <Package className="h-4 w-4 mr-2" />
                     My Orders
                   </DropdownMenuItem>
@@ -153,7 +154,7 @@ export function Navigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link href="/login" asChild>
+              <Link to="/login" asChild>
                 <Button variant="ghost" size="sm" data-testid="button-login">
                   Login
                 </Button>

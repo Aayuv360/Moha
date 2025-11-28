@@ -247,7 +247,7 @@ export default function ProductDetail() {
           <p className="text-muted-foreground mb-8">
             The item you were looking for could not be located.
           </p>
-          <Link href="/products">
+          <Link to="/products">
             <Button size="lg">Back to Products</Button>
           </Link>
         </div>
@@ -301,7 +301,7 @@ export default function ProductDetail() {
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-16">
-        <Link href="/products">
+        <Link to="/products">
           <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition mb-8 cursor-pointer">
             <ChevronLeft className="h-4 w-4" /> All Products
           </span>

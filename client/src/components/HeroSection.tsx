@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import heroImage from "@assets/generated_images/Model_in_burgundy_saree_hero_554d9242.png";
 
 export function HeroSection() {
@@ -69,7 +69,7 @@ export function HeroSection() {
               className="px-8 bg-primary/90 backdrop-blur-sm hover:bg-primary"
               asChild
             >
-              <Link href="/products" data-testid="button-shop-collection">
+              <Link to="/products" data-testid="button-shop-collection">
                 Shop Collection
               </Link>
             </Button>
@@ -79,7 +79,7 @@ export function HeroSection() {
               className="px-8 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20"
               asChild
             >
-              <Link href="/products?occasion=Wedding" data-testid="button-wedding-collection">
+              <Link to="/products?occasion=Wedding" data-testid="button-wedding-collection">
                 Wedding Collection
               </Link>
             </Button>

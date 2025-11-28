@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import type { CartItem, Product } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -208,7 +208,7 @@ export default function Cart() {
                 </span>
               </div>
 
-              <Link href="/checkout">
+              <Link to="/checkout">
                 <a className="block w-full" data-testid="link-checkout">
                   <Button
                     size="lg"
@@ -220,7 +220,7 @@ export default function Cart() {
                 </a>
               </Link>
 
-              <Link href="/products">
+              <Link to="/products">
                 <a
                   className="block w-full mt-3"
                   data-testid="link-continue-shopping"

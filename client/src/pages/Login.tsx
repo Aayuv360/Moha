@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 
 export default function Login() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
@@ -26,7 +26,7 @@ export default function Login() {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      setLocation("/");
+      navigate("/", { replace: true });
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -86,7 +86,7 @@ export default function Login() {
             </form>
             <div className="mt-6 text-center text-sm">
               Don't have an account?{" "}
-              <Link href="/register" className="text-primary hover:underline" data-testid="link-register">
+              <Link to="/register" className="text-primary hover:underline" data-testid="link-register">
                 Create one
               </Link>
             </div>

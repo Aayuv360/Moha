@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
@@ -139,7 +139,7 @@ export default function Checkout() {
   }
 
   if (cartItems.length === 0 && !orderPlaced) {
-    setLocation("/cart");
+    navigate("/cart");
     return null;
   }
 
@@ -162,13 +162,13 @@ export default function Checkout() {
             with order details shortly.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button size="lg" onClick={() => setLocation("/products")}>
+            <Button size="lg" onClick={() => navigate("/products")}>
               Continue Shopping
             </Button>
             <Button
               variant="outline"
               size="lg"
-              onClick={() => setLocation("/")}
+              onClick={() => navigate("/")}
             >
               Go to Home
             </Button>

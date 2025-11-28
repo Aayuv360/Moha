@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { ProductCard } from "@/components/ProductCard";
@@ -28,7 +28,7 @@ export default function Wishlist() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      setLocation("/login");
+      navigate("/login");
     }
   }, [user, authLoading, setLocation]);
 
@@ -122,7 +122,7 @@ export default function Wishlist() {
                 Start adding sarees to your wishlist by clicking the heart icon
               </p>
               <Button
-                onClick={() => setLocation("/products")}
+                onClick={() => navigate("/products")}
                 data-testid="button-browse-products"
               >
                 Browse Products

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -39,7 +39,7 @@ export default function InventoryProductDetail({
       if (onBack) {
         onBack();
       } else {
-        setLocation("/inventory/dashboard?tab=products");
+        navigate("/inventory/dashboard?tab=products");
       }
     },
     onError: () => {

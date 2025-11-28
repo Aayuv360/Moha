@@ -1,6 +1,6 @@
 import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -29,10 +29,8 @@ export function EmptyState({
         {description}
       </p>
       {actionLabel && actionHref && (
-        <Link href={actionHref}>
-          <a data-testid="button-empty-state-action">
-            <Button size="lg">{actionLabel}</Button>
-          </a>
+        <Link to={actionHref} data-testid="button-empty-state-action">
+          <Button size="lg">{actionLabel}</Button>
         </Link>
       )}
     </div>

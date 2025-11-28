@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,7 +39,7 @@ export default function InventoryLogin() {
 
   useEffect(() => {
     if (user?.isInventoryOwner) {
-      setLocation("/inventory/dashboard");
+      navigate("/inventory/dashboard");
     }
   }, [user, setLocation]);
 
@@ -62,7 +62,7 @@ export default function InventoryLogin() {
       setUser(response.user);
       setToken(response.token);
       localStorage.setItem("token", response.token);
-      setLocation("/inventory/dashboard");
+      navigate("/inventory/dashboard");
       toast({
         title: "Login successful",
         description: "Welcome to inventory panel",

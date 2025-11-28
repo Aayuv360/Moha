@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 
 export default function Register() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { register } = useAuth();
   const { toast } = useToast();
   const [name, setName] = useState("");
@@ -47,7 +47,7 @@ export default function Register() {
         title: "Account created!",
         description: "Welcome to Moha Saree Collection",
       });
-      setLocation("/");
+      navigate("/", { replace: true });
     } catch (error: any) {
       toast({
         title: "Registration failed",
@@ -133,7 +133,7 @@ export default function Register() {
             </form>
             <div className="mt-6 text-center text-sm">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary hover:underline" data-testid="link-login">
+              <Link to="/login" className="text-primary hover:underline" data-testid="link-login">
                 Sign in
               </Link>
             </div>

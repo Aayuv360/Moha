@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,7 +77,7 @@ export default function Orders() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      setLocation('/login');
+      navigate('/login');
     }
   }, [user, authLoading, setLocation]);
 
@@ -140,7 +140,7 @@ export default function Orders() {
               <p className="text-muted-foreground mb-6 text-center">
                 Start shopping to see your orders here
               </p>
-              <Button onClick={() => setLocation('/products')} data-testid="button-browse-products">
+              <Button onClick={() => navigate('/products')} data-testid="button-browse-products">
                 Browse Products
               </Button>
             </CardContent>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { ProductCard } from "@/components/ProductCard";
@@ -40,12 +40,13 @@ function parseProductParams(location: string): ProductFilters {
 }
 
 export default function Products() {
-  const [location, setLocation] = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { user, token } = useAuth();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const filters = parseProductParams(location);
+  const filters = parseProductParams(location.pathname + location.search);
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["products", filters],
@@ -157,7 +158,7 @@ export default function Products() {
     });
 
     const queryString = newParams.toString();
-    setLocation(queryString ? `/products?${queryString}` : "/products", {
+    navigate(queryString ? `/products?${queryString}` : "/products", {
       replace: false,
     });
   };
