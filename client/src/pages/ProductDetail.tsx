@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRoute, Link } from "wouter";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import gsap from "gsap";
 import { Navigation } from "@/components/Navigation";
@@ -23,7 +23,7 @@ import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 
 export default function ProductDetail() {
-  const [, params] = useRoute("/product/:id");
+  const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const { user, token } = useAuth();
 
@@ -41,8 +41,8 @@ export default function ProductDetail() {
   const isUserCart = !!user?.id;
 
   const { data: product, isLoading } = useQuery<Product>({
-    queryKey: ["/api/onlineProducts", params?.id],
-    enabled: !!params?.id,
+    queryKey: ["/api/onlineProducts", id],
+    enabled: !!id,
   });
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
     queryKey: [`/api/wishlist/check/${product?.id}`],
@@ -142,17 +142,17 @@ export default function ProductDetail() {
   const toggleWishlistMutation = useMutation({
     mutationFn: async () => {
       if (isInWishlist) {
-        return await apiRequest("DELETE", `/api/wishlist/${product.id}`);
+        return await apiRequest("DELETE", `/api/wishlist/${product?.id}`);
       } else {
         return await apiRequest("POST", "/api/wishlist", {
-          productId: product.id,
+          productId: product?.id,
         });
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
       queryClient.invalidateQueries({
-        queryKey: [`/api/wishlist/check/${product.id}`],
+        queryKey: [`/api/wishlist/check/${product?.id}`],
       });
       toast({
         title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
@@ -443,7 +443,7 @@ export default function ProductDetail() {
                 <Button
                   ref={buttonRef}
                   size="lg"
-                  className="flex-1 gap-2 text-lg py-3 transition-transform duration-200 hover:shadow-xl hover:shadow-primary/30"
+                  className="flex-1 gap-2 text-lg transition-transform duration-200 hover:shadow-xl hover:shadow-primary/30"
                   onClick={handleAddToCart}
                   disabled={
                     product.inStock === 0 || addToCartMutation.isPending
@@ -461,11 +461,18 @@ export default function ProductDetail() {
               <Button
                 variant="outline"
                 size="lg"
-                className="gap-2 w-full sm:w-auto hover:bg-primary/5 hover:text-primary/60 border-primary/30"
+                className={`
+                  gap-2 w-full sm:w-auto 
+                  hover:bg-primary/10 
+                  border border-primary/30 
+                  ${isInWishlist ? "text-primary" : ""}
+                `}
                 onClick={handleWishlistToggle}
                 disabled={toggleWishlistMutation.isPending}
               >
-                <Heart className="h-5 w-5 fill-primary text-primary" />
+                <Heart
+                  className={`h-4 w-4 transition-all ${isInWishlist ? "fill-primary text-primary" : ""}`}
+                />
                 Wishlist
               </Button>
             </div>

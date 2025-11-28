@@ -22,17 +22,17 @@ export default function AdminDashboard() {
   }, [user, setLocation]);
 
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ['/api/admin/users'],
+    queryKey: ["/api/admin/users"],
     enabled: !!user?.isAdmin,
   });
 
   const { data: orders = [] } = useQuery<Order[]>({
-    queryKey: ['/api/admin/orders'],
+    queryKey: ["/api/admin/orders"],
     enabled: !!user?.isAdmin,
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ['/api/admin/all-products'],
+    queryKey: ["/api/admin/all-products"],
     enabled: !!user?.isAdmin,
   });
 
@@ -71,7 +71,11 @@ export default function AdminDashboard() {
             <Shield className="h-6 w-6" />
             <h1 className="text-2xl font-bold">Admin Panel</h1>
           </div>
-          <Button variant="outline" onClick={handleLogout} data-testid="button-admin-logout">
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            data-testid="button-admin-logout"
+          >
             <LogOut className="h-4 w-4 mr-2" />
             Logout
           </Button>
@@ -82,7 +86,9 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Users
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{users.length}</div>
@@ -90,7 +96,9 @@ export default function AdminDashboard() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Orders
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{orders.length}</div>
@@ -98,10 +106,12 @@ export default function AdminDashboard() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Products</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Products
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{products.length}</div>
+              <div className="text-2xl font-bold">{products?.length}</div>
             </CardContent>
           </Card>
         </div>
@@ -114,17 +124,33 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {users.map((u: any) => (
-                  <div key={u.id} className="flex items-center justify-between p-3 border rounded">
+                  <div
+                    key={u.id}
+                    className="flex items-center justify-between p-3 border rounded"
+                  >
                     <div className="flex-1">
-                      <p className="font-medium" data-testid={`text-user-${u.id}`}>{u.name}</p>
+                      <p
+                        className="font-medium"
+                        data-testid={`text-user-${u.id}`}
+                      >
+                        {u.name}
+                      </p>
                       <p className="text-sm text-muted-foreground">{u.email}</p>
-                      {u.isBlocked && <Badge variant="destructive" className="mt-1">Blocked</Badge>}
+                      {u.isBlocked && (
+                        <Badge variant="destructive" className="mt-1">
+                          Blocked
+                        </Badge>
+                      )}
                     </div>
                     <Button
                       size="sm"
                       variant={u.isBlocked ? "default" : "destructive"}
-                      onClick={() => u.isBlocked ? handleUnblockUser(u.id) : handleBlockUser(u.id)}
-                      data-testid={`button-${u.isBlocked ? 'unblock' : 'block'}-user-${u.id}`}
+                      onClick={() =>
+                        u.isBlocked
+                          ? handleUnblockUser(u.id)
+                          : handleBlockUser(u.id)
+                      }
+                      data-testid={`button-${u.isBlocked ? "unblock" : "block"}-user-${u.id}`}
                     >
                       {u.isBlocked ? "Unblock" : "Block"}
                     </Button>
@@ -142,8 +168,15 @@ export default function AdminDashboard() {
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {orders.slice(0, 10).map((order: any) => (
                   <div key={order.id} className="p-3 border rounded">
-                    <p className="font-medium" data-testid={`text-order-${order.id}`}>{order.customerName}</p>
-                    <p className="text-sm text-muted-foreground">{order.email}</p>
+                    <p
+                      className="font-medium"
+                      data-testid={`text-order-${order.id}`}
+                    >
+                      {order.customerName}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {order.email}
+                    </p>
                     <div className="flex justify-between items-center mt-2">
                       <span className="text-sm">₹{order.totalAmount}</span>
                       <Badge variant="outline">{order.status}</Badge>
