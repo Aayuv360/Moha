@@ -25,31 +25,43 @@ export default function Cart() {
 
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
-  const cartEndpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
-    queryKey: ['/api/cart', cartIdentifier],
+    queryKey: ["/api/cart", cartIdentifier],
     queryFn: async () => {
-      const endpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
-      const options = isUserCart ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : undefined;
-      return await apiRequest('GET', endpoint, undefined, options);
+      const endpoint = isUserCart
+        ? `/api/cart/user/${user.id}`
+        : `/api/cart/${sessionId}`;
+      const options = isUserCart
+        ? {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        : undefined;
+      return await apiRequest("GET", endpoint, undefined, options);
     },
   });
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
-      return await apiRequest('PATCH', `/api/cart/${id}`, { quantity }, isUserCart ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : undefined);
+      return await apiRequest(
+        "PATCH",
+        `/api/cart/${id}`,
+        { quantity },
+        isUserCart
+          ? {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          : undefined,
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cart', cartIdentifier] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/cart", cartIdentifier],
+      });
     },
     onError: () => {
       toast({
@@ -62,14 +74,23 @@ export default function Cart() {
 
   const removeItemMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest('DELETE', `/api/cart/${id}`, {}, isUserCart ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : undefined);
+      return await apiRequest(
+        "DELETE",
+        `/api/cart/${id}`,
+        {},
+        isUserCart
+          ? {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          : undefined,
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cart', cartIdentifier] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/cart", cartIdentifier],
+      });
       toast({
         title: "Removed from cart",
         description: "Item has been removed from your cart.",
@@ -94,7 +115,7 @@ export default function Cart() {
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + parseFloat(item.product.price) * item.quantity,
-    0
+    0,
   );
   const shipping = subtotal >= 5000 ? 0 : 200;
   const total = subtotal + shipping;
@@ -148,24 +169,29 @@ export default function Cart() {
 
           <div className="lg:col-span-1">
             <Card className="p-6 sticky top-24">
-              <h2 className="text-xl font-serif font-medium mb-6">Order Summary</h2>
+              <h2 className="text-xl font-serif font-medium mb-6">
+                Order Summary
+              </h2>
 
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium" data-testid="text-subtotal">
-                    ₹{subtotal.toLocaleString('en-IN')}
+                    ₹{subtotal.toLocaleString("en-IN")}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="font-medium" data-testid="text-shipping">
-                    {shipping === 0 ? 'Free' : `₹${shipping.toLocaleString('en-IN')}`}
+                    {shipping === 0
+                      ? "Free"
+                      : `₹${shipping.toLocaleString("en-IN")}`}
                   </span>
                 </div>
                 {subtotal < 5000 && (
                   <p className="text-xs text-muted-foreground">
-                    Add ₹{(5000 - subtotal).toLocaleString('en-IN')} more for free shipping
+                    Add ₹{(5000 - subtotal).toLocaleString("en-IN")} more for
+                    free shipping
                   </p>
                 )}
               </div>
@@ -174,21 +200,31 @@ export default function Cart() {
 
               <div className="flex justify-between mb-6">
                 <span className="text-lg font-medium">Total</span>
-                <span className="text-2xl font-semibold" data-testid="text-total">
-                  ₹{total.toLocaleString('en-IN')}
+                <span
+                  className="text-2xl font-semibold"
+                  data-testid="text-total"
+                >
+                  ₹{total.toLocaleString("en-IN")}
                 </span>
               </div>
 
               <Link href="/checkout">
                 <a className="block w-full" data-testid="link-checkout">
-                  <Button size="lg" className="w-full" style={{ backgroundColor: '#9b083a' }}>
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    style={{ backgroundColor: "#9b083a" }}
+                  >
                     Proceed to Checkout
                   </Button>
                 </a>
               </Link>
 
               <Link href="/products">
-                <a className="block w-full mt-3" data-testid="link-continue-shopping">
+                <a
+                  className="block w-full mt-3"
+                  data-testid="link-continue-shopping"
+                >
                   <Button variant="outline" size="lg" className="w-full">
                     Continue Shopping
                   </Button>

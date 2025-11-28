@@ -33,9 +33,6 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
-  const cartEndpoint = isUserCart
-    ? `/api/cart/user/${user.id}`
-    : `/api/cart/${sessionId}`;
 
   const { data: cart = [] } = useQuery<CartItem[]>({
     queryKey: ["/api/cart", cartIdentifier],

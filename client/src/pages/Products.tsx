@@ -74,16 +74,23 @@ export default function Products() {
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
-      return await apiRequest("POST", "/api/cart", item, user ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : undefined);
+      return await apiRequest(
+        "POST",
+        "/api/cart",
+        item,
+        user
+          ? {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          : undefined,
+      );
     },
     onSuccess: () => {
       const cartIdentifier = user?.id || sessionId;
       queryClient.invalidateQueries({
-        queryKey: ['/api/cart', cartIdentifier],
+        queryKey: ["/api/cart", cartIdentifier],
       });
       toast({
         title: "Added to cart",
@@ -267,14 +274,6 @@ export default function Products() {
           </div>
         </div>
       </div>
-
-      <footer className="bg-card border-t border-border py-8 md:py-12 px-4 md:px-6 mt-12 md:mt-20">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-sm text-muted-foreground">
-            © 2024 Moha. Celebrating India's textile heritage.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

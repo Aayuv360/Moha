@@ -13,16 +13,23 @@ interface CartItemCardProps {
   onRemove: (id: string) => void;
 }
 
-export function CartItemCard({ item, onUpdateQuantity, onRemove }: CartItemCardProps) {
+export function CartItemCard({
+  item,
+  onUpdateQuantity,
+  onRemove,
+}: CartItemCardProps) {
   const { product, quantity } = item;
   const subtotal = parseFloat(product.price) * quantity;
-
+  const image = product.images
+    .replace(/[{}]/g, "")
+    .split(",")
+    .map((s: string) => s.replace(/"/g, ""))[0];
   return (
     <Card className="p-4 md:p-6" data-testid={`cart-item-${item.id}`}>
       <div className="flex gap-4 md:gap-6">
         <div className="w-24 h-32 md:w-32 md:h-40 flex-shrink-0 bg-muted rounded-lg overflow-hidden">
           <img
-            src={product.imageUrl}
+            src={image}
             alt={product.name}
             className="w-full h-full object-cover"
           />
@@ -53,13 +60,18 @@ export function CartItemCard({ item, onUpdateQuantity, onRemove }: CartItemCardP
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => onUpdateQuantity(item.id, Math.max(1, quantity - 1))}
+                onClick={() =>
+                  onUpdateQuantity(item.id, Math.max(1, quantity - 1))
+                }
                 disabled={quantity <= 1}
                 data-testid={`button-decrease-${item.id}`}
               >
                 <Minus className="h-4 w-4" />
               </Button>
-              <span className="text-base font-medium w-12 text-center" data-testid={`text-quantity-${item.id}`}>
+              <span
+                className="text-base font-medium w-12 text-center"
+                data-testid={`text-quantity-${item.id}`}
+              >
                 {quantity}
               </span>
               <Button
@@ -73,8 +85,11 @@ export function CartItemCard({ item, onUpdateQuantity, onRemove }: CartItemCardP
               </Button>
             </div>
 
-            <p className="text-2xl md:text-3xl font-semibold" data-testid={`text-subtotal-${item.id}`}>
-              ₹{subtotal.toLocaleString('en-IN')}
+            <p
+              className="text-2xl md:text-3xl font-semibold"
+              data-testid={`text-subtotal-${item.id}`}
+            >
+              ₹{subtotal.toLocaleString("en-IN")}
             </p>
           </div>
         </div>

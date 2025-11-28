@@ -161,10 +161,10 @@ export function ProductAllocationForm({
         setShopStocks(initialShopStocks);
 
         const hasOnline = editingProduct.storeInventory.some(
-          (item) => item.channel === "online" && item.quantity > 0,
+          (item: any) => item.channel === "online" && item.quantity > 0,
         );
         const hasPhysical = editingProduct.storeInventory.some(
-          (item) => item.channel === "physical" && item.quantity > 0,
+          (item: any) => item.channel === "physical" && item.quantity > 0,
         );
 
         if (hasOnline && hasPhysical) setChannel("Both");
@@ -455,8 +455,8 @@ export function ProductAllocationForm({
                 <FormItem className="mt-6">
                   <FormLabel>Product Images (URLs)</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      {...field} 
+                    <Textarea
+                      {...field}
                       className="resize-none min-h-32"
                       placeholder="Paste image URLs (one per line)&#10;Example:&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/image3.jpg"
                     />
