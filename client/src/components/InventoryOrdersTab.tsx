@@ -117,35 +117,47 @@ export function OrdersTab({
         : deliveredOrders;
   return (
     <div className="space-y-6">
-      <div className="flex gap-2">
+      <div className="flex gap-1 sm:gap-2 flex-wrap">
         <Button
           variant={ordersSubTab === "pending" ? "default" : "outline"}
           onClick={() => setOrdersSubTab("pending")}
           data-testid="button-tab-pending-orders"
+          className="text-xs sm:text-sm"
+          size="sm"
         >
-          Pending Orders ({pendingOrders.length})
+          <span className="hidden sm:inline">Pending Orders</span>
+          <span className="sm:hidden">Pending</span> ({pendingOrders.length})
         </Button>
         <Button
           variant={ordersSubTab === "shipped" ? "default" : "outline"}
           onClick={() => setOrdersSubTab("shipped")}
           data-testid="button-tab-shipped-orders"
+          className="text-xs sm:text-sm"
+          size="sm"
         >
-          Shipped Orders ({shippedOrders.length})
+          <span className="hidden sm:inline">Shipped Orders</span>
+          <span className="sm:hidden">Shipped</span> ({shippedOrders.length})
         </Button>
         <Button
           variant={ordersSubTab === "delivered" ? "default" : "outline"}
           onClick={() => setOrdersSubTab("delivered")}
           data-testid="button-tab-delivered-orders"
+          className="text-xs sm:text-sm"
+          size="sm"
         >
-          Delivered Orders ({deliveredOrders.length})
+          <span className="hidden sm:inline">Delivered Orders</span>
+          <span className="sm:hidden">Delivered</span> ({deliveredOrders.length})
         </Button>
         <Button
           variant={ordersSubTab === "returns" ? "default" : "outline"}
           onClick={() => setOrdersSubTab("returns")}
           data-testid="button-tab-returns-orders"
+          className="text-xs sm:text-sm"
+          size="sm"
         >
-          <RotateCw className="h-4 w-4 mr-2" />
-          Returns ({inventoryReturns.length})
+          <RotateCw className="h-4 w-4 mr-1" />
+          <span className="hidden sm:inline">Returns</span>
+          <span className="sm:hidden">Return</span> ({inventoryReturns.length})
         </Button>
       </div>
 

@@ -30,96 +30,96 @@ export function DashboardTab({
 }: DashboardTabProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Total Sales
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{totalSales}</div>
-            <p className="text-xs text-muted-foreground mt-1">Orders received</p>
+            <div className="text-2xl sm:text-3xl font-bold">{totalSales}</div>
+            <p className="text-xs text-muted-foreground mt-1">Orders</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Revenue
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+              Revenue
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
-              ₹{totalRevenue.toLocaleString("en-IN")}
+            <div className="text-2xl sm:text-3xl font-bold">
+              ₹{(totalRevenue / 1000000).toFixed(1)}M
             </div>
-            <p className="text-xs text-muted-foreground mt-1">From all orders</p>
+            <p className="text-xs text-muted-foreground mt-1">Total</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Products
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+              Products
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{products.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Listed products</p>
+            <div className="text-2xl sm:text-3xl font-bold">{products.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Listed</p>
           </CardContent>
         </Card>
         <Card
           className={lowStockProducts > 0 ? "border-destructive" : ""}
         >
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Low Stock Alert
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+              Low Stock
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div
-              className={`text-3xl font-bold ${lowStockProducts > 0 ? "text-destructive" : ""}`}
+              className={`text-2xl sm:text-3xl font-bold ${lowStockProducts > 0 ? "text-destructive" : ""}`}
             >
               {lowStockProducts}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Products ≤ 5 units
+              ≤ 5 units
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Inventory Value
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+              Inventory
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
-              ₹{totalInventoryValue.toLocaleString("en-IN")}
+            <div className="text-2xl sm:text-3xl font-bold">
+              ₹{(totalInventoryValue / 1000000).toFixed(1)}M
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Current stock value</p>
+            <p className="text-xs text-muted-foreground mt-1">Value</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Order Status Summary</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Order Status Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 border rounded">
-              <div className="text-2xl font-bold text-yellow-600">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="text-center p-2 sm:p-4 border rounded">
+              <div className="text-xl sm:text-2xl font-bold text-yellow-600">
                 {orders.filter((o: any) => o.status === "pending").length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Pending</p>
             </div>
-            <div className="text-center p-4 border rounded">
-              <div className="text-2xl font-bold text-blue-600">
+            <div className="text-center p-2 sm:p-4 border rounded">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {orders.filter((o: any) => o.status === "shipped").length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Shipped</p>
             </div>
-            <div className="text-center p-4 border rounded">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-center p-2 sm:p-4 border rounded">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {orders.filter((o: any) => o.status === "delivered").length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Delivered</p>

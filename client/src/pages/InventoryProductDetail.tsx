@@ -67,19 +67,19 @@ export default function InventoryProductDetail({
 
   return (
     <div>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
+          <div className="space-y-3 sm:space-y-4">
             <div className="bg-muted rounded-lg overflow-hidden">
               <img
                 src={allImages[selectedImageIndex]}
                 alt={product.name}
-                className="w-full h-96 object-cover"
+                className="w-full h-56 sm:h-96 object-cover"
               />
             </div>
 
             {allImages.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-1 sm:gap-2">
                 {allImages.map((img, idx) => (
                   <button
                     key={idx}
@@ -94,7 +94,7 @@ export default function InventoryProductDetail({
                     <img
                       src={img}
                       alt={`Product ${idx}`}
-                      className="w-full h-20 object-cover"
+                      className="w-full h-12 sm:h-20 object-cover"
                     />
                   </button>
                 ))}
@@ -102,56 +102,56 @@ export default function InventoryProductDetail({
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-              <p className="text-2xl font-semibold text-primary">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">{product.name}</h1>
+              <p className="text-xl sm:text-2xl font-semibold text-primary">
                 ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
               </p>
             </div>
 
-            <Card className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <Card className="p-3 sm:p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Fabric</p>
-                  <p className="font-medium">{product.fabric}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Fabric</p>
+                  <p className="font-medium text-sm">{product.fabric}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Color</p>
-                  <p className="font-medium">{product.color}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Color</p>
+                  <p className="font-medium text-sm">{product.color}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Occasion</p>
-                  <p className="font-medium">{product.occasion}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Occasion</p>
+                  <p className="font-medium text-sm">{product.occasion}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Category</p>
-                  <p className="font-medium">{product.category}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Category</p>
+                  <p className="font-medium text-sm">{product.category}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Current Stock</p>
-                  <p className="font-medium">{product.inStock} units</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Stock</p>
+                  <p className="font-medium text-sm">{product.inStock} units</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">SKU</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">SKU</p>
                   <p className="font-medium text-xs">{product.trackingId}</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-6">
-              <p className="text-sm text-muted-foreground mb-2">Description</p>
+            <Card className="p-3 sm:p-6">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">Description</p>
               <p className="text-sm leading-relaxed">{product.description}</p>
             </Card>
 
             {product.videoUrl && (
-              <Card className="p-6">
-                <p className="text-sm text-muted-foreground mb-2">Video</p>
+              <Card className="p-3 sm:p-6">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2">Video</p>
                 <a
                   href={product.videoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline text-sm"
+                  className="text-primary hover:underline text-xs sm:text-sm"
                   data-testid="link-video"
                 >
                   View Product Video
@@ -159,14 +159,16 @@ export default function InventoryProductDetail({
               </Card>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <Button
                 onClick={() => setShowEditDialog(true)}
                 className="flex-1"
                 data-testid="button-edit-product"
+                size="sm"
               >
-                <Edit2 className="h-4 w-4 mr-2" />
-                Edit Product
+                <Edit2 className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Edit Product</span>
+                <span className="sm:hidden">Edit</span>
               </Button>
               <Button
                 onClick={handleDelete}
@@ -174,9 +176,10 @@ export default function InventoryProductDetail({
                 className="flex-1"
                 disabled={deleteProductMutation.isPending}
                 data-testid="button-delete-product"
+                size="sm"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                <Trash2 className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Delete</span>
               </Button>
             </div>
           </div>

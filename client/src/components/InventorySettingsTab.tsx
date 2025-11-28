@@ -52,21 +52,21 @@ export function SettingsTab({
           </div>
 
           <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">Inventory Summary</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 border rounded">
+            <h3 className="font-semibold mb-3 text-sm sm:text-base">Inventory Summary</h3>
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <div className="p-2 sm:p-3 border rounded">
                 <p className="text-xs text-muted-foreground mb-1">
                   Total Stock
                 </p>
-                <p className="text-2xl font-bold">
+                <p className="text-xl sm:text-2xl font-bold">
                   {products.reduce((sum, p) => sum + p.inStock, 0)}
                 </p>
               </div>
-              <div className="p-3 border rounded">
+              <div className="p-2 sm:p-3 border rounded">
                 <p className="text-xs text-muted-foreground mb-1">
                   Low Stock Items
                 </p>
-                <p className="text-2xl font-bold text-destructive">
+                <p className="text-xl sm:text-2xl font-bold text-destructive">
                   {lowStockProducts}
                 </p>
               </div>
