@@ -802,14 +802,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/cart", async (req, res) => {
+  app.get("/api/cart/:sessionId", async (req, res) => {
     try {
-      const sessionId = req.query.sessionId as string;
-      if (!sessionId) {
-        return res.status(400).json({ error: "sessionId query parameter required" });
-      }
-
-      const cartItems = await storage.getCartItems(sessionId);
+      const cartItems = await storage.getCartItems(req.params.sessionId);
 
       const cartItemsWithProducts = await Promise.all(
         cartItems.map(async (item) => {

@@ -36,7 +36,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
   const cartItem = cart.find((item) => item.productId === product.id);
   const cartQuantity = cartItem?.quantity || 0;
-  console.log(cartItem);
+
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
     queryKey: [`/api/wishlist/check/${product.id}`],
     enabled: !!token,
