@@ -139,6 +139,30 @@ export default function ProductDetail() {
       }),
   });
 
+  const toggleWishlistMutation = useMutation({
+    mutationFn: async () => {
+      if (isInWishlist) {
+        return await apiRequest("DELETE", `/api/wishlist/${product.id}`);
+      } else {
+        return await apiRequest("POST", "/api/wishlist", {
+          productId: product.id,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/wishlist/check/${product.id}`],
+      });
+      toast({
+        title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
+        description: isInWishlist
+          ? "Item removed from your wishlist"
+          : "Item added to your wishlist successfully.",
+      });
+    },
+  });
+
   const handleIncreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -230,6 +254,7 @@ export default function ProductDetail() {
       </div>
     );
   }
+
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -243,29 +268,6 @@ export default function ProductDetail() {
     }
     toggleWishlistMutation.mutate();
   };
-  const toggleWishlistMutation = useMutation({
-    mutationFn: async () => {
-      if (isInWishlist) {
-        return await apiRequest("DELETE", `/api/wishlist/${product.id}`);
-      } else {
-        return await apiRequest("POST", "/api/wishlist", {
-          productId: product.id,
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
-      queryClient.invalidateQueries({
-        queryKey: [`/api/wishlist/check/${product.id}`],
-      });
-      toast({
-        title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
-        description: isInWishlist
-          ? "Item removed from your wishlist"
-          : "Item added to your wishlist successfully.",
-      });
-    },
-  });
 
   const specs = [
     { label: "Fabric", value: product.fabric },
