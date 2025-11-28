@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
@@ -17,15 +17,23 @@ import { useAuth } from "@/lib/auth";
 import gsap from "gsap";
 
 interface ProductFilters {
-  search: string;
   fabric: string;
   occasion: string;
   priceRange: string;
 }
 
-function parseProductParams(location: string): ProductFilters {
-  const params = new URLSearchParams(location.split("?")[1] || "");
-  const search = params.get("search") || "";
+function parseUrlParams(searchString: string): ProductFilters {
+  const params = new Map<string, string>();
+  const parts = searchString.slice(1).split("&");
+  
+  for (const part of parts) {
+    if (!part) continue;
+    const [key, value] = part.split("=");
+    if (key) {
+      params.set(decodeURIComponent(key), decodeURIComponent(value || ""));
+    }
+  }
+
   const fabric = params.get("fabric") || "All";
   const occasion = params.get("occasion") || "All";
   const minPrice = params.get("minPrice");
@@ -36,7 +44,7 @@ function parseProductParams(location: string): ProductFilters {
     priceRange = `${minPrice}-${maxPrice}`;
   }
 
-  return { search, fabric, occasion, priceRange };
+  return { fabric, occasion, priceRange };
 }
 
 export default function Products() {
@@ -45,28 +53,27 @@ export default function Products() {
   const { toast } = useToast();
   const { user, token } = useAuth();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const filters = parseProductParams(location.pathname + location.search);
+  const filters = useMemo(() => parseUrlParams(location.search), [location.search]);
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: ["products", filters],
+    queryKey: ["products", filters, searchQuery],
     queryFn: async () => {
-      const apiParams = new URLSearchParams();
-      if (filters.search) apiParams.append("search", filters.search);
-      if (filters.fabric !== "All") apiParams.append("fabric", filters.fabric);
-      if (filters.occasion !== "All")
-        apiParams.append("occasion", filters.occasion);
-
+      const params: string[] = [];
+      
+      if (searchQuery) params.push(`search=${encodeURIComponent(searchQuery)}`);
+      if (filters.fabric !== "All") params.push(`fabric=${encodeURIComponent(filters.fabric)}`);
+      if (filters.occasion !== "All") params.push(`occasion=${encodeURIComponent(filters.occasion)}`);
+      
       if (filters.priceRange !== "all") {
         const [min, max] = filters.priceRange.split("-");
-        apiParams.append("minPrice", min);
-        apiParams.append("maxPrice", max);
+        params.push(`minPrice=${encodeURIComponent(min)}`);
+        params.push(`maxPrice=${encodeURIComponent(max)}`);
       }
 
-      const queryString = apiParams.toString();
-      const url = queryString
-        ? `/api/onlineProducts?${queryString}`
-        : "/api/onlineProducts";
+      const queryString = params.length > 0 ? `?${params.join("&")}` : "";
+      const url = `/api/onlineProducts${queryString}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
@@ -134,7 +141,16 @@ export default function Products() {
   const pushProductParams = (
     updates: Partial<Record<string, string | null>>,
   ) => {
-    const newParams = new URLSearchParams(location.split("?")[1] || "");
+    const params = new Map<string, string>();
+    const parts = location.search.slice(1).split("&");
+    
+    for (const part of parts) {
+      if (!part) continue;
+      const [key, value] = part.split("=");
+      if (key && value) {
+        params.set(decodeURIComponent(key), decodeURIComponent(value));
+      }
+    }
 
     Object.entries(updates).forEach(([key, value]) => {
       if (
@@ -143,21 +159,27 @@ export default function Products() {
         value === "All" ||
         value === "all"
       ) {
-        newParams.delete(key);
+        params.delete(key);
         if (key === "priceRange") {
-          newParams.delete("minPrice");
-          newParams.delete("maxPrice");
+          params.delete("minPrice");
+          params.delete("maxPrice");
         }
       } else if (key === "priceRange" && value !== "all") {
         const [min, max] = value.split("-");
-        newParams.set("minPrice", min);
-        newParams.set("maxPrice", max);
+        params.delete("priceRange");
+        params.set("minPrice", min);
+        params.set("maxPrice", max);
       } else {
-        newParams.set(key, value);
+        params.set(key, value);
       }
     });
 
-    const queryString = newParams.toString();
+    const queryArray: string[] = [];
+    params.forEach((value, key) => {
+      queryArray.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+    });
+
+    const queryString = queryArray.join("&");
     navigate(queryString ? `/products?${queryString}` : "/products", {
       replace: false,
     });
@@ -176,7 +198,7 @@ export default function Products() {
   };
 
   const handleSearch = (query: string) => {
-    pushProductParams({ search: query || null });
+    setSearchQuery(query);
   };
 
   return (
@@ -198,7 +220,7 @@ export default function Products() {
             <Input
               type="search"
               placeholder="Search sarees..."
-              value={filters.search}
+              value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-10"
               data-testid="input-search-products"

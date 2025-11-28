@@ -23,7 +23,14 @@ export function FilterSidebar({
   isMobile = false,
   onClose,
 }: FilterSidebarProps) {
-  const fabricOptions = ["All", "Silk", "Cotton Silk", "Banarasi", "Chiffon", "Kanjivaram"];
+  const fabricOptions = [
+    "All",
+    "Silk",
+    "Cotton Silk",
+    "Banarasi",
+    "Chiffon",
+    "Kanjivaram",
+  ];
   const occasionOptions = ["All", "Wedding", "Festive", "Casual", "Party"];
   const priceRangeOptions = [
     { label: "All", value: "all" },
@@ -38,14 +45,21 @@ export function FilterSidebar({
       {isMobile && (
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-serif font-medium">Filters</h2>
-          <Button variant="ghost" size="icon" onClick={onClose} data-testid="button-close-filters">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            data-testid="button-close-filters"
+          >
             <X className="h-5 w-5" />
           </Button>
         </div>
       )}
 
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-sm font-mono uppercase tracking-wider">Filter By</h3>
+        <h3 className="text-sm font-mono uppercase tracking-wider">
+          Filter By
+        </h3>
         <Button
           variant="ghost"
           size="sm"
@@ -60,11 +74,21 @@ export function FilterSidebar({
       <div className="space-y-6">
         <div>
           <Label className="text-base font-medium mb-4 block">Fabric</Label>
-          <RadioGroup value={filters.fabric} onValueChange={(value) => onFilterChange('fabric', value)}>
+          <RadioGroup
+            value={filters.fabric}
+            onValueChange={(value) => onFilterChange("fabric", value)}
+          >
             {fabricOptions.map((option) => (
               <div key={option} className="flex items-center space-x-2 mb-3">
-                <RadioGroupItem value={option} id={`fabric-${option}`} data-testid={`radio-fabric-${option}`} />
-                <Label htmlFor={`fabric-${option}`} className="cursor-pointer font-normal">
+                <RadioGroupItem
+                  value={option}
+                  id={`fabric-${option}`}
+                  data-testid={`radio-fabric-${option}`}
+                />
+                <Label
+                  htmlFor={`fabric-${option}`}
+                  className="cursor-pointer font-normal"
+                >
                   {option}
                 </Label>
               </div>
@@ -76,11 +100,21 @@ export function FilterSidebar({
 
         <div>
           <Label className="text-base font-medium mb-4 block">Occasion</Label>
-          <RadioGroup value={filters.occasion} onValueChange={(value) => onFilterChange('occasion', value)}>
+          <RadioGroup
+            value={filters.occasion}
+            onValueChange={(value) => onFilterChange("occasion", value)}
+          >
             {occasionOptions.map((option) => (
               <div key={option} className="flex items-center space-x-2 mb-3">
-                <RadioGroupItem value={option} id={`occasion-${option}`} data-testid={`radio-occasion-${option}`} />
-                <Label htmlFor={`occasion-${option}`} className="cursor-pointer font-normal">
+                <RadioGroupItem
+                  value={option}
+                  id={`occasion-${option}`}
+                  data-testid={`radio-occasion-${option}`}
+                />
+                <Label
+                  htmlFor={`occasion-${option}`}
+                  className="cursor-pointer font-normal"
+                >
                   {option}
                 </Label>
               </div>
@@ -91,12 +125,27 @@ export function FilterSidebar({
         <Separator />
 
         <div>
-          <Label className="text-base font-medium mb-4 block">Price Range</Label>
-          <RadioGroup value={filters.priceRange} onValueChange={(value) => onFilterChange('priceRange', value)}>
+          <Label className="text-base font-medium mb-4 block">
+            Price Range
+          </Label>
+          <RadioGroup
+            value={filters.priceRange}
+            onValueChange={(value) => onFilterChange("priceRange", value)}
+          >
             {priceRangeOptions.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2 mb-3">
-                <RadioGroupItem value={option.value} id={`price-${option.value}`} data-testid={`radio-price-${option.value}`} />
-                <Label htmlFor={`price-${option.value}`} className="cursor-pointer font-normal">
+              <div
+                key={option.value}
+                className="flex items-center space-x-2 mb-3"
+              >
+                <RadioGroupItem
+                  value={option.value}
+                  id={`price-${option.value}`}
+                  data-testid={`radio-price-${option.value}`}
+                />
+                <Label
+                  htmlFor={`price-${option.value}`}
+                  className="cursor-pointer font-normal"
+                >
                   {option.label}
                 </Label>
               </div>
