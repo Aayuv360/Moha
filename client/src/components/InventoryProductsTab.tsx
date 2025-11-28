@@ -235,16 +235,14 @@ export function ProductsTab({
             ))}
           </div>
 
-          {!viewingProductId && (
-            <>
-              {categoryProducts.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    No products in this category
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto border rounded-lg">
+          {categoryProducts.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                No products in this category
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto border rounded-lg">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
@@ -427,9 +425,7 @@ export function ProductsTab({
                   ))}
                 </tbody>
               </table>
-                </div>
-              )}
-            </>
+            </div>
           )}
         </div>
       )}
