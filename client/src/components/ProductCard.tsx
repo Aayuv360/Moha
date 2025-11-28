@@ -22,6 +22,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const badgeRef = useRef<HTMLDivElement>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -32,18 +33,20 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
-  const cartEndpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
+  const cartEndpoint = isUserCart
+    ? `/api/cart/user/${user.id}`
+    : `/api/cart/${sessionId}`;
 
   const { data: cart = [] } = useQuery<CartItem[]>({
-    queryKey: ['/api/cart', cartIdentifier],
+    queryKey: ["/api/cart", cartIdentifier],
     queryFn: async () => {
-      const endpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
-      const options = isUserCart ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : undefined;
-      return await apiRequest('GET', endpoint, undefined, options);
+      const endpoint = isUserCart
+        ? `/api/cart/user/${user.id}`
+        : `/api/cart/${sessionId}`;
+      const options = isUserCart
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : undefined;
+      return await apiRequest("GET", endpoint, undefined, options);
     },
   });
 
@@ -60,35 +63,39 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const updateCartMutation = useMutation({
     mutationFn: async (newQuantity: number) => {
       if (!cartItem) return;
-      return await apiRequest("PATCH", `/api/cart/${cartItem.id}`, {
-        quantity: newQuantity,
-      }, isUserCart ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      return await apiRequest(
+        "PATCH",
+        `/api/cart/${cartItem.id}`,
+        {
+          quantity: newQuantity,
         },
-      } : undefined);
+        isUserCart
+          ? { headers: { Authorization: `Bearer ${token}` } }
+          : undefined,
+      );
     },
-    onSuccess: () => {
+    onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ['/api/cart', cartIdentifier],
-      });
-    },
+        queryKey: ["/api/cart", cartIdentifier],
+      }),
   });
 
   const removeFromCartMutation = useMutation({
     mutationFn: async () => {
       if (!cartItem) return;
-      return await apiRequest("DELETE", `/api/cart/${cartItem.id}`, {}, isUserCart ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : undefined);
+      return await apiRequest(
+        "DELETE",
+        `/api/cart/${cartItem.id}`,
+        {},
+        isUserCart
+          ? { headers: { Authorization: `Bearer ${token}` } }
+          : undefined,
+      );
     },
-    onSuccess: () => {
+    onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ['/api/cart', cartIdentifier],
-      });
-    },
+        queryKey: ["/api/cart", cartIdentifier],
+      }),
   });
 
   const toggleWishlistMutation = useMutation({
@@ -109,8 +116,8 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       toast({
         title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
         description: isInWishlist
-          ? "Item has been removed from your wishlist"
-          : "Item has been added to your wishlist successfully.",
+          ? "Item removed from your wishlist"
+          : "Item added to your wishlist successfully.",
       });
     },
   });
@@ -120,6 +127,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       ? product.images
       : [product.imageUrl];
 
+  // Scroll animation for card
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from(cardRef.current, {
@@ -135,10 +143,10 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
         delay: (index % 4) * 0.1,
       });
     }, cardRef);
-
     return () => ctx.revert();
   }, [index]);
 
+  // Image hover rotation
   useEffect(() => {
     if (isHovered && images.length > 1) {
       intervalRef.current = setInterval(() => {
@@ -158,6 +166,19 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isHovered, images.length]);
+
+  // Low-stock badge animation
+  useEffect(() => {
+    if (product.inStock > 0 && product.inStock <= 5 && badgeRef.current) {
+      const tl = gsap.timeline({ repeat: -1, yoyo: true });
+      tl.to(badgeRef.current, {
+        scale: 1.1,
+        duration: 0.6,
+        ease: "power1.inOut",
+      });
+      return () => tl.kill();
+    }
+  }, [product.inStock]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -185,7 +206,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     if (!user) {
       toast({
         title: "Login required",
-        description: "Please login to add items to your wishlist",
+        description: "Please login to add items to wishlist",
         variant: "destructive",
       });
       return;
@@ -198,16 +219,17 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       <Link href={`/product/${product.id}`} className="block">
         <div>
           <div
-            className="overflow-hidden bg-muted relative rounded-lg"
+            className="overflow-hidden bg-muted relative rounded-lg group"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
             <img
               src={images[currentImageIndex]}
               alt={product.name}
-              className="w-full h-80 object-cover object-center transition-all duration-500 group-hover:scale-102 "
+              className="w-full h-80 object-cover object-center transition-all duration-500 group-hover:scale-102"
             />
 
+            {/* Image indicators */}
             {images.length > 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 {images.map((_, idx) => (
@@ -223,6 +245,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
               </div>
             )}
 
+            {/* Sold out badge */}
             {product.inStock === 0 && (
               <div className="absolute top-2 right-2">
                 <Badge
@@ -233,8 +256,21 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
                 </Badge>
               </div>
             )}
+
+            {/* Low-stock badge */}
+            {product.inStock > 0 && product.inStock <= 5 && (
+              <div className="absolute top-2 right-2" ref={badgeRef}>
+                <Badge
+                  variant="destructive"
+                  className="text-white text-sm bg-red-600/90"
+                >
+                  Only {product.inStock} left!
+                </Badge>
+              </div>
+            )}
           </div>
 
+          {/* Product details */}
           <div className="p-1.5 md:p-2 space-y-2">
             <div className="flex items-center justify-between">
               <h3
@@ -259,15 +295,13 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
                 data-testid={`button-wishlist-${product.id}`}
               >
                 <Heart
-                  className={`h-4 w-4 transition-all ${
-                    isInWishlist ? "fill-red-500 text-red-500" : ""
-                  }`}
+                  className={`h-4 w-4 transition-all ${isInWishlist ? "fill-red-500 text-red-500" : ""}`}
                 />
               </Button>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center justify-between">
+              <div>
                 <p className="text-base md:text-lg font-semibold">
                   ₹{Number(product.price).toLocaleString("en-IN")}
                 </p>
@@ -275,36 +309,38 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
               <div className="flex items-center gap-2">
                 {cartQuantity > 0 ? (
-                  <div className="flex items-center gap-1 border border-border rounded-md">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleDecreaseQuantity}
-                      disabled={
-                        updateCartMutation.isPending ||
-                        removeFromCartMutation.isPending
-                      }
-                      className="h-6 w-6 p-0"
-                      data-testid={`button-decrease-qty-${product.id}`}
-                    >
-                      −
-                    </Button>
-                    <span className="w-6 text-center text-sm font-medium">
-                      {cartQuantity}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleIncreaseQuantity}
-                      disabled={
-                        cartQuantity >= product.inStock ||
-                        updateCartMutation.isPending
-                      }
-                      className="h-6 w-6 p-0"
-                      data-testid={`button-increase-qty-${product.id}`}
-                    >
-                      +
-                    </Button>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1 border border-border rounded-md">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleDecreaseQuantity}
+                        disabled={
+                          updateCartMutation.isPending ||
+                          removeFromCartMutation.isPending
+                        }
+                        className="h-6 w-6 p-0"
+                        data-testid={`button-decrease-qty-${product.id}`}
+                      >
+                        −
+                      </Button>
+                      <span className="w-6 text-center text-sm font-medium">
+                        {cartQuantity}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleIncreaseQuantity}
+                        disabled={
+                          cartQuantity >= product.inStock ||
+                          updateCartMutation.isPending
+                        }
+                        className="h-6 w-6 p-0"
+                        data-testid={`button-increase-qty-${product.id}`}
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <Button
