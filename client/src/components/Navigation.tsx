@@ -21,8 +21,20 @@ export function Navigation() {
   const sessionId = getOrCreateSessionId();
   const { user, token, logout } = useAuth();
 
+  const cartIdentifier = user?.id || sessionId;
+  const isUserCart = !!user?.id;
+
   const { data: cart = [] } = useQuery<CartItem[]>({
-    queryKey: [`/api/cart?sessionId=${sessionId}`],
+    queryKey: ['/api/cart', cartIdentifier],
+    queryFn: async () => {
+      const endpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
+      const options = isUserCart ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : undefined;
+      return await apiRequest('GET', endpoint, undefined, options);
+    },
   });
 
   const { data: wishlistItems = [] } = useQuery<WishlistItem[]>({

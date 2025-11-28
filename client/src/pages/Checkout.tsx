@@ -24,6 +24,7 @@ import { z } from "zod";
 import type { CartItem, Product } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
+import { useAuth } from "@/lib/auth";
 import { CheckCircle2 } from "lucide-react";
 
 interface CartItemWithProduct extends CartItem {
@@ -48,9 +49,22 @@ export default function Checkout() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
   const sessionId = getOrCreateSessionId();
+  const { user, token } = useAuth();
+
+  const cartIdentifier = user?.id || sessionId;
+  const isUserCart = !!user?.id;
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
-    queryKey: ["/api/cart", sessionId],
+    queryKey: ['/api/cart', cartIdentifier],
+    queryFn: async () => {
+      const endpoint = isUserCart ? `/api/cart/user/${user.id}` : `/api/cart/${sessionId}`;
+      const options = isUserCart ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : undefined;
+      return await apiRequest('GET', endpoint, undefined, options);
+    },
   });
 
   const form = useForm<CheckoutFormData>({
@@ -75,7 +89,7 @@ export default function Checkout() {
     onSuccess: (data: any) => {
       setOrderId(data.id);
       setOrderPlaced(true);
-      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cart', cartIdentifier] });
 
       toast({
         title: "Order placed successfully!",

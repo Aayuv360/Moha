@@ -81,9 +81,9 @@ export default function Products() {
       } : undefined);
     },
     onSuccess: () => {
-      const cacheKey = user?.id ? `/api/cart/user/${user.id}` : `/api/cart?sessionId=${getOrCreateSessionId()}`;
+      const cartIdentifier = user?.id || sessionId;
       queryClient.invalidateQueries({
-        queryKey: [cacheKey],
+        queryKey: ['/api/cart', cartIdentifier],
       });
       toast({
         title: "Added to cart",

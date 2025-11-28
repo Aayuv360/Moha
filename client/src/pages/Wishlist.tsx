@@ -17,6 +17,7 @@ export default function Wishlist() {
   const { user, token, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const sessionId = getOrCreateSessionId();
 
   const { data: wishlistItems = [], isLoading: loadingWishlist } = useQuery<
     WishlistItem[]
@@ -38,14 +39,20 @@ export default function Wishlist() {
     enabled: !!token,
   });
 
+  const cartIdentifier = user?.id || sessionId;
+  const isUserCart = !!user?.id;
+
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
-      return await apiRequest("POST", "/api/cart", item);
+      return await apiRequest("POST", "/api/cart", item, isUserCart ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : undefined);
     },
     onSuccess: () => {
-      const sessionId = getOrCreateSessionId();
       queryClient.invalidateQueries({
-        queryKey: [`/api/cart?sessionId=${sessionId}`],
+        queryKey: ['/api/cart', cartIdentifier],
       });
       toast({
         title: "Added to cart",
@@ -62,11 +69,11 @@ export default function Wishlist() {
   });
 
   const handleAddToCart = (product: Product) => {
-    const sessionId = getOrCreateSessionId();
     addToCartMutation.mutate({
       productId: product.id,
       quantity: 1,
-      sessionId,
+      sessionId: isUserCart ? undefined : sessionId,
+      userId: user?.id,
     });
   };
 
