@@ -123,6 +123,26 @@ export function ProductAllocationForm({
         },
   });
 
+  // Reset form when editingProduct changes
+  useEffect(() => {
+    if (editingProduct) {
+      form.reset({
+        name: editingProduct.name,
+        description: editingProduct.description,
+        price: parseFloat(editingProduct.price.toString()),
+        fabric: editingProduct.fabric,
+        color: editingProduct.color,
+        occasion: editingProduct.occasion,
+        category: editingProduct.category,
+        totalStock: editingProduct.inStock,
+        images: Array.isArray(editingProduct.images)
+          ? editingProduct.images.join("\n")
+          : "",
+        videoUrl: editingProduct.videoUrl || "",
+      });
+    }
+  }, [editingProduct, form]);
+
   const { data: allStores = [] } = useQuery<Store[]>({
     queryKey: ["/api/inventory/all-stores"],
   });

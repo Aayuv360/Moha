@@ -49,10 +49,8 @@ export function ProductsTab({
   setShowProductDialog,
   selectedProducts,
   setSelectedProducts,
-  onProductIdClick,
 }: ProductsTabProps) {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   const [productDetails, setProductDetails] = useState<Product | null>(null);
   const categories = Array.from(
     new Set(products.map((p: any) => p.category || "Uncategorized")),

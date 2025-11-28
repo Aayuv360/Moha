@@ -121,7 +121,10 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       });
     },
   });
-  const images = Array.isArray(product.images) ? product.images : [];
+  const images = product.images
+    .replace(/[{}]/g, "")
+    .split(",")
+    .map((s: string) => s.replace(/"/g, ""));
 
   // Scroll animation for card
   useEffect(() => {

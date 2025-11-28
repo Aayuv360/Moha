@@ -536,11 +536,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const { storeInventory, channel } = req.body;
-        console.log("sdsdsd", storeInventory, channel);
         const updateData = { ...req.body };
 
+        // Ensure images is an array
         if (updateData.images && !Array.isArray(updateData.images)) {
           updateData.images = [];
+        } else if (!updateData.images) {
+          updateData.images = product.images || [];
         }
 
         const updatedProduct = await storage.updateProduct(

@@ -59,27 +59,33 @@ export default function ProductDetail() {
     enabled: !!params?.id,
   });
 
-  const images = useMemo(() => {
-    if (Array.isArray(product?.images) && product.images.length > 0) {
-      return product.images;
-    }
-    if (product?.imageUrl) {
-      return [product.imageUrl];
-    }
-    return [];
-  }, [product]);
+  const images =
+    product?.images
+      .replace(/[{}]/g, "")
+      .split(",")
+      .map((s: string) => s.replace(/"/g, "")) ?? [];
 
   /** ADD TO CART */
   // @ts-ignore
   const addToCartMutation = useMutation({
-    mutationFn: async (item) => await apiRequest("POST", "/api/cart", item, user ? {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    } : undefined),
+    mutationFn: async (item) =>
+      await apiRequest(
+        "POST",
+        "/api/cart",
+        item,
+        user
+          ? {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          : undefined,
+      ),
 
     onSuccess: () => {
-      const cacheKey = user?.id ? `/api/cart/user/${user.id}` : `/api/cart/${getOrCreateSessionId()}`;
+      const cacheKey = user?.id
+        ? `/api/cart/user/${user.id}`
+        : `/api/cart/${getOrCreateSessionId()}`;
       queryClient.invalidateQueries({ queryKey: [cacheKey] });
 
       if (buttonRef.current) {
@@ -140,7 +146,7 @@ export default function ProductDetail() {
     });
   }, [product, addToCartMutation, user]);
 
-  const handleImageMove = useCallback((e) => {
+  const handleImageMove = useCallback((e: any) => {
     if (!zoomRef.current) return;
 
     const rect = zoomRef.current.getBoundingClientRect();
@@ -151,8 +157,8 @@ export default function ProductDetail() {
   }, []);
 
   const nextImage = useCallback(() => {
-    setCurrentImageIndex((i) => (i === images.length - 1 ? 0 : i + 1));
-  }, [images.length]);
+    setCurrentImageIndex((i) => (i === images?.length - 1 ? 0 : i + 1));
+  }, [images?.length]);
 
   const prevImage = useCallback(() => {
     setCurrentImageIndex((i) => (i === 0 ? images.length - 1 : i - 1));
@@ -228,7 +234,7 @@ export default function ProductDetail() {
           <div className="space-y-4">
             <div
               ref={zoomRef}
-              className="aspect-[3/4] bg-muted rounded-xl overflow-hidden shadow-lg relative group cursor-[url('data:image/svg+xml;utf8,<svg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%2224%22%20height=%2224%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22currentColor%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%20class=%22lucide%20lucide-zoom-in%22><circle%20cx=%2211%22%20cy=%2211%22%20r=%228%22/><line%20x1=%2221%22%20y1=%2221%22%20x2=%2216.65%22%20y2=%2216.65%22/><line%20x1=%2211%22%20y1=%228%22%20x2=%2211%22%20y2=%2214%22/><line%20x1=%228%22%20y1=%2211%22%20x2=%2214%22%20y2=%2211%22/></svg>'),crosshair] sticky top-20"
+              className="aspect-[3/4] bg-muted rounded-xl overflow-hidden shadow-lg relative group"
               onMouseMove={handleImageMove}
               onMouseEnter={() => setZoomActive(true)}
               onMouseLeave={() => setZoomActive(false)}
@@ -237,10 +243,7 @@ export default function ProductDetail() {
             >
               <img
                 ref={imageRef}
-                src={
-                  images[currentImageIndex] ||
-                  "https://placehold.co/400x533/CCCCCC/333333?text=Image+Error"
-                }
+                src={images[currentImageIndex]}
                 alt={`${product.name} - View ${currentImageIndex + 1}`}
                 className="w-full h-full object-cover transition-[transform,filter] duration-300"
                 style={{
@@ -248,20 +251,14 @@ export default function ProductDetail() {
                   transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
                   filter: zoomActive ? "brightness(1.05)" : "brightness(1)",
                 }}
-                onError={(e) =>
-                  (e.currentTarget.src =
-                    "https://placehold.co/400x533/CCCCCC/333333?text=Image+Error")
-                }
               />
 
-              {/* NAV BUTTONS */}
               {images.length > 1 && (
                 <>
                   <button
                     onClick={prevImage}
                     aria-label="Previous image"
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white h-10 w-10 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={zoomActive}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white h-10 w-10 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center text-gray-700"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
@@ -270,7 +267,6 @@ export default function ProductDetail() {
                     onClick={nextImage}
                     aria-label="Next image"
                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white h-10 w-10 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={zoomActive}
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
@@ -281,8 +277,6 @@ export default function ProductDetail() {
                 </>
               )}
             </div>
-
-            {/* THUMBNAILS */}
             {images.length > 1 && (
               <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
                 {images.map((img, i) => (
@@ -290,20 +284,16 @@ export default function ProductDetail() {
                     key={i}
                     onClick={() => setCurrentImageIndex(i)}
                     aria-label={`View image ${i + 1}`}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 p-0.5 ${
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
                       currentImageIndex === i
-                        ? "border-primary ring-2 ring-primary/40 scale-[1.03]"
-                        : "border-gray-200 hover:border-gray-400 opacity-80 hover:opacity-100"
+                        ? "scale-[1.1]"
+                        : "opacity-80 hover:opacity-100"
                     }`}
                   >
                     <img
                       src={img}
                       alt={`Thumbnail ${i + 1}`}
-                      className="w-full h-full object-cover rounded-[4px]"
-                      onError={(e) =>
-                        (e.currentTarget.src =
-                          "https://placehold.co/100x100/CCCCCC/333333?text=Thumb+Error")
-                      }
+                      className="w-full h-full rounded-[4px]"
                     />
                   </button>
                 ))}
@@ -311,9 +301,7 @@ export default function ProductDetail() {
             )}
           </div>
 
-          {/* RIGHT — DETAILS */}
-          <div ref={contentRef} className="flex flex-col pt-0 lg:pt-8">
-            {/* TITLE & PRICE */}
+          <div ref={contentRef} className="flex flex-col">
             <div className="mb-4">
               <Badge
                 variant="secondary"
@@ -373,7 +361,6 @@ export default function ProductDetail() {
 
             <Separator className="my-8" />
 
-            {/* SPECIFICATIONS */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold mb-4">Key Details</h2>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
@@ -390,7 +377,6 @@ export default function ProductDetail() {
 
             <Separator className="my-6" />
 
-            {/* FEATURES / TRUST BADGES */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-2">
               {features.map((f) => (
                 <div
@@ -413,49 +399,8 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
-
-        {/* SUGGESTED ITEMS - Placeholder content for a clean design */}
-        <section className="mt-24">
-          <h2 className="text-3xl font-serif text-center mb-12 text-gray-800">
-            Complete the Look
-          </h2>
-          {/* 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="group cursor-pointer rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100"
-              >
-                <div className="aspect-[3/4] bg-gray-100 overflow-hidden">
-                  <img
-                    src={`https://placehold.co/300x400/D2B48C/2A2A2A?text=Accessory+${i}`}
-                    alt={`Suggested Item ${i}`}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="p-4 bg-white">
-                  <p className="text-sm font-medium text-gray-700">
-                    Jewelry Set {i}
-                  </p>
-                  <p className="text-lg font-semibold text-primary mt-1">
-                    ₹3,500
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div> */}
-
-          <div className="text-center pt-16">
-            <Link href="/products">
-              <Button variant="outline" size="lg" className="text-base">
-                Browse More Collections
-              </Button>
-            </Link>
-          </div>
-        </section>
       </div>
 
-      {/* FOOTER */}
       <footer className="bg-card border-t py-12 mt-20 text-center">
         <div className="max-w-7xl mx-auto px-4">
           <p className="text-sm text-muted-foreground">
