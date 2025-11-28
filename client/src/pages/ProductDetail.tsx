@@ -363,9 +363,9 @@ export default function ProductDetail() {
             </div>
 
             {/* ACTION BUTTONS */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-4 items-center sm:items-start">
+            <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full">
               {cartQuantity > 0 ? (
-                <div className="flex items-center gap-2 border border-border rounded-md overflow-hidden">
+                <div className="flex items-center gap-2 border border-border rounded-md overflow-hidden flex-1">
                   <Button
                     size="lg"
                     variant="ghost"
@@ -374,12 +374,12 @@ export default function ProductDetail() {
                       updateCartMutation.isPending ||
                       removeFromCartMutation.isPending
                     }
-                    className="h-10 w-10 p-0 text-lg sm:text-xl"
+                    className="flex-1"
                     data-testid={`button-decrease-qty-${product.id}`}
                   >
                     −
                   </Button>
-                  <span className="w-10 text-center text-lg font-medium">
+                  <span className="px-4 text-center text-lg font-medium">
                     {cartQuantity}
                   </span>
                   <Button
@@ -390,7 +390,7 @@ export default function ProductDetail() {
                       cartQuantity >= product.inStock ||
                       updateCartMutation.isPending
                     }
-                    className="h-10 w-10 p-0 text-lg sm:text-xl"
+                    className="flex-1"
                     data-testid={`button-increase-qty-${product.id}`}
                   >
                     +
@@ -400,7 +400,7 @@ export default function ProductDetail() {
                 <Button
                   ref={buttonRef}
                   size="lg"
-                  className="flex-1 gap-2 text-lg py-3 transition-transform duration-200 hover:shadow-xl hover:shadow-primary/30"
+                  className="flex-1 gap-2 transition-transform duration-200 hover:shadow-xl hover:shadow-primary/30"
                   onClick={handleAddToCart}
                   disabled={
                     product.inStock === 0 || addToCartMutation.isPending
@@ -418,7 +418,8 @@ export default function ProductDetail() {
               <Button
                 variant="outline"
                 size="lg"
-                className="gap-2 w-full sm:w-auto hover:bg-primary/5 hover:text-primary/60 border-primary/30"
+                className="gap-2 flex-1 sm:flex-none hover:bg-primary/5 hover:text-primary/60 border-primary/30"
+                data-testid="button-wishlist"
               >
                 <Heart className="h-5 w-5 fill-primary text-primary" />
                 Wishlist
