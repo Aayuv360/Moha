@@ -300,18 +300,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addToCart(insertItem: InsertCartItem): Promise<CartItem> {
-    const whereConditions = [eq(cartItems.productId, insertItem.productId)];
+    let whereCondition: any;
     
     if (insertItem.sessionId) {
-      whereConditions.push(eq(cartItems.sessionId, insertItem.sessionId));
+      whereCondition = and(
+        eq(cartItems.productId, insertItem.productId),
+        eq(cartItems.sessionId, insertItem.sessionId)
+      );
     } else if (insertItem.userId) {
-      whereConditions.push(eq(cartItems.userId, insertItem.userId));
+      whereCondition = and(
+        eq(cartItems.productId, insertItem.productId),
+        eq(cartItems.userId, insertItem.userId)
+      );
+    } else {
+      throw new Error("Either sessionId or userId must be provided");
     }
 
     const [existingItem] = await db
       .select()
       .from(cartItems)
-      .where(and(...whereConditions));
+      .where(whereCondition);
 
     if (existingItem) {
       const [updatedItem] = await db

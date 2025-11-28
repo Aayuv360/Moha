@@ -142,13 +142,7 @@ export const insertProductSchema = createInsertSchema(products).omit({
 });
 export const insertCartItemSchema = createInsertSchema(cartItems).omit({
   id: true,
-}).refine(
-  (data) => data.sessionId || data.userId,
-  {
-    message: "Either sessionId or userId must be provided",
-    path: ["sessionId"],
-  }
-);
+});
 export const insertOrderSchema = createInsertSchema(orders).omit({
   id: true,
   createdAt: true,

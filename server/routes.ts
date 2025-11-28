@@ -869,6 +869,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCartItemSchema.parse(req.body);
 
+      if (!validatedData.sessionId && !validatedData.userId) {
+        return res.status(400).json({ error: "Either sessionId or userId must be provided" });
+      }
+
       const product = await storage.getProduct(validatedData.productId);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
@@ -881,6 +885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cartItem = await storage.addToCart(validatedData);
       res.status(201).json(cartItem);
     } catch (error) {
+      console.error("Add to cart error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
