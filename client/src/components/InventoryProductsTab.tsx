@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Edit2, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,7 @@ export function ProductsTab({
   setSelectedProducts,
 }: ProductsTabProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const categories = Array.from(
     new Set(products.map((p: any) => p.category || "Uncategorized")),
@@ -151,8 +153,7 @@ export function ProductsTab({
   };
 
   const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
-    setShowProductDialog(true);
+    setLocation(`/inventory/product/${product.id}`);
   };
 
   const categoryProducts = products.filter(
@@ -360,7 +361,8 @@ export function ProductsTab({
                               onClick={() => handleEditProduct(product)}
                               data-testid={`button-edit-product-${product.id}`}
                             >
-                              <Edit2 className="h-3 w-3" />
+                              <Edit2 className="h-3 w-3 mr-1" />
+                              Edit
                             </Button>
 
                             <Button
