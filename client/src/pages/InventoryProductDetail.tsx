@@ -11,27 +11,27 @@ import type { Product } from "@shared/schema";
 import { ProductAllocationForm } from "@/components/ProductAllocationForm";
 
 interface InventoryProductDetailProps {
-  productId: string;
+  productId: Product;
   onBack?: () => void;
 }
 
-export default function InventoryProductDetail({ productId, onBack }: InventoryProductDetailProps) {
+export default function InventoryProductDetail({
+  product,
+  onBack,
+}: InventoryProductDetailProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const { data: product, isLoading } = useQuery<Product>({
-    queryKey: ["/api/inventory/products", productId],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/inventory/products/${productId}`, undefined);
-      return response;
-    },
-  });
-
+  console.log(product);
   const deleteProductMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("DELETE", `/api/inventory/products/${productId}`, {});
+      return await apiRequest(
+        "DELETE",
+        `/api/inventory/products/${product.id}`,
+        {},
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/products"] });
@@ -53,14 +53,6 @@ export default function InventoryProductDetail({ productId, onBack }: InventoryP
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Loading product details...</p>
-      </div>
-    );
-  }
-
   if (!product) {
     return (
       <div className="text-center py-12">
@@ -69,7 +61,9 @@ export default function InventoryProductDetail({ productId, onBack }: InventoryP
     );
   }
 
-  const allImages = [product.imageUrl, ...(product.images || [])].filter(Boolean);
+  const allImages = [product.imageUrl, ...(product.images || [])].filter(
+    Boolean,
+  );
 
   return (
     <div>
@@ -91,11 +85,17 @@ export default function InventoryProductDetail({ productId, onBack }: InventoryP
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
                     className={`relative rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImageIndex === idx ? "border-primary" : "border-muted"
+                      selectedImageIndex === idx
+                        ? "border-primary"
+                        : "border-muted"
                     }`}
                     data-testid={`button-image-${idx}`}
                   >
-                    <img src={img} alt={`Product ${idx}`} className="w-full h-20 object-cover" />
+                    <img
+                      src={img}
+                      alt={`Product ${idx}`}
+                      className="w-full h-20 object-cover"
+                    />
                   </button>
                 ))}
               </div>
@@ -189,7 +189,9 @@ export default function InventoryProductDetail({ productId, onBack }: InventoryP
             editingProduct={product}
             onSuccess={() => {
               setShowEditDialog(false);
-              queryClient.invalidateQueries({ queryKey: ["/api/inventory/products", productId] });
+              queryClient.invalidateQueries({
+                queryKey: ["/api/inventory/products", productId],
+              });
             }}
           />
         </DialogContent>

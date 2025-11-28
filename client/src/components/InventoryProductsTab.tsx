@@ -2,13 +2,21 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit2, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit2,
+  ChevronDown,
+  ChevronUp,
+  ArrowLeft,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, StoreProductInventory, Order } from "@shared/schema";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { ProductAllocationForm } from "./ProductAllocationForm";
+import InventoryProductDetail from "@/pages/InventoryProductDetail";
 
 interface StoreInventory {
   storeId: string;
@@ -42,11 +50,10 @@ export function ProductsTab({
   selectedProducts,
   setSelectedProducts,
   onProductIdClick,
-  viewingProductId,
 }: ProductsTabProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-
+  const [productDetails, setProductDetails] = useState<Product | null>(null);
   const categories = Array.from(
     new Set(products.map((p: any) => p.category || "Uncategorized")),
   ).sort();
@@ -172,7 +179,7 @@ export function ProductsTab({
           Your Products ({products.length})
         </h2>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap justify-end">
           {selectedProducts.size > 0 && (
             <Button
               variant="destructive"
@@ -221,7 +228,9 @@ export function ProductsTab({
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => {
+                  setSelectedCategory(category), setProductDetails(null);
+                }}
                 data-testid={`button-category-${category}`}
               >
                 {category} (
@@ -243,188 +252,213 @@ export function ProductsTab({
             </div>
           ) : (
             <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-4 py-3 text-left font-semibold">
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedProducts.size === categoryProducts.length &&
-                          categoryProducts.length > 0
-                        }
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedProducts(
-                              new Set(categoryProducts.map((p) => p.id)),
-                            );
-                          } else {
-                            setSelectedProducts(new Set());
+              {productDetails ? (
+                <>
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => setProductDetails(null)}
+                      className="m-4"
+                      data-testid="button-back-to-products"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Products
+                    </Button>
+                  </div>
+
+                  <InventoryProductDetail
+                    product={productDetails}
+                    onBack={() => setProductDetails(null)}
+                  />
+                </>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="px-4 py-3 text-left font-semibold">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedProducts.size === categoryProducts.length &&
+                            categoryProducts.length > 0
                           }
-                        }}
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Product Name
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">ID</th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Fabric
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">Color</th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Occasion
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">Price</th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Initial Stock
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Current Stock
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Sold Stock
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Allocated
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedProducts(
+                                new Set(categoryProducts.map((p) => p.id)),
+                              );
+                            } else {
+                              setSelectedProducts(new Set());
+                            }
+                          }}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Product Name
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">ID</th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Fabric
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Color
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Occasion
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Price
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Initial Stock
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Current Stock
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Sold Stock
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Allocated
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
 
-                <tbody>
-                  {categoryProducts.map((product) => (
-                    <>
-                      <tr
-                        key={product.id}
-                        className="border-b hover:bg-muted/30 transition-colors"
-                        data-testid={`card-product-${product.id}`}
-                      >
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.has(product.id)}
-                            onChange={(e) => {
-                              const updated = new Set(selectedProducts);
-                              if (e.target.checked) updated.add(product.id);
-                              else updated.delete(product.id);
-                              setSelectedProducts(updated);
-                            }}
-                          />
-                        </td>
+                  <tbody>
+                    {categoryProducts.map((product) => (
+                      <>
+                        <tr
+                          key={product.id}
+                          className="border-b hover:bg-muted/30 transition-colors"
+                          data-testid={`card-product-${product.id}`}
+                        >
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.has(product.id)}
+                              onChange={(e) => {
+                                const updated = new Set(selectedProducts);
+                                if (e.target.checked) updated.add(product.id);
+                                else updated.delete(product.id);
+                                setSelectedProducts(updated);
+                              }}
+                            />
+                          </td>
 
-                        <td className="px-4 py-3 font-semibold">
-                          {product.name}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          <button
-                            onClick={() => onProductIdClick?.(product.id)}
-                            className="text-primary hover:underline cursor-pointer"
-                            data-testid={`link-product-id-${product.id}`}
-                          >
-                            {product.trackingId}
-                          </button>
-                        </td>
+                          <td className="px-4 py-3 font-semibold">
+                            {product.name}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            <button
+                              onClick={() => setProductDetails(product)}
+                              className="text-primary hover:underline cursor-pointer"
+                              data-testid={`link-product-id-${product.id}`}
+                            >
+                              {product.trackingId}
+                            </button>
+                          </td>
 
-                        <td className="px-4 py-3">{product.fabric}</td>
-                        <td className="px-4 py-3">{product.color}</td>
-                        <td className="px-4 py-3">{product.occasion}</td>
-                        <td className="px-4 py-3 font-bold text-primary">
-                          ₹
-                          {parseFloat(product.price.toString()).toLocaleString(
-                            "en-IN",
-                          )}
-                        </td>
-                        <td className="px-4 py-3 font-medium">
-                          {product.inStock + calculateSoldStock(product.id)}
-                        </td>
-                        <td className="px-4 py-3 font-medium">
-                          {product.inStock}
-                        </td>
+                          <td className="px-4 py-3">{product.fabric}</td>
+                          <td className="px-4 py-3">{product.color}</td>
+                          <td className="px-4 py-3">{product.occasion}</td>
+                          <td className="px-4 py-3 font-bold text-primary">
+                            ₹
+                            {parseFloat(
+                              product.price.toString(),
+                            ).toLocaleString("en-IN")}
+                          </td>
+                          <td className="px-4 py-3 font-medium">
+                            {product.inStock + calculateSoldStock(product.id)}
+                          </td>
+                          <td className="px-4 py-3 font-medium">
+                            {product.inStock}
+                          </td>
 
-                        <td className="px-4 py-3 font-medium">
-                          {calculateSoldStock(product.id)}
-                        </td>
+                          <td className="px-4 py-3 font-medium">
+                            {calculateSoldStock(product.id)}
+                          </td>
 
-                        <td className="px-4 py-3 font-medium">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => toggleExpanded(product.id)}
-                            data-testid={`button-expand-allocation-${product.id}`}
-                          >
-                            {calculateAllocatedStock(product)}
-                            {expandedProducts.has(product.id) ? (
-                              <ChevronUp className="h-4 w-4 ml-1" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 ml-1" />
-                            )}
-                          </Button>
-                        </td>
-
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1">
+                          <td className="px-4 py-3 font-medium">
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => handleEditProduct(product)}
-                              data-testid={`button-edit-product-${product.id}`}
+                              variant="ghost"
+                              onClick={() => toggleExpanded(product.id)}
+                              data-testid={`button-expand-allocation-${product.id}`}
                             >
-                              <Edit2 className="h-3 w-3" />
+                              {calculateAllocatedStock(product)}
+                              {expandedProducts.has(product.id) ? (
+                                <ChevronUp className="h-4 w-4 ml-1" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 ml-1" />
+                              )}
                             </Button>
+                          </td>
 
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteProduct(product.id)}
-                              data-testid={`button-delete-product-${product.id}`}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditProduct(product)}
+                                data-testid={`button-edit-product-${product.id}`}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
 
-                      {expandedProducts.has(product.id) &&
-                        product.storeInventory && (
-                          <tr className="bg-muted/20 border-b">
-                            <td colSpan={10} className="px-4 py-4">
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-sm">
-                                  Stock Allocation by Store:
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                  {product.storeInventory.map(
-                                    (allocation: any, idx: number) => (
-                                      <div
-                                        key={idx}
-                                        className="bg-white dark:bg-slate-900 p-3 rounded border"
-                                        data-testid={`allocation-item-${product.id}-${idx}`}
-                                      >
-                                        <div className="text-sm font-medium">
-                                          {storeMap[allocation.storeId] ||
-                                            allocation.storeId}
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteProduct(product.id)}
+                                data-testid={`button-delete-product-${product.id}`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {expandedProducts.has(product.id) &&
+                          product.storeInventory && (
+                            <tr className="bg-muted/20 border-b">
+                              <td colSpan={10} className="px-4 py-4">
+                                <div className="space-y-3">
+                                  <h4 className="font-semibold text-sm">
+                                    Stock Allocation by Store:
+                                  </h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {product.storeInventory.map(
+                                      (allocation: any, idx: number) => (
+                                        <div
+                                          key={idx}
+                                          className="bg-white dark:bg-slate-900 p-3 rounded border"
+                                          data-testid={`allocation-item-${product.id}-${idx}`}
+                                        >
+                                          <div className="text-sm font-medium">
+                                            {storeMap[allocation.storeId] ||
+                                              allocation.storeId}
+                                          </div>
+                                          <div className="text-xs text-muted-foreground mt-1">
+                                            Channel: {allocation.channel}
+                                          </div>
+                                          <div className="text-sm font-semibold mt-2">
+                                            Quantity: {allocation.quantity}
+                                          </div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground mt-1">
-                                          Channel: {allocation.channel}
-                                        </div>
-                                        <div className="text-sm font-semibold mt-2">
-                                          Quantity: {allocation.quantity}
-                                        </div>
-                                      </div>
-                                    ),
-                                  )}
+                                      ),
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                    </>
-                  ))}
-                </tbody>
-              </table>
+                              </td>
+                            </tr>
+                          )}
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </div>
