@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { User, Order } from "@shared/schema";
-import { AdminLayout } from "../layouts/AdminLayout";
 
 export function AdminDashboardPage() {
   const { toast } = useToast();
@@ -41,8 +40,7 @@ export function AdminDashboardPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
@@ -148,6 +146,5 @@ export function AdminDashboardPage() {
           </Card>
         </div>
       </div>
-    </AdminLayout>
   );
 }

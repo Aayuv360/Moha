@@ -18,7 +18,6 @@ import {
 import type { Product, Order, Return } from "@shared/schema";
 import { InventoryDashboardTab as DashboardTab, InventoryProductsTab as ProductsTab, InventoryOrdersTab as OrdersTab, InventorySettingsTab as SettingsTab, InventoryReturnsTab } from "../components";
 import InventoryProductDetail from "./InventoryProductDetail";
-import { InventoryLayout } from "../layouts/InventoryLayout";
 
 export function InventoryDashboardPage() {
   const navigate = useNavigate();
@@ -119,8 +118,7 @@ export function InventoryDashboardPage() {
   );
 
   return (
-    <InventoryLayout>
-      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-140px)]">
+    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-140px)]">
         <aside className="hidden lg:block w-48 border-r bg-card">
           <nav className="space-y-1 p-4">
             <NavButtons />
@@ -196,6 +194,5 @@ export function InventoryDashboardPage() {
           </div>
         </main>
       </div>
-    </InventoryLayout>
   );
 }
