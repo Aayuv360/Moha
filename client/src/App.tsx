@@ -31,14 +31,11 @@ function AppRouter() {
             </UserLayout>
           }
         />
-        
-        {/* Admin Routes */}
+
         <Route path="/admin/*" element={<AdminRoutes />} />
 
-        {/* Inventory Routes */}
         <Route path="/inventory/*" element={<InventoryRoutes />} />
 
-        {/* 404 - Catch all remaining */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
