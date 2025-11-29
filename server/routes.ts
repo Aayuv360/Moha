@@ -1360,7 +1360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Wishlist endpoints
+  // Wishlist endpoints - User can only access their own wishlist
   app.get("/api/wishlist", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
@@ -1368,11 +1368,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
+      // Only fetch this user's wishlist items
       const wishlistItems = await storage.getUserWishlist(req.userId!);
 
       // Convert product IDs to tracking IDs and user ID to tracking ID
       const enrichedItems = await Promise.all(
         wishlistItems.map(async (item: any) => {
+          // Verify item belongs to authenticated user
+          if (item.userId !== req.userId!) {
+            return null;
+          }
           const product = await storage.getProduct(item.productId);
           return {
             id: item.id,
@@ -1383,12 +1388,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }),
       );
 
-      res.json(enrichedItems);
+      res.json(enrichedItems.filter(Boolean));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch wishlist" });
     }
   });
 
+  // Add to wishlist - only for authenticated user
   app.post("/api/wishlist", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUserById(req.userId!);
@@ -1408,11 +1414,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         productId = product.id;
       }
 
+      // Always ensure userId is the authenticated user's ID
       const validatedData = insertWishlistItemSchema.parse({
         userId: req.userId!,
         productId: productId,
       });
       const wishlistItem = await storage.addToWishlist(validatedData);
+      
+      // Verify the item belongs to the authenticated user
+      if (wishlistItem.userId !== req.userId!) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
       const product = await storage.getProduct(productId);
       res.status(201).json({
         id: wishlistItem.id,
@@ -1428,6 +1441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove from wishlist - only authenticated user can remove their own items
   app.delete(
     "/api/wishlist/:productIdOrTrackingId",
     authMiddleware,
@@ -1449,6 +1463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           productId = product.id;
         }
 
+        // Only remove from authenticated user's wishlist
         const success = await storage.removeFromWishlist(
           req.userId!,
           productId,
