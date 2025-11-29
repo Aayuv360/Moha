@@ -954,7 +954,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cartItemsWithProducts = await Promise.all(
         mergedCartItems.map(async (item) => {
           const product = await storage.getProduct(item.productId);
-          return { ...item, product };
+          return { 
+            id: item.id,
+            userId: item.userId,
+            quantity: item.quantity,
+            product: product ? { ...product, id: product.trackingId } : null
+          };
         }),
       );
 
@@ -1002,7 +1007,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId: validatedData.sessionId,
         userId: validatedData.userId,
       });
-      res.status(201).json(cartItem);
+      
+      res.status(201).json({
+        id: cartItem.id,
+        userId: cartItem.userId,
+        sessionId: cartItem.sessionId,
+        quantity: cartItem.quantity,
+        product: product ? { ...product, id: product.trackingId } : null
+      });
     } catch (error) {
       console.error("Add to cart error:", error);
       if (error instanceof z.ZodError) {
@@ -1029,7 +1041,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Cart item not found" });
       }
 
-      res.json(updatedItem);
+      const product = await storage.getProduct(updatedItem.productId);
+      res.json({
+        id: updatedItem.id,
+        userId: updatedItem.userId,
+        sessionId: updatedItem.sessionId,
+        quantity: updatedItem.quantity,
+        product: product ? { ...product, id: product.trackingId } : null
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to update cart item" });
     }
@@ -1060,9 +1079,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!order.orderTrackingId) {
             const trackingId = generateOrderTrackingId();
             await storage.updateOrder(order.id, { orderTrackingId: trackingId });
-            return { ...order, orderTrackingId: trackingId };
+            order.orderTrackingId = trackingId;
           }
-          return order;
+          
+          // Parse items and convert product IDs to tracking IDs
+          let items = [];
+          if (order.items) {
+            try {
+              items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+              items = await Promise.all(items.map(async (item: any) => {
+                const product = await storage.getProduct(item.productId);
+                return {
+                  ...item,
+                  productId: product?.trackingId || item.productId
+                };
+              }));
+            } catch (e) {
+              // If parsing fails, leave items as is
+            }
+          }
+          
+          return {
+            id: order.orderTrackingId,
+            userId: order.userId,
+            ...order,
+            items: JSON.stringify(items)
+          };
         })
       );
       
@@ -1163,7 +1205,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.clearCart(sessionId);
         }
 
-        res.status(201).json(order);
+        // Convert order response to use tracking IDs
+        let items = [];
+        if (order.items) {
+          try {
+            items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+            items = await Promise.all(items.map(async (item: any) => {
+              const product = await storage.getProduct(item.productId);
+              return {
+                ...item,
+                productId: product?.trackingId || item.productId
+              };
+            }));
+          } catch (e) {
+            // If parsing fails, leave items as is
+          }
+        }
+
+        res.status(201).json({
+          id: order.orderTrackingId,
+          userId: order.userId,
+          ...order,
+          items: JSON.stringify(items)
+        });
       } catch (error) {
         console.error("Order creation error:", error);
         if (error instanceof z.ZodError) {
@@ -1193,7 +1257,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Order not found" });
       }
 
-      res.json(order);
+      // Convert items to use tracking IDs
+      let items = [];
+      if (order.items) {
+        try {
+          items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+          items = await Promise.all(items.map(async (item: any) => {
+            const product = await storage.getProduct(item.productId);
+            return {
+              ...item,
+              productId: product?.trackingId || item.productId
+            };
+          }));
+        } catch (e) {
+          // If parsing fails, leave items as is
+        }
+      }
+
+      res.json({
+        id: order.orderTrackingId,
+        userId: order.userId,
+        ...order,
+        items: JSON.stringify(items)
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch order" });
     }
@@ -1203,7 +1289,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/wishlist", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const wishlistItems = await storage.getUserWishlist(req.userId!);
-      res.json(wishlistItems);
+      
+      // Convert product IDs to tracking IDs
+      const enrichedItems = await Promise.all(
+        wishlistItems.map(async (item: any) => {
+          const product = await storage.getProduct(item.productId);
+          return {
+            id: item.id,
+            userId: item.userId,
+            productId: product?.trackingId || item.productId,
+            createdAt: item.createdAt
+          };
+        })
+      );
+      
+      res.json(enrichedItems);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch wishlist" });
     }
@@ -1226,7 +1326,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         productId: productId,
       });
       const wishlistItem = await storage.addToWishlist(validatedData);
-      res.status(201).json(wishlistItem);
+      const product = await storage.getProduct(productId);
+      res.status(201).json({
+        id: wishlistItem.id,
+        userId: wishlistItem.userId,
+        productId: product?.trackingId || wishlistItem.productId,
+        createdAt: wishlistItem.createdAt
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
