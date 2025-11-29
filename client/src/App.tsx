@@ -12,6 +12,11 @@ import { UserRoutes } from "@/features/user/routes";
 import { AdminRoutes } from "@/features/admin/routes";
 import { InventoryRoutes } from "@/features/inventory/routes";
 
+// Layout imports
+import { UserLayout } from "@/features/user/layouts/UserLayout";
+import { AdminLayout } from "@/features/admin/layouts/AdminLayout";
+import { InventoryLayout } from "@/features/inventory/layouts/InventoryLayout";
+
 // Shared
 import NotFound from "@/pages/not-found";
 
@@ -19,13 +24,36 @@ function AppRouter() {
   return (
     <Router>
       <Routes>
-        {/* User Routes - Default/Root */}
-        <Route path="/*" element={<UserRoutes />} />
+        {/* User Routes with User Layout */}
+        <Route
+          path="/*"
+          element={
+            <UserLayout>
+              <UserRoutes />
+            </UserLayout>
+          }
+        />
         
-        {/* Admin Routes */}
+        {/* Admin Routes with Admin Layout */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminLayout>
+              <AdminRoutes />
+            </AdminLayout>
+          }
+        />
         <Route path="/admin/*" element={<AdminRoutes />} />
 
-        {/* Inventory Routes */}
+        {/* Inventory Routes with Inventory Layout */}
+        <Route
+          path="/inventory/dashboard"
+          element={
+            <InventoryLayout>
+              <InventoryRoutes />
+            </InventoryLayout>
+          }
+        />
         <Route path="/inventory/*" element={<InventoryRoutes />} />
 
         {/* 404 - Catch all remaining */}
