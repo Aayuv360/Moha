@@ -63,7 +63,6 @@ export const cartItems = pgTable("cart_items", {
   quantity: integer("quantity").notNull().default(1),
   sessionId: text("session_id"),
   userId: varchar("user_id"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const orders = pgTable("orders", {
