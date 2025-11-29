@@ -60,7 +60,9 @@ export default function ProductDetail() {
     queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
   });
 
-  const cartItem = cart.find((item) => item.product?.trackingId === product?.trackingId);
+  const cartItem = cart.find(
+    (item) => item?.product?.trackingId === product?.trackingId,
+  );
   const cartQuantity = cartItem?.quantity || 0;
 
   const images =
