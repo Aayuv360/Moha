@@ -40,6 +40,9 @@ export function InventoryLoginPage() {
   useEffect(() => {
     if (user?.isInventoryOwner) {
       navigate("/inventory/dashboard", { replace: true });
+    } else if (user && !user.isInventoryOwner) {
+      // Regular users cannot access inventory login
+      navigate("/", { replace: true });
     }
   }, [user, navigate]);
 

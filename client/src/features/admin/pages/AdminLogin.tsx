@@ -27,6 +27,9 @@ export function AdminLoginPage() {
   useEffect(() => {
     if (user?.isAdmin) {
       navigate("/admin/dashboard", { replace: true });
+    } else if (user && !user.isAdmin) {
+      // Regular users cannot access admin login
+      navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
