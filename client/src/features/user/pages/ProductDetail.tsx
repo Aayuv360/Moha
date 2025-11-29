@@ -16,10 +16,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import type { Product, CartItem } from "@shared/schema";
+import type { Product, CartItem, WishlistItem } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
+import { wishlistService } from "@/services/wishlist";
 
 export default function ProductDetail() {
   const { id, trackingId } = useParams<{ id?: string; trackingId?: string }>();
@@ -47,12 +48,12 @@ export default function ProductDetail() {
     queryKey: [endpoint],
     enabled: !!endpoint,
   });
-  const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
-    queryKey: [`/api/wishlist/check/${product?.id}`],
+  const { data: wishlistItems = [] } = useQuery<WishlistItem[]>({
+    queryKey: ["/api/wishlist"],
     enabled: !!token,
   });
 
-  const isInWishlist = wishlistData?.isInWishlist || false;
+  const isInWishlist = product ? wishlistItems.some((w) => w.productId === product.trackingId) : false;
   const { data: cart = [] } = useQuery<CartItem[]>({
     queryKey: ["/api/cart", cartIdentifier],
     queryFn: async () => {
@@ -143,25 +144,18 @@ export default function ProductDetail() {
   });
 
   const toggleWishlistMutation = useMutation({
-    mutationFn: async () => {
-      if (isInWishlist) {
-        return await apiRequest("DELETE", `/api/wishlist/${product?.id}`);
-      } else {
-        return await apiRequest("POST", "/api/wishlist", {
-          productId: product?.id,
-        });
+    mutationFn: () =>
+      product ? wishlistService.toggleWishlist(product.trackingId, isInWishlist, token!) : Promise.reject(),
+    onSuccess: (response) => {
+      const isNowInWishlist = response?.isInWishlist !== false;
+      if (product) {
+        wishlistService.updateWishlistCache(product.trackingId, isNowInWishlist);
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
-      queryClient.invalidateQueries({
-        queryKey: [`/api/wishlist/check/${product?.id}`],
-      });
       toast({
-        title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
-        description: isInWishlist
-          ? "Item removed from your wishlist"
-          : "Item added to your wishlist successfully.",
+        title: isNowInWishlist ? "Added to wishlist" : "Removed from wishlist",
+        description: isNowInWishlist
+          ? "Item added to your wishlist successfully."
+          : "Item removed from your wishlist",
       });
     },
   });
