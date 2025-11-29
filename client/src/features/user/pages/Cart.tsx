@@ -127,7 +127,6 @@ export default function Cart() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <LoadingSpinner />
       </div>
     );
@@ -136,7 +135,6 @@ export default function Cart() {
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
           <EmptyState
             icon={<ShoppingBag className="h-12 w-12 text-muted-foreground" />}
@@ -152,8 +150,6 @@ export default function Cart() {
   console.log("Cart Items:", modalOpen);
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light mb-8 md:mb-12">
           Shopping Cart

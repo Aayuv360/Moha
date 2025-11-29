@@ -24,7 +24,7 @@ interface ProductFilters {
 function parseUrlParams(searchString: string): ProductFilters {
   const params = new Map<string, string>();
   const parts = searchString.slice(1).split("&");
-  
+
   for (const part of parts) {
     if (!part) continue;
     const [key, value] = part.split("=");
@@ -54,17 +54,22 @@ export default function Products() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filters = useMemo(() => parseUrlParams(location.search), [location.search]);
+  const filters = useMemo(
+    () => parseUrlParams(location.search),
+    [location.search],
+  );
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["products", filters, searchQuery],
     queryFn: async () => {
       const params: string[] = [];
-      
+
       if (searchQuery) params.push(`search=${encodeURIComponent(searchQuery)}`);
-      if (filters.fabric !== "All") params.push(`fabric=${encodeURIComponent(filters.fabric)}`);
-      if (filters.occasion !== "All") params.push(`occasion=${encodeURIComponent(filters.occasion)}`);
-      
+      if (filters.fabric !== "All")
+        params.push(`fabric=${encodeURIComponent(filters.fabric)}`);
+      if (filters.occasion !== "All")
+        params.push(`occasion=${encodeURIComponent(filters.occasion)}`);
+
       if (filters.priceRange !== "all") {
         const [min, max] = filters.priceRange.split("-");
         params.push(`minPrice=${encodeURIComponent(min)}`);
@@ -142,7 +147,7 @@ export default function Products() {
   ) => {
     const params = new Map<string, string>();
     const parts = location.search.slice(1).split("&");
-    
+
     for (const part of parts) {
       if (!part) continue;
       const [key, value] = part.split("=");
@@ -175,7 +180,9 @@ export default function Products() {
 
     const queryArray: string[] = [];
     params.forEach((value, key) => {
-      queryArray.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+      queryArray.push(
+        `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
+      );
     });
 
     const queryString = queryArray.join("&");
@@ -202,8 +209,6 @@ export default function Products() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
         <div className="mb-8 md:mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light mb-4">

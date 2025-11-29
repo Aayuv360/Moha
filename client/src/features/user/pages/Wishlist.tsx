@@ -43,15 +43,22 @@ export default function Wishlist() {
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
-      return await apiRequest("POST", "/api/cart", item, isUserCart ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : undefined);
+      return await apiRequest(
+        "POST",
+        "/api/cart",
+        item,
+        isUserCart
+          ? {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          : undefined,
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['/api/cart', cartIdentifier],
+        queryKey: ["/api/cart", cartIdentifier],
       });
       toast({
         title: "Added to cart",
@@ -79,7 +86,6 @@ export default function Wishlist() {
   if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading...</p>
@@ -97,7 +103,6 @@ export default function Wishlist() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
         <div className="mb-8 md:mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light mb-4">

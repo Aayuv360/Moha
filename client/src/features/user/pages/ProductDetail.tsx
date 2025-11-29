@@ -229,7 +229,6 @@ export default function ProductDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <LoadingSpinner />
       </div>
     );
@@ -238,7 +237,6 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 py-12 text-center">
           <h1 className="text-3xl font-serif mb-6 text-gray-800">
             Product not found
@@ -297,8 +295,6 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
-      <Navigation />
-
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-16">
         <Link to="/products">
           <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition mb-8 cursor-pointer">

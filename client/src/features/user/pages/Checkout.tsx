@@ -158,7 +158,6 @@ export default function Checkout() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <LoadingSpinner />
       </div>
     );
@@ -172,7 +171,6 @@ export default function Checkout() {
   if (orderPlaced) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-12 md:py-20 text-center">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
             <CheckCircle2 className="h-10 w-10 text-primary" />
@@ -202,8 +200,6 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light mb-8 md:mb-12">
           Checkout

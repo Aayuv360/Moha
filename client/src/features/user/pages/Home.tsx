@@ -91,7 +91,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
       <HeroSection />
 
       <section className="py-12 md:py-20 px-4 md:px-6">
@@ -127,7 +126,10 @@ export default function Home() {
 
       <section className="py-12 md:py-20 px-4 md:px-6 bg-card">
         <div className="max-w-6xl mx-auto">
-          <div ref={featuresRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          <div
+            ref={featuresRef}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
+          >
             {features.map((feature) => (
               <div key={feature.title} className="text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center text-primary">
@@ -154,10 +156,15 @@ export default function Home() {
                 Preserving Traditional Craftsmanship
               </h2>
               <p className="text-muted-foreground leading-relaxed mb-6">
-                Each saree in our collection represents centuries of textile artistry passed down through generations. We work directly with master weavers across India to bring you authentic, handcrafted sarees that celebrate our rich cultural heritage.
+                Each saree in our collection represents centuries of textile
+                artistry passed down through generations. We work directly with
+                master weavers across India to bring you authentic, handcrafted
+                sarees that celebrate our rich cultural heritage.
               </p>
               <p className="text-muted-foreground leading-relaxed mb-8">
-                From the intricate zari work of Banarasi silk to the vibrant colors of Kanjivaram, every piece tells a unique story of skill, patience, and artistic excellence.
+                From the intricate zari work of Banarasi silk to the vibrant
+                colors of Kanjivaram, every piece tells a unique story of skill,
+                patience, and artistic excellence.
               </p>
               <Link to="/products">
                 <a data-testid="link-view-collection">
