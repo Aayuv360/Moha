@@ -58,6 +58,7 @@ export interface IStorage {
   // Products
   getAllProducts(filters?: ProductFilters): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
+  getProductByTrackingId(trackingId: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(
     id: string,
@@ -257,6 +258,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(products)
       .where(eq(products.id, id));
+    return product || undefined;
+  }
+
+  async getProductByTrackingId(trackingId: string): Promise<Product | undefined> {
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.trackingId, trackingId));
     return product || undefined;
   }
 

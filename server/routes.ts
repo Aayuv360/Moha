@@ -775,6 +775,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/onlineProducts/tracking/:trackingId", async (req, res) => {
+    try {
+      const product = await storage.getProductByTrackingId(req.params.trackingId);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const allocations = await storage.getProductInventoryByProduct(
+        product.id,
+      );
+
+      const onlineEntry = allocations.find(
+        (alloc) => alloc.channel === "online",
+      );
+
+      const onlineStock = onlineEntry ? onlineEntry.quantity : 0;
+
+      res.json({
+        ...product,
+        inStock: onlineStock,
+      });
+    } catch (error) {
+      console.error("Error fetching product by tracking ID:", error);
+      res.status(500).json({
+        error: "Failed to fetch product",
+        details: String(error),
+      });
+    }
+  });
+
   app.get("/api/onlineProducts/:id", async (req, res) => {
     try {
       const product = await storage.getProduct(req.params.id);

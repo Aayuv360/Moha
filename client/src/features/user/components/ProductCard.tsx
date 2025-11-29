@@ -211,7 +211,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
   return (
     <div ref={cardRef} data-testid={`card-product-${product.id}`}>
-      <Link href={`/product/${product.id}`} className="block">
+      <Link to={`/product/${product.trackingId}`} className="block">
         <div>
           <div
             className="overflow-hidden bg-muted relative rounded-lg group"

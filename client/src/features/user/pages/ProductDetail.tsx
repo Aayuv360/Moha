@@ -22,7 +22,7 @@ import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 
 export default function ProductDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id, trackingId } = useParams<{ id?: string; trackingId?: string }>();
   const { toast } = useToast();
   const { user, token } = useAuth();
 
@@ -39,9 +39,14 @@ export default function ProductDetail() {
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
 
+  // Determine which endpoint to use based on route parameter
+  const endpoint = trackingId
+    ? `/api/onlineProducts/tracking/${trackingId}`
+    : `/api/onlineProducts/${id}`;
+
   const { data: product, isLoading } = useQuery<Product>({
-    queryKey: ["/api/onlineProducts", id],
-    enabled: !!id,
+    queryKey: [endpoint],
+    enabled: !!(id || trackingId),
   });
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
     queryKey: [`/api/wishlist/check/${product?.id}`],

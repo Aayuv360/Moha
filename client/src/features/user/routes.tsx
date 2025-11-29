@@ -16,14 +16,12 @@ import NotFound from "@/pages/not-found";
 export function UserRoutes() {
   return (
     <Routes>
-      {/* Public Routes */}
       <Route path="/" element={<HomePage />} />
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/product/:id" element={<ProductDetailPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Protected Routes - Require Authentication */}
       <Route
         path="/cart"
         element={
