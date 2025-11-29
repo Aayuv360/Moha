@@ -11,6 +11,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getOrCreateSessionId } from "@/lib/session";
 import { wishlistService } from "@/services/wishlist";
+import type { WishlistItem } from "@shared/schema";
 import { CartItem, Product } from "./cartTypes";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -52,12 +53,12 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   );
   const cartQuantity = cartItem?.quantity || 0;
 
-  const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
-    queryKey: [`/api/wishlist/check/${product.trackingId}`],
+  const { data: wishlistItems = [] } = useQuery<WishlistItem[]>({
+    queryKey: ["/api/wishlist"],
     enabled: !!token,
   });
 
-  const isInWishlist = wishlistData?.isInWishlist || false;
+  const isInWishlist = wishlistItems.some((w) => w.productId === product.trackingId);
 
   const updateCartMutation = useMutation({
     mutationFn: async (newQuantity: number) => {

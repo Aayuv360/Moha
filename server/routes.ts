@@ -1474,34 +1474,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  app.get(
-    "/api/wishlist/check/:productIdOrTrackingId",
-    authMiddleware,
-    async (req: AuthRequest, res) => {
-      try {
-        const user = await storage.getUserById(req.userId!);
-        if (!user) {
-          return res.status(404).json({ error: "User not found" });
-        }
-
-        let productId = req.params.productIdOrTrackingId;
-
-        if (productId.startsWith("PROD-")) {
-          const product = await storage.getProductByTrackingId(productId);
-          if (!product) {
-            return res.status(404).json({ error: "Product not found" });
-          }
-          productId = product.id;
-        }
-
-        const isInWishlist = await storage.isInWishlist(req.userId!, productId);
-        res.json({ isInWishlist, userId: user.userTrackingId });
-      } catch (error) {
-        res.status(500).json({ error: "Failed to check wishlist" });
-      }
-    },
-  );
-
   // Returns endpoints
   app.post("/api/returns", authMiddleware, async (req: AuthRequest, res) => {
     try {

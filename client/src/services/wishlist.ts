@@ -1,15 +1,7 @@
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { WishlistItem } from "@shared/schema";
 
 export const wishlistService = {
-  checkWishlist: async (productTrackingId: string, token: string) => {
-    return await apiRequest(
-      "GET",
-      `/api/wishlist/check/${productTrackingId}`,
-      undefined,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  },
-
   toggleWishlist: async (
     productTrackingId: string,
     isInWishlist: boolean,
@@ -36,13 +28,31 @@ export const wishlistService = {
     productTrackingId: string,
     isNowInWishlist: boolean
   ) => {
-    // Update query cache directly with response without triggering GET call
-    queryClient.setQueryData(
-      [`/api/wishlist/check/${productTrackingId}`],
-      { isInWishlist: isNowInWishlist }
-    );
+    // Get current wishlist from cache
+    const currentWishlist = queryClient.getQueryData<WishlistItem[]>([
+      "/api/wishlist",
+    ]) || [];
 
-    // Also invalidate general wishlist to keep it in sync
-    queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+    // Update the wishlist by adding or removing the product
+    let updatedWishlist: WishlistItem[];
+    if (isNowInWishlist) {
+      // Add to wishlist if not already present
+      if (!currentWishlist.some((w) => w.productId === productTrackingId)) {
+        updatedWishlist = [
+          ...currentWishlist,
+          { id: "", userId: "", productId: productTrackingId, createdAt: new Date() },
+        ];
+      } else {
+        updatedWishlist = currentWishlist;
+      }
+    } else {
+      // Remove from wishlist
+      updatedWishlist = currentWishlist.filter(
+        (w) => w.productId !== productTrackingId
+      );
+    }
+
+    // Update the cache
+    queryClient.setQueryData(["/api/wishlist"], updatedWishlist);
   },
 };
