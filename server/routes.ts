@@ -1473,7 +1473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!success) {
           return res.status(404).json({ error: "Wishlist item not found" });
         }
-        res.status(204).send();
+        res.status(200).json({ isInWishlist: false });
       } catch (error) {
         res.status(500).json({ error: "Failed to remove from wishlist" });
       }
