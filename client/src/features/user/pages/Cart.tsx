@@ -111,7 +111,7 @@ export default function Cart() {
       </div>
     );
   }
-  console.log("Cart Items:", modalOpen);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
@@ -125,7 +125,8 @@ export default function Cart() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  setModalOpen(true), setMode("select");
+                  setModalOpen(true);
+                  setMode("select");
                 }}
               >
                 Change Address
@@ -190,27 +191,20 @@ export default function Cart() {
                 </span>
               </div>
 
-              <Link to="/checkout">
-                <a className="block w-full" data-testid="link-checkout">
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    style={{ backgroundColor: "#9b083a" }}
-                  >
-                    Proceed to Checkout
-                  </Button>
-                </a>
+              <Link to="/checkout" className="block w-full" data-testid="link-checkout">
+                <Button
+                  size="lg"
+                  className="w-full"
+                  style={{ backgroundColor: "#9b083a" }}
+                >
+                  Proceed to Checkout
+                </Button>
               </Link>
 
-              <Link to="/products">
-                <a
-                  className="block w-full mt-3"
-                  data-testid="link-continue-shopping"
-                >
-                  <Button variant="outline" size="lg" className="w-full">
-                    Continue Shopping
-                  </Button>
-                </a>
+              <Link to="/products" className="block w-full mt-3" data-testid="link-continue-shopping">
+                <Button variant="outline" size="lg" className="w-full">
+                  Continue Shopping
+                </Button>
               </Link>
             </Card>
           </div>
