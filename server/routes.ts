@@ -954,6 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               id: item.id,
               userId: user.userTrackingId,
               quantity: item.quantity,
+              productId: product?.id,
               product: product ? { ...product, id: product.trackingId } : null,
             };
           }),
@@ -961,6 +962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json(cartItemsWithProducts.filter((item) => item.product));
       } catch (error) {
+        console.error("Cart fetch error:", error);
         res.status(500).json({ error: "Failed to fetch cart items" });
       }
     },
