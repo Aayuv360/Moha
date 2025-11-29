@@ -1,0 +1,10 @@
+export { default as InventoryDashboardTab } from "./InventoryDashboardTab";
+export { default as InventoryOrdersTab } from "./InventoryOrdersTab";
+export { default as InventoryProductsTab } from "./InventoryProductsTab";
+export { default as InventoryReturnsTab } from "./InventoryReturnsTab";
+export { default as InventorySettingsTab } from "./InventorySettingsTab";
+export { default as ExportReportsCard } from "./ExportReportsCard";
+export { default as ReturnsAnalyticsCard } from "./ReturnsAnalyticsCard";
+export { default as SalesTrendsChart } from "./SalesTrendsChart";
+export { default as TopProductsChart } from "./TopProductsChart";
+export { default as ProductAllocationForm } from "./ProductAllocationForm";

@@ -16,12 +16,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { Product, Order, Return } from "@shared/schema";
-import { DashboardTab } from "@/components/InventoryDashboardTab";
-import { ProductsTab } from "@/components/InventoryProductsTab";
-import { OrdersTab } from "@/components/InventoryOrdersTab";
-import { SettingsTab } from "@/components/InventorySettingsTab";
-import { InventoryReturnsTab } from "@/components/InventoryReturnsTab";
-import InventoryProductDetail from "@/pages/InventoryProductDetail";
+import { InventoryDashboardTab as DashboardTab } from "../components/InventoryDashboardTab";
+import { InventoryProductsTab as ProductsTab } from "../components/InventoryProductsTab";
+import { InventoryOrdersTab as OrdersTab } from "../components/InventoryOrdersTab";
+import { InventorySettingsTab as SettingsTab } from "../components/InventorySettingsTab";
+import { InventoryReturnsTab } from "../components/InventoryReturnsTab";
+import { InventoryProductDetailPage as InventoryProductDetail } from "./InventoryProductDetail";
 import { InventoryLayout } from "../layouts/InventoryLayout";
 
 export function InventoryDashboardPage() {
