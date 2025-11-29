@@ -22,6 +22,18 @@ import {
   type AuthRequest,
 } from "./auth";
 
+// Generate unique order tracking ID (format: ORD-XXXXX-XXXXX)
+function generateOrderTrackingId(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let part1 = "";
+  let part2 = "";
+  for (let i = 0; i < 5; i++) {
+    part1 += chars.charAt(Math.floor(Math.random() * chars.length));
+    part2 += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `ORD-${part1}-${part2}`;
+}
+
 const adminAuthMiddleware = async (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -651,7 +663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   app.patch(
-    "/api/inventory/orders/:id/status",
+    "/api/inventory/orders/:idOrTrackingId/status",
     authMiddleware,
     async (req: AuthRequest, res) => {
       try {
@@ -665,7 +677,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Invalid status" });
         }
 
-        const order = await storage.getOrder(req.params.id);
+        let id = req.params.idOrTrackingId;
+        let order = null;
+
+        // Check if it's a tracking ID (format: ORD-XXXXX-XXXXX)
+        if (id.startsWith("ORD-")) {
+          const allOrders = await storage.getAllOrders();
+          order = allOrders.find(o => o.orderTrackingId === id && o.inventoryId === user.inventoryId);
+        } else {
+          order = await storage.getOrder(id);
+        }
+
         if (!order || order.inventoryId !== user.inventoryId) {
           return res
             .status(404)
@@ -678,7 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (refundStatus !== undefined) updates.refundStatus = refundStatus;
 
         const updatedOrder = await storage.updateOrderStatus(
-          req.params.id,
+          order.id,
           status,
         );
 
@@ -690,7 +712,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   app.patch(
-    "/api/inventory/orders/:id/refund",
+    "/api/inventory/orders/:idOrTrackingId/refund",
     authMiddleware,
     async (req: AuthRequest, res) => {
       try {
@@ -706,14 +728,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Invalid refund status" });
         }
 
-        const order = await storage.getOrder(req.params.id);
+        let id = req.params.idOrTrackingId;
+        let order = null;
+
+        // Check if it's a tracking ID (format: ORD-XXXXX-XXXXX)
+        if (id.startsWith("ORD-")) {
+          const allOrders = await storage.getAllOrders();
+          order = allOrders.find(o => o.orderTrackingId === id && o.inventoryId === user.inventoryId);
+        } else {
+          order = await storage.getOrder(id);
+        }
+
         if (!order || order.inventoryId !== user.inventoryId) {
           return res
             .status(404)
             .json({ error: "Order not found or unauthorized" });
         }
 
-        const updatedOrder = await storage.updateOrder(req.params.id, {
+        const updatedOrder = await storage.updateOrder(order.id, {
           refundStatus,
           returnNotes,
         });
@@ -1042,6 +1074,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const orderData = {
           ...validatedData,
+          orderTrackingId: generateOrderTrackingId(),
           items: JSON.stringify(enrichedItems),
           userId: req.userId || null,
           inventoryId: inventoryId || null,

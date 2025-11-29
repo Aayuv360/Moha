@@ -309,7 +309,7 @@ export function OrdersTab({
                         <div className="flex items-center gap-3 mb-2">
                           <div>
                             <p className="font-semibold text-lg">
-                              Order {order.id.substring(0, 8)}
+                              Order {order.orderTrackingId}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
                               Customer:{" "}
