@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Filter, ShoppingBag, Search as SearchIcon } from "lucide-react";
 import type { Product, InsertCartItem } from "@shared/schema";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
+import { cartService } from "../services/cartService";
 import gsap from "gsap";
 
 interface ProductFilters {
@@ -86,24 +86,10 @@ export default function Products() {
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
-      return await apiRequest(
-        "POST",
-        "/api/cart",
-        item,
-        user
-          ? {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          : undefined,
-      );
+      return await cartService.addToCart(item, isUserCart, token);
     },
     onSuccess: () => {
-      const cartIdentifier = user?.id;
-      queryClient.invalidateQueries({
-        queryKey: ["/api/cart", cartIdentifier],
-      });
+      cartService.invalidateCartCache(cartIdentifier);
       toast({
         title: "Added to cart",
         description: "Item has been added to your cart successfully.",

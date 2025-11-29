@@ -19,8 +19,8 @@ import {
 import type { Product, CartItem, WishlistItem } from "@shared/schema";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
-import { wishlistService } from "@/services/wishlist";
 import { cartService } from "../services/cartService";
+import { wishlistService } from "../services/wishlist";
 
 export default function ProductDetail() {
   const { id, trackingId } = useParams<{ id?: string; trackingId?: string }>();
@@ -40,7 +40,6 @@ export default function ProductDetail() {
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
 
-  // Determine which endpoint to use - both can use the same endpoint
   const productParam = trackingId || id;
   const endpoint = productParam ? `/api/onlineProducts/${productParam}` : null;
 
@@ -61,7 +60,7 @@ export default function ProductDetail() {
     queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
   });
 
-  const cartItem = cart.find((item) => item.productId === product?.id);
+  const cartItem = cart.find((item) => item.product?.trackingId === product?.trackingId);
   const cartQuantity = cartItem?.quantity || 0;
 
   const images =
@@ -77,7 +76,7 @@ export default function ProductDetail() {
         cartItem.id,
         newQuantity,
         isUserCart,
-        token
+        token,
       );
     },
     onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
@@ -110,11 +109,7 @@ export default function ProductDetail() {
   const removeFromCartMutation = useMutation({
     mutationFn: async () => {
       if (!cartItem) return;
-      return await cartService.removeFromCart(
-        cartItem.id,
-        isUserCart,
-        token
-      );
+      return await cartService.removeFromCart(cartItem.id, isUserCart, token);
     },
     onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
   });

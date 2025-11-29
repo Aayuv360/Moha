@@ -10,10 +10,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getOrCreateSessionId } from "@/lib/session";
-import { wishlistService } from "@/services/wishlist";
 import { cartService } from "../services/cartService";
 import type { WishlistItem } from "@shared/schema";
 import { CartItem, Product } from "./cartTypes";
+import { wishlistService } from "../services/wishlist";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -62,7 +62,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
         cartItem.id,
         newQuantity,
         isUserCart,
-        token
+        token,
       );
     },
     onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
@@ -71,11 +71,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const removeFromCartMutation = useMutation({
     mutationFn: async () => {
       if (!cartItem) return;
-      return await cartService.removeFromCart(
-        cartItem.id,
-        isUserCart,
-        token
-      );
+      return await cartService.removeFromCart(cartItem.id, isUserCart, token);
     },
     onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
   });
