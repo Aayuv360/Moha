@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import type { CartItem, Product } from "@shared/schema";
-import { queryClient } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { cartService } from "../services/cartService";
@@ -38,7 +37,12 @@ export default function Cart() {
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
-      return await cartService.updateCartQuantity(id, quantity, isUserCart, token);
+      return await cartService.updateCartQuantity(
+        id,
+        quantity,
+        isUserCart,
+        token,
+      );
     },
     onSuccess: () => {
       cartService.invalidateCartCache(cartIdentifier);

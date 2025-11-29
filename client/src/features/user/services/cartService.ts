@@ -5,7 +5,7 @@ export const cartService = {
     return await apiRequest("GET", `/api/cart/${sessionId}`);
   },
 
-  getCartByUserId: async (userTrackingId: string, token: string) => {
+  getCartByUserId: async (userTrackingId: string, token: string | null) => {
     return await apiRequest(
       "GET",
       `/api/cart/user/${userTrackingId}`,
@@ -17,7 +17,7 @@ export const cartService = {
   getCart: async (
     cartIdentifier: string,
     isUserCart: boolean,
-    token?: string
+    token: string | null
   ) => {
     if (isUserCart && token) {
       return await cartService.getCartByUserId(cartIdentifier, token);
@@ -28,7 +28,7 @@ export const cartService = {
   addToCart: async (
     item: any,
     isUserCart: boolean,
-    token?: string
+    token: string | null
   ) => {
     return await apiRequest(
       "POST",
@@ -44,7 +44,7 @@ export const cartService = {
     cartItemId: string,
     quantity: number,
     isUserCart: boolean,
-    token?: string
+    token: string | null
   ) => {
     return await apiRequest(
       "PATCH",
@@ -59,7 +59,7 @@ export const cartService = {
   removeFromCart: async (
     cartItemId: string,
     isUserCart: boolean,
-    token?: string
+    token: string | null
   ) => {
     return await apiRequest(
       "DELETE",
@@ -73,8 +73,9 @@ export const cartService = {
 
   mergeCartsOnLogin: async (
     sessionId: string,
-    token: string
+    token: string | null
   ) => {
+    if (!token) throw new Error("Token required for merge");
     return await apiRequest(
       "POST",
       "/api/cart/merge-on-login",
