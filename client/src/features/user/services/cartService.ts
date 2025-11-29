@@ -1,5 +1,4 @@
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { CartItem } from "@shared/schema";
 
 export const cartService = {
   getCartBySessionId: async (sessionId: string) => {

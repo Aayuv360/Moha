@@ -9,9 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import type { CartItem, Product } from "@shared/schema";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
+import { cartService } from "../services/cartService";
 import { useState } from "react";
 import { AddressModal, useFetchAddresses } from "@/features/address";
 
@@ -32,40 +33,15 @@ export default function Cart() {
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
-    queryFn: async () => {
-      const endpoint = isUserCart
-        ? `/api/cart/user/${user.id}`
-        : `/api/cart/${sessionId}`;
-      const options = isUserCart
-        ? {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        : undefined;
-      return await apiRequest("GET", endpoint, undefined, options);
-    },
+    queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
   });
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
-      return await apiRequest(
-        "PATCH",
-        `/api/cart/${id}`,
-        { quantity },
-        isUserCart
-          ? {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          : undefined,
-      );
+      return await cartService.updateCartQuantity(id, quantity, isUserCart, token);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/cart", cartIdentifier],
-      });
+      cartService.invalidateCartCache(cartIdentifier);
     },
     onError: () => {
       toast({
@@ -78,23 +54,10 @@ export default function Cart() {
 
   const removeItemMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(
-        "DELETE",
-        `/api/cart/${id}`,
-        {},
-        isUserCart
-          ? {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          : undefined,
-      );
+      return await cartService.removeFromCart(id, isUserCart, token);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/cart", cartIdentifier],
-      });
+      cartService.invalidateCartCache(cartIdentifier);
       toast({
         title: "Removed from cart",
         description: "Item has been removed from your cart.",

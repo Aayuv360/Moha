@@ -17,10 +17,11 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { Product, CartItem, WishlistItem } from "@shared/schema";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
-import { wishlistService } from "../services/wishlist";
+import { wishlistService } from "@/services/wishlist";
+import { cartService } from "../services/cartService";
 
 export default function ProductDetail() {
   const { id, trackingId } = useParams<{ id?: string; trackingId?: string }>();
@@ -58,15 +59,7 @@ export default function ProductDetail() {
     : false;
   const { data: cart = [] } = useQuery<CartItem[]>({
     queryKey: ["/api/cart", cartIdentifier],
-    queryFn: async () => {
-      const endpoint = isUserCart
-        ? `/api/cart/user/${user.id}`
-        : `/api/cart/${sessionId}`;
-      const options = isUserCart
-        ? { headers: { Authorization: `Bearer ${token}` } }
-        : undefined;
-      return await apiRequest("GET", endpoint, undefined, options);
-    },
+    queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
   });
 
   const cartItem = cart.find((item) => item.productId === product?.id);
@@ -81,33 +74,21 @@ export default function ProductDetail() {
   const updateCartMutation = useMutation({
     mutationFn: async (newQuantity: number) => {
       if (!cartItem) return;
-      return await apiRequest(
-        "PATCH",
-        `/api/cart/${cartItem.id}`,
-        { quantity: newQuantity },
-        isUserCart
-          ? { headers: { Authorization: `Bearer ${token}` } }
-          : undefined,
+      return await cartService.updateCartQuantity(
+        cartItem.id,
+        newQuantity,
+        isUserCart,
+        token
       );
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ["/api/cart", cartIdentifier],
-      }),
+    onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
   });
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: any) =>
-      await apiRequest(
-        "POST",
-        "/api/cart",
-        item,
-        user ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
-      ),
+      await cartService.addToCart(item, isUserCart, token),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/cart", cartIdentifier],
-      });
+      cartService.invalidateCartCache(cartIdentifier);
 
       if (buttonRef.current) {
         gsap
@@ -130,19 +111,13 @@ export default function ProductDetail() {
   const removeFromCartMutation = useMutation({
     mutationFn: async () => {
       if (!cartItem) return;
-      return await apiRequest(
-        "DELETE",
-        `/api/cart/${cartItem.id}`,
-        {},
-        isUserCart
-          ? { headers: { Authorization: `Bearer ${token}` } }
-          : undefined,
+      return await cartService.removeFromCart(
+        cartItem.id,
+        isUserCart,
+        token
       );
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ["/api/cart", cartIdentifier],
-      }),
+    onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
   });
 
   const toggleWishlistMutation = useMutation({
