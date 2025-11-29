@@ -1144,8 +1144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/cart/:id", async (req, res) => {
     try {
       // Get cart item before deleting to know which cart to return
-      const allCartItems = await storage.getCartItems("");
-      const cartItem = allCartItems.find((item) => item.id === req.params.id);
+      const cartItem = await storage.getCartItemById(req.params.id);
 
       if (!cartItem) {
         return res.status(404).json({ error: "Cart item not found" });
@@ -1187,6 +1186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(cartItemsWithProducts.filter((item) => item.product));
     } catch (error) {
+      console.error("Delete cart error:", error);
       res.status(500).json({ error: "Failed to remove cart item" });
     }
   });

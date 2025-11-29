@@ -70,6 +70,7 @@ export interface IStorage {
   // Cart
   getCartItems(sessionId: string): Promise<CartItem[]>;
   getCartItemsByUserId(userId: string): Promise<CartItem[]>;
+  getCartItemById(id: string): Promise<CartItem | undefined>;
   addToCart(item: InsertCartItem): Promise<CartItem>;
   updateCartItemQuantity(
     id: string,
@@ -316,6 +317,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(cartItems)
       .where(eq(cartItems.userId, userId));
+  }
+
+  async getCartItemById(id: string): Promise<CartItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(cartItems)
+      .where(eq(cartItems.id, id));
+    return item || undefined;
   }
 
   async addToCart(insertItem: InsertCartItem): Promise<CartItem> {
