@@ -34,6 +34,18 @@ function generateOrderTrackingId(): string {
   return `ORD-${part1}-${part2}`;
 }
 
+// Generate unique user tracking ID (format: USER-XXXXX-XXXXX)
+function generateUserTrackingId(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let part1 = "";
+  let part2 = "";
+  for (let i = 0; i < 5; i++) {
+    part1 += chars.charAt(Math.floor(Math.random() * chars.length));
+    part2 += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `USER-${part1}-${part2}`;
+}
+
 const adminAuthMiddleware = async (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -103,17 +115,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const hashedPassword = await hashPassword(validatedData.password);
+      const userTrackingId = generateUserTrackingId();
       const user = await storage.createUser({
         ...validatedData,
         password: hashedPassword,
-      });
+        userTrackingId: userTrackingId,
+      } as any);
 
       const token = generateToken(user.id);
 
       const { password: _, ...userWithoutPassword } = user;
 
       res.status(201).json({
-        user: userWithoutPassword,
+        user: { ...userWithoutPassword, id: user.userTrackingId },
         token,
       });
     } catch (error) {
@@ -225,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...userWithoutPassword } = user;
 
       res.json({
-        user: userWithoutPassword,
+        user: { ...userWithoutPassword, id: user.userTrackingId },
         token,
       });
     } catch (error) {
@@ -244,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      res.json({ ...userWithoutPassword, id: user.userTrackingId });
     } catch (error) {
       res.status(500).json({ error: "Failed to get user" });
     }
@@ -914,20 +928,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/cart/user/:userId", authMiddleware, async (req: AuthRequest, res) => {
+  app.get("/api/cart/user/:userTrackingId", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      if (req.userId !== req.params.userId) {
+      const user = await storage.getUserById(req.userId!);
+      if (!user || user.userTrackingId !== req.params.userTrackingId) {
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      const cartItems = await storage.getCartItemsByUserId(req.params.userId);
+      const cartItems = await storage.getCartItemsByUserId(req.userId!);
 
       const cartItemsWithProducts = await Promise.all(
         cartItems.map(async (item) => {
           const product = await storage.getProduct(item.productId);
           return { 
             id: item.id,
-            userId: item.userId,
+            userId: user.userTrackingId,
             quantity: item.quantity,
             product: product ? { ...product, id: product.trackingId } : null
           };
@@ -948,6 +963,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Session ID is required" });
       }
 
+      const user = await storage.getUserById(req.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
       await storage.mergeCartsOnLogin(sessionId, req.userId!);
 
       const mergedCartItems = await storage.getCartItemsByUserId(req.userId!);
@@ -956,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const product = await storage.getProduct(item.productId);
           return { 
             id: item.id,
-            userId: item.userId,
+            userId: user.userTrackingId,
             quantity: item.quantity,
             product: product ? { ...product, id: product.trackingId } : null
           };
@@ -1008,9 +1028,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: validatedData.userId,
       });
       
+      let userTrackingId = cartItem.userId;
+      if (cartItem.userId) {
+        const user = await storage.getUserById(cartItem.userId);
+        if (user) {
+          userTrackingId = user.userTrackingId;
+        }
+      }
+      
       res.status(201).json({
         id: cartItem.id,
-        userId: cartItem.userId,
+        userId: userTrackingId,
         sessionId: cartItem.sessionId,
         quantity: cartItem.quantity,
         product: product ? { ...product, id: product.trackingId } : null
@@ -1042,9 +1070,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const product = await storage.getProduct(updatedItem.productId);
+      
+      let userTrackingId = updatedItem.userId;
+      if (updatedItem.userId) {
+        const user = await storage.getUserById(updatedItem.userId);
+        if (user) {
+          userTrackingId = user.userTrackingId;
+        }
+      }
+      
       res.json({
         id: updatedItem.id,
-        userId: updatedItem.userId,
+        userId: userTrackingId,
         sessionId: updatedItem.sessionId,
         quantity: updatedItem.quantity,
         product: product ? { ...product, id: product.trackingId } : null
