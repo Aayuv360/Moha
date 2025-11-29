@@ -28,9 +28,10 @@ export const cartService = {
   addToCart: async (
     item: any,
     isUserCart: boolean,
-    token: string | null
+    token: string | null,
+    cartIdentifier: string
   ) => {
-    return await apiRequest(
+    const updatedCart = await apiRequest(
       "POST",
       "/api/cart",
       item,
@@ -38,15 +39,18 @@ export const cartService = {
         ? { headers: { Authorization: `Bearer ${token}` } }
         : undefined
     );
+    queryClient.setQueryData(["/api/cart", cartIdentifier], updatedCart);
+    return updatedCart;
   },
 
   updateCartQuantity: async (
     cartItemId: string,
     quantity: number,
     isUserCart: boolean,
-    token: string | null
+    token: string | null,
+    cartIdentifier: string
   ) => {
-    return await apiRequest(
+    const updatedCart = await apiRequest(
       "PATCH",
       `/api/cart/${cartItemId}`,
       { quantity },
@@ -54,14 +58,17 @@ export const cartService = {
         ? { headers: { Authorization: `Bearer ${token}` } }
         : undefined
     );
+    queryClient.setQueryData(["/api/cart", cartIdentifier], updatedCart);
+    return updatedCart;
   },
 
   removeFromCart: async (
     cartItemId: string,
     isUserCart: boolean,
-    token: string | null
+    token: string | null,
+    cartIdentifier: string
   ) => {
-    return await apiRequest(
+    const updatedCart = await apiRequest(
       "DELETE",
       `/api/cart/${cartItemId}`,
       {},
@@ -69,6 +76,8 @@ export const cartService = {
         ? { headers: { Authorization: `Bearer ${token}` } }
         : undefined
     );
+    queryClient.setQueryData(["/api/cart", cartIdentifier], updatedCart);
+    return updatedCart;
   },
 
   mergeCartsOnLogin: async (

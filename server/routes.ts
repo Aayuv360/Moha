@@ -1051,21 +1051,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: validatedData.userId,
       });
 
-      let userTrackingId = cartItem.userId;
+      // Return full updated cart instead of just the added item
+      const cartIdentifier = cartItem.userId || cartItem.sessionId;
+      let allCartItems;
+      
       if (cartItem.userId) {
-        const user = await storage.getUserById(cartItem.userId);
-        if (user) {
-          userTrackingId = user.userTrackingId;
-        }
+        allCartItems = await storage.getCartItemsByUserId(cartItem.userId);
+      } else {
+        allCartItems = await storage.getCartItems(cartItem.sessionId!);
       }
 
-      res.status(201).json({
-        id: cartItem.id,
-        userId: userTrackingId,
-        sessionId: cartItem.sessionId,
-        quantity: cartItem.quantity,
-        product: product ? { ...product, id: product.trackingId } : null,
-      });
+      const cartItemsWithProducts = await Promise.all(
+        allCartItems.map(async (item) => {
+          const prod = await storage.getProduct(item.productId);
+          let userTrackingId = item.userId;
+          if (item.userId) {
+            const u = await storage.getUserById(item.userId);
+            if (u) userTrackingId = u.userTrackingId;
+          }
+          return {
+            id: item.id,
+            userId: userTrackingId,
+            sessionId: item.sessionId,
+            quantity: item.quantity,
+            productId: prod?.id,
+            product: prod ? { ...prod, id: prod.trackingId } : null,
+          };
+        }),
+      );
+
+      res.status(201).json(cartItemsWithProducts.filter((item) => item.product));
     } catch (error) {
       console.error("Add to cart error:", error);
       if (error instanceof z.ZodError) {
@@ -1092,23 +1107,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Cart item not found" });
       }
 
-      const product = await storage.getProduct(updatedItem.productId);
-
-      let userTrackingId = updatedItem.userId;
+      // Return full updated cart instead of just the updated item
+      let allCartItems;
+      
       if (updatedItem.userId) {
-        const user = await storage.getUserById(updatedItem.userId);
-        if (user) {
-          userTrackingId = user.userTrackingId;
-        }
+        allCartItems = await storage.getCartItemsByUserId(updatedItem.userId);
+      } else {
+        allCartItems = await storage.getCartItems(updatedItem.sessionId!);
       }
 
-      res.json({
-        id: updatedItem.id,
-        userId: userTrackingId,
-        sessionId: updatedItem.sessionId,
-        quantity: updatedItem.quantity,
-        product: product ? { ...product, id: product.trackingId } : null,
-      });
+      const cartItemsWithProducts = await Promise.all(
+        allCartItems.map(async (item) => {
+          const prod = await storage.getProduct(item.productId);
+          let userTrackingId = item.userId;
+          if (item.userId) {
+            const u = await storage.getUserById(item.userId);
+            if (u) userTrackingId = u.userTrackingId;
+          }
+          return {
+            id: item.id,
+            userId: userTrackingId,
+            sessionId: item.sessionId,
+            quantity: item.quantity,
+            productId: prod?.id,
+            product: prod ? { ...prod, id: prod.trackingId } : null,
+          };
+        }),
+      );
+
+      res.json(cartItemsWithProducts.filter((item) => item.product));
     } catch (error) {
       res.status(500).json({ error: "Failed to update cart item" });
     }
@@ -1116,13 +1143,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/cart/:id", async (req, res) => {
     try {
+      // Get cart item before deleting to know which cart to return
+      const allCartItems = await storage.getCartItems("");
+      const cartItem = allCartItems.find((item) => item.id === req.params.id);
+
+      if (!cartItem) {
+        return res.status(404).json({ error: "Cart item not found" });
+      }
+
       const success = await storage.removeFromCart(req.params.id);
 
       if (!success) {
         return res.status(404).json({ error: "Cart item not found" });
       }
 
-      res.status(204).send();
+      // Return full updated cart after deletion
+      let remainingCartItems;
+      
+      if (cartItem.userId) {
+        remainingCartItems = await storage.getCartItemsByUserId(cartItem.userId);
+      } else {
+        remainingCartItems = await storage.getCartItems(cartItem.sessionId!);
+      }
+
+      const cartItemsWithProducts = await Promise.all(
+        remainingCartItems.map(async (item) => {
+          const prod = await storage.getProduct(item.productId);
+          let userTrackingId = item.userId;
+          if (item.userId) {
+            const u = await storage.getUserById(item.userId);
+            if (u) userTrackingId = u.userTrackingId;
+          }
+          return {
+            id: item.id,
+            userId: userTrackingId,
+            sessionId: item.sessionId,
+            quantity: item.quantity,
+            productId: prod?.id,
+            product: prod ? { ...prod, id: prod.trackingId } : null,
+          };
+        }),
+      );
+
+      res.json(cartItemsWithProducts.filter((item) => item.product));
     } catch (error) {
       res.status(500).json({ error: "Failed to remove cart item" });
     }
