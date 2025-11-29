@@ -17,7 +17,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { Product, CartItem, WishlistItem } from "@shared/schema";
-import { queryClient } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { wishlistService } from "@/services/wishlist";

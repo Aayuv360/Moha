@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { cartService } from "@/features/user/services/cartService";
 
 interface User {
   id: string;
@@ -75,13 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sessionId = localStorage.getItem("sessionId");
     if (sessionId && response.token) {
       try {
-        await apiRequest("POST", "/api/cart/merge-on-login", {
-          sessionId,
-        }, {
-          headers: {
-            Authorization: `Bearer ${response.token}`,
-          },
-        });
+        await cartService.mergeCartsOnLogin(sessionId, response.token);
       } catch (error) {
         console.error("Failed to merge carts:", error);
       }
@@ -102,13 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sessionId = localStorage.getItem("sessionId");
     if (sessionId && response.token) {
       try {
-        await apiRequest("POST", "/api/cart/merge-on-login", {
-          sessionId,
-        }, {
-          headers: {
-            Authorization: `Bearer ${response.token}`,
-          },
-        });
+        await cartService.mergeCartsOnLogin(sessionId, response.token);
       } catch (error) {
         console.error("Failed to merge carts:", error);
       }
