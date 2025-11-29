@@ -10,6 +10,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getOrCreateSessionId } from "@/lib/session";
+import { wishlistService } from "@/services/wishlist";
 import { CartItem, Product } from "./cartTypes";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -97,29 +98,12 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   });
 
   const toggleWishlistMutation = useMutation({
-    mutationFn: async () => {
-      if (isInWishlist) {
-        return await apiRequest(
-          "DELETE",
-          `/api/wishlist/${product.trackingId}`,
-        );
-      } else {
-        return await apiRequest("POST", "/api/wishlist", {
-          trackingId: product.trackingId,
-        });
-      }
-    },
+    mutationFn: () =>
+      wishlistService.toggleWishlist(product.trackingId, isInWishlist, token!),
     onSuccess: (response) => {
-      // Update query cache directly with response without triggering GET call
       const isNowInWishlist = response?.isInWishlist !== false;
-      queryClient.setQueryData(
-        [`/api/wishlist/check/${product.trackingId}`],
-        { isInWishlist: isNowInWishlist }
-      );
-      
-      // Also invalidate general wishlist to keep it in sync
-      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
-      
+      wishlistService.updateWishlistCache(product.trackingId, isNowInWishlist);
+
       toast({
         title: isNowInWishlist ? "Added to wishlist" : "Removed from wishlist",
         description: isNowInWishlist
