@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import type { Product, Order, Return } from "@shared/schema";
 import { InventoryDashboardTab as DashboardTab, InventoryProductsTab as ProductsTab, InventoryOrdersTab as OrdersTab, InventorySettingsTab as SettingsTab, InventoryReturnsTab } from "../components";
-import { InventoryProductDetailPage as InventoryProductDetail } from "./InventoryProductDetail";
+import InventoryProductDetail from "./InventoryProductDetail";
 import { InventoryLayout } from "../layouts/InventoryLayout";
 
 export function InventoryDashboardPage() {
