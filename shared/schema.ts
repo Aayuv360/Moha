@@ -164,7 +164,7 @@ export const insertCartItemSchema = createInsertSchema(cartItems)
   })
   .refine(
     (data) => data.productId || data.trackingId,
-    "Either productId or trackingId must be provided"
+    "Either productId or trackingId must be provided",
   );
 
 export const insertOrderSchema = createInsertSchema(orders)

@@ -10,7 +10,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getOrCreateSessionId } from "@/lib/session";
-import type { Product, CartItem } from "@shared/schema";
+import { CartItem, Product } from "./cartTypes";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -50,8 +50,6 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     (item) => item.product.trackingId === product.trackingId,
   );
   const cartQuantity = cartItem?.quantity || 0;
-  console.log("Cart Itemspp:", product);
-  console.log("Cart Items:", cart);
 
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
     queryKey: [`/api/wishlist/check/${product.trackingId}`],
@@ -59,7 +57,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   });
 
   const isInWishlist = wishlistData?.isInWishlist || false;
-
+  console.log("Cart wishlistData:", wishlistData);
   const updateCartMutation = useMutation({
     mutationFn: async (newQuantity: number) => {
       if (!cartItem) return;
@@ -114,7 +112,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
       queryClient.invalidateQueries({
-        queryKey: [`/api/wishlist/check/${product.id}`],
+        queryKey: [`/api/wishlist/check/${product.trackingId}`],
       });
       toast({
         title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
