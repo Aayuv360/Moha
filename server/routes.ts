@@ -899,7 +899,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cartItemsWithProducts = await Promise.all(
         cartItems.map(async (item) => {
           const product = await storage.getProduct(item.productId);
-          return { ...item, product };
+          return { 
+            id: item.id,
+            sessionId: item.sessionId,
+            quantity: item.quantity,
+            product: product ? { ...product, id: product.trackingId } : null
+          };
         }),
       );
 
@@ -920,7 +925,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cartItemsWithProducts = await Promise.all(
         cartItems.map(async (item) => {
           const product = await storage.getProduct(item.productId);
-          return { ...item, product };
+          return { 
+            id: item.id,
+            userId: item.userId,
+            quantity: item.quantity,
+            product: product ? { ...product, id: product.trackingId } : null
+          };
         }),
       );
 
