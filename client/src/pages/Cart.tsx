@@ -14,7 +14,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { useState } from "react";
-import { AddressModal } from "@/features/address";
+import { AddressModal, useFetchAddresses } from "@/features/address";
 
 interface CartItemWithProduct extends CartItem {
   product: Product;
@@ -28,6 +28,8 @@ export default function Cart() {
   const [mode, setMode] = useState<"select" | "add">("select");
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
+
+  useFetchAddresses(!!token);
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],

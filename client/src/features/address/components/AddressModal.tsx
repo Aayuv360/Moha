@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
@@ -18,8 +17,10 @@ import {
 import {
   useSaveAddressMutation,
   useDeleteAddressMutation,
+  useFetchAddresses,
   type AddressFormData,
 } from "../services/addressService";
+import { useAuth } from "@/lib/auth";
 
 export default function AddressModal({
   modalOpen,
@@ -28,9 +29,12 @@ export default function AddressModal({
   setMode,
 }: any) {
   const dispatch = useDispatch();
+  const { token } = useAuth();
   const { addresses, selectedAddressId, editingAddressId } = useSelector(
     (state: RootState) => state.address,
   );
+
+  useFetchAddresses(!!token && modalOpen);
 
   const selectedAddress = addresses.find((a) => a.id === editingAddressId);
   const saveAddressMutation = useSaveAddressMutation();
