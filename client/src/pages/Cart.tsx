@@ -13,6 +13,8 @@ import type { CartItem, Product } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
+import { useState } from "react";
+import AddressModal from "@/components/Address/AddressModal";
 
 interface CartItemWithProduct extends CartItem {
   product: Product;
@@ -22,7 +24,8 @@ export default function Cart() {
   const { toast } = useToast();
   const { user, token } = useAuth();
   const sessionId = getOrCreateSessionId();
-
+  const [modalOpen, setModalOpen] = useState(false);
+  const [mode, setMode] = useState<"select" | "add">("select");
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
 
@@ -145,7 +148,7 @@ export default function Cart() {
       </div>
     );
   }
-
+  console.log("Cart Items:", modalOpen);
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -157,6 +160,22 @@ export default function Cart() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setModalOpen(true), setMode("select");
+              }}
+            >
+              Change Address
+            </Button>
+            {modalOpen && (
+              <AddressModal
+                modalOpen={modalOpen}
+                setModalOpen={setModalOpen}
+                mode={mode}
+                setMode={setMode}
+              />
+            )}
             {cartItems.map((item) => (
               <CartItemCard
                 key={item.id}
@@ -234,14 +253,6 @@ export default function Cart() {
           </div>
         </div>
       </div>
-
-      <footer className="bg-card border-t border-border py-8 md:py-12 px-4 md:px-6 mt-12 md:mt-20">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-sm text-muted-foreground">
-            © 2024 Moha. Celebrating India's textile heritage.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
