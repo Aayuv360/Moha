@@ -68,6 +68,7 @@ export const orders = pgTable("orders", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
+  orderTrackingId: varchar("order_tracking_id").notNull().unique(),
   userId: varchar("user_id"),
   customerName: text("customer_name").notNull(),
   email: text("email").notNull(),

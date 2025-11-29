@@ -172,7 +172,7 @@ export default function Orders() {
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                           <CardTitle className="text-lg font-medium">
-                            Order #{order.id.substring(0, 8)}
+                            Order #{order.orderTrackingId}
                           </CardTitle>
                           <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />

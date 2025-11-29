@@ -1099,9 +1099,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  app.get("/api/orders/:id", async (req, res) => {
+  app.get("/api/orders/:idOrTrackingId", async (req, res) => {
     try {
-      const order = await storage.getOrder(req.params.id);
+      let id = req.params.idOrTrackingId;
+      let order = null;
+
+      // Check if it's a tracking ID (format: ORD-XXXXX-XXXXX)
+      if (id.startsWith("ORD-")) {
+        const orders = await storage.getAllOrders();
+        order = orders.find(o => o.orderTrackingId === id);
+      } else {
+        order = await storage.getOrder(id);
+      }
 
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
