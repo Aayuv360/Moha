@@ -148,7 +148,9 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
         duration: 0.6,
         ease: "power1.inOut",
       });
-      return () => tl.kill();
+      return () => {
+        tl.kill();
+      };
     }
   }, [product.inStock]);
 
