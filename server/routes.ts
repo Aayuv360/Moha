@@ -165,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...userWithoutPassword } = user;
 
       res.json({
-        user: userWithoutPassword,
+        user: { ...userWithoutPassword, id: user.userTrackingId },
         token,
       });
     } catch (error) {
@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...userWithoutPassword } = user;
 
       res.json({
-        user: userWithoutPassword,
+        user: { ...userWithoutPassword, id: user.userTrackingId },
         token,
       });
     } catch (error) {
