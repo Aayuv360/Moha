@@ -14,8 +14,6 @@ import { InventoryRoutes } from "@/features/inventory/routes";
 
 // Layout imports
 import { UserLayout } from "@/features/user/layouts/UserLayout";
-import { AdminLayout } from "@/features/admin/layouts/AdminLayout";
-import { InventoryLayout } from "@/features/inventory/layouts/InventoryLayout";
 
 // Shared
 import NotFound from "@/pages/not-found";
@@ -34,26 +32,10 @@ function AppRouter() {
           }
         />
         
-        {/* Admin Routes with Admin Layout */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <AdminLayout>
-              <AdminRoutes />
-            </AdminLayout>
-          }
-        />
+        {/* Admin Routes */}
         <Route path="/admin/*" element={<AdminRoutes />} />
 
-        {/* Inventory Routes with Inventory Layout */}
-        <Route
-          path="/inventory/dashboard"
-          element={
-            <InventoryLayout>
-              <InventoryRoutes />
-            </InventoryLayout>
-          }
-        />
+        {/* Inventory Routes */}
         <Route path="/inventory/*" element={<InventoryRoutes />} />
 
         {/* 404 - Catch all remaining */}

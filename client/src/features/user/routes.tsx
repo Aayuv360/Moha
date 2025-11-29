@@ -1,5 +1,15 @@
 import { Routes, Route } from "react-router-dom";
-import { HomePage, ProductsPage, ProductDetailPage, CartPage, CheckoutPage, LoginPage, RegisterPage, OrdersPage, WishlistPage } from "@/features/user/pages";
+import {
+  HomePage,
+  ProductsPage,
+  ProductDetailPage,
+  CartPage,
+  CheckoutPage,
+  LoginPage,
+  RegisterPage,
+  OrdersPage,
+  WishlistPage,
+} from "@/features/user/pages";
 import NotFound from "@/pages/not-found";
 
 export function UserRoutes() {
@@ -14,7 +24,7 @@ export function UserRoutes() {
       <Route path="/orders" element={<OrdersPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="*" element={<NotFound />} />
+      {/* <Route path="*" element={<NotFound />} /> */}
     </Routes>
   );
 }
