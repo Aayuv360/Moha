@@ -135,7 +135,7 @@ export default function Products() {
     }
 
     addToCartMutation.mutate({
-      productId: product.id,
+      trackingId: product.trackingId,
       quantity: quantity,
       sessionId: user ? undefined : sessionId,
       userId: user?.id,

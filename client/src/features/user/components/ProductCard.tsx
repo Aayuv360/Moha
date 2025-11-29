@@ -51,7 +51,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const cartQuantity = cartItem?.quantity || 0;
 
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
-    queryKey: [`/api/wishlist/check/${product.id}`],
+    queryKey: [`/api/wishlist/check/${product.trackingId}`],
     enabled: !!token,
   });
 
@@ -98,10 +98,10 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const toggleWishlistMutation = useMutation({
     mutationFn: async () => {
       if (isInWishlist) {
-        return await apiRequest("DELETE", `/api/wishlist/${product.id}`);
+        return await apiRequest("DELETE", `/api/wishlist/${product.trackingId}`);
       } else {
         return await apiRequest("POST", "/api/wishlist", {
-          productId: product.id,
+          trackingId: product.trackingId,
         });
       }
     },

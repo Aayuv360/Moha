@@ -154,19 +154,22 @@ export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
 });
-export const insertCartItemSchema = createInsertSchema(cartItems).omit({
-  id: true,
-});
+export const insertCartItemSchema = createInsertSchema(cartItems)
+  .omit({ id: true })
+  .extend({
+    trackingId: z.string().optional(),
+  });
 export const insertOrderSchema = createInsertSchema(orders).omit({
   id: true,
   createdAt: true,
   status: true,
   channel: true,
 });
-export const insertWishlistItemSchema = createInsertSchema(wishlistItems).omit({
-  id: true,
-  createdAt: true,
-});
+export const insertWishlistItemSchema = createInsertSchema(wishlistItems)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    trackingId: z.string().optional(),
+  });
 export const insertReturnSchema = createInsertSchema(returns).omit({
   id: true,
   createdAt: true,

@@ -917,7 +917,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Either sessionId or userId must be provided" });
       }
 
-      const product = await storage.getProduct(validatedData.productId);
+      // Convert tracking ID to product ID if provided
+      let productId = validatedData.productId;
+      if (validatedData.trackingId && !productId) {
+        const product = await storage.getProductByTrackingId(validatedData.trackingId);
+        if (!product) {
+          return res.status(404).json({ error: "Product not found" });
+        }
+        productId = product.id;
+      }
+
+      const product = await storage.getProduct(productId);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -926,7 +936,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Product is out of stock" });
       }
 
-      const cartItem = await storage.addToCart(validatedData);
+      const cartItem = await storage.addToCart({
+        ...validatedData,
+        productId: productId,
+      });
       res.status(201).json(cartItem);
     } catch (error) {
       console.error("Add to cart error:", error);
@@ -1112,9 +1125,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/wishlist", authMiddleware, async (req: AuthRequest, res) => {
     try {
+      // Convert tracking ID to product ID if provided
+      let productId = req.body.productId;
+      if (req.body.trackingId && !productId) {
+        const product = await storage.getProductByTrackingId(req.body.trackingId);
+        if (!product) {
+          return res.status(404).json({ error: "Product not found" });
+        }
+        productId = product.id;
+      }
+
       const validatedData = insertWishlistItemSchema.parse({
         userId: req.userId!,
-        productId: req.body.productId,
+        productId: productId,
       });
       const wishlistItem = await storage.addToWishlist(validatedData);
       res.status(201).json(wishlistItem);
@@ -1127,13 +1150,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete(
-    "/api/wishlist/:productId",
+    "/api/wishlist/:productIdOrTrackingId",
     authMiddleware,
     async (req: AuthRequest, res) => {
       try {
+        let productId = req.params.productIdOrTrackingId;
+        
+        // Check if it's a tracking ID and convert to product ID
+        if (productId.startsWith("PROD-")) {
+          const product = await storage.getProductByTrackingId(productId);
+          if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+          }
+          productId = product.id;
+        }
+
         const success = await storage.removeFromWishlist(
           req.userId!,
-          req.params.productId,
+          productId,
         );
         if (!success) {
           return res.status(404).json({ error: "Wishlist item not found" });
@@ -1146,13 +1180,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   app.get(
-    "/api/wishlist/check/:productId",
+    "/api/wishlist/check/:productIdOrTrackingId",
     authMiddleware,
     async (req: AuthRequest, res) => {
       try {
+        let productId = req.params.productIdOrTrackingId;
+        
+        // Check if it's a tracking ID and convert to product ID
+        if (productId.startsWith("PROD-")) {
+          const product = await storage.getProductByTrackingId(productId);
+          if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+          }
+          productId = product.id;
+        }
+
         const isInWishlist = await storage.isInWishlist(
           req.userId!,
-          req.params.productId,
+          productId,
         );
         res.json({ isInWishlist });
       } catch (error) {

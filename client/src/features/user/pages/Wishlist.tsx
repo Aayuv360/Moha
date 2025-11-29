@@ -76,7 +76,7 @@ export default function Wishlist() {
 
   const handleAddToCart = (product: Product) => {
     addToCartMutation.mutate({
-      productId: product.id,
+      trackingId: product.trackingId,
       quantity: 1,
       sessionId: isUserCart ? undefined : sessionId,
       userId: user?.id,
