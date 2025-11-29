@@ -57,7 +57,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   });
 
   const isInWishlist = wishlistData?.isInWishlist || false;
-  console.log("Cart wishlistData:", wishlistData);
+
   const updateCartMutation = useMutation({
     mutationFn: async (newQuantity: number) => {
       if (!cartItem) return;
@@ -109,16 +109,22 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
         });
       }
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // Update query cache directly with response without triggering GET call
+      const isNowInWishlist = response?.isInWishlist !== false;
+      queryClient.setQueryData(
+        [`/api/wishlist/check/${product.trackingId}`],
+        { isInWishlist: isNowInWishlist }
+      );
+      
+      // Also invalidate general wishlist to keep it in sync
       queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
-      queryClient.invalidateQueries({
-        queryKey: [`/api/wishlist/check/${product.trackingId}`],
-      });
+      
       toast({
-        title: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
-        description: isInWishlist
-          ? "Item removed from your wishlist"
-          : "Item added to your wishlist successfully.",
+        title: isNowInWishlist ? "Added to wishlist" : "Removed from wishlist",
+        description: isNowInWishlist
+          ? "Item added to your wishlist successfully."
+          : "Item removed from your wishlist",
       });
     },
   });

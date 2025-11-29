@@ -1428,13 +1428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
-      const product = await storage.getProduct(productId);
-      res.status(201).json({
-        id: wishlistItem.id,
-        userId: user.userTrackingId,
-        productId: product?.trackingId || wishlistItem.productId,
-        createdAt: wishlistItem.createdAt,
-      });
+      res.status(201).json({ isInWishlist: true });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
