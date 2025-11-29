@@ -1,13 +1,11 @@
 import { Link } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { LogOut, User as UserIcon, Package } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function InventoryHeader() {
-  const authContext = useContext(AuthContext);
-  const user = authContext?.user;
+  const { user, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card border-b border-border">
@@ -49,7 +47,7 @@ export function InventoryHeader() {
                 <DropdownMenuItem disabled className="text-xs text-muted-foreground">
                   {user.email}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => authContext?.logout()}>
+                <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout
                 </DropdownMenuItem>
