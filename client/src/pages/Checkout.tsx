@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -19,15 +20,22 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { insertOrderSchema, insertAddressSchema } from "@shared/schema";
+import { insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
-import type { CartItem, Product, Address } from "@shared/schema";
+import type { CartItem, Product } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { CheckCircle2, Edit2, Trash2, Plus } from "lucide-react";
-
-import AddressForm from "@/components/Address/AddressForm";
+import {
+  AddressForm,
+  useFetchAddresses,
+  useSaveAddressMutation,
+  useDeleteAddressMutation,
+  setSelectedAddressId as setSelectedAddressIdAction,
+  setEditingAddressId as setEditingAddressIdAction,
+} from "@/features/address";
+import type { RootState } from "@/lib/store";
 
 interface CartItemWithProduct extends CartItem {
   product: Product;
@@ -45,33 +53,22 @@ const checkoutSchema = insertOrderSchema.extend({
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
-const addressFormSchema = insertAddressSchema.extend({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  address: z.string().min(10, "Address must be at least 10 characters"),
-  city: z.string().min(2, "City is required"),
-  state: z.string().min(2, "State is required"),
-  pincode: z.string().regex(/^\d{6}$/, "Pincode must be 6 digits"),
-  isDefault: z.boolean().default(false),
-});
-
-type AddressFormData = z.infer<typeof addressFormSchema>;
-
 export default function Checkout() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
-    null,
-  );
-  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const sessionId = getOrCreateSessionId();
   const { user, token } = useAuth();
 
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
+
+  const { selectedAddressId, editingAddressId, addresses } = useSelector(
+    (state: RootState) => state.address,
+  );
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
@@ -90,10 +87,7 @@ export default function Checkout() {
     },
   });
 
-  const { data: addresses = [] } = useQuery<Address[]>({
-    queryKey: ["/api/addresses"],
-    enabled: !!token,
-  });
+  useFetchAddresses(!!token);
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -110,53 +104,8 @@ export default function Checkout() {
     },
   });
 
-  const saveAddressMutation = useMutation({
-    mutationFn: async (data: AddressFormData) => {
-      console.log("Saving address", data);
-      if (editingAddressId) {
-        return await apiRequest(
-          "PATCH",
-          `/api/addresses/${editingAddressId}`,
-          data,
-        );
-      }
-      return await apiRequest("POST", "/api/addresses", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/addresses"] });
-      setEditingAddressId(null);
-      toast({
-        title: "Address saved successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to save address",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteAddressMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest("DELETE", `/api/addresses/${id}`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/addresses"] });
-      if (selectedAddressId) setSelectedAddressId(null);
-      toast({
-        title: "Address deleted successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete address",
-        variant: "destructive",
-      });
-    },
-  });
+  const saveAddressMutation = useSaveAddressMutation();
+  const deleteAddressMutation = useDeleteAddressMutation();
 
   const placeOrderMutation = useMutation({
     mutationFn: async (data: CheckoutFormData) => {
@@ -277,7 +226,7 @@ export default function Checkout() {
                             : "hover-elevate"
                         }`}
                         onClick={() => {
-                          setSelectedAddressId(addr.id);
+                          dispatch(setSelectedAddressIdAction(addr.id));
                           form.setValue("customerName", addr.name);
                           form.setValue("phone", addr.phone);
                           form.setValue("address", addr.address);
@@ -293,7 +242,7 @@ export default function Checkout() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setEditingAddressId(addr.id);
+                                dispatch(setEditingAddressIdAction(addr.id));
                                 setShowAddressDialog(true);
                               }}
                               className="p-1 hover-elevate"
@@ -331,8 +280,7 @@ export default function Checkout() {
                 <>
                   <AddressForm
                     onSave={(data) => {
-                      console.log("Saving address", data);
-                      saveAddressMutation.mutate(data);
+                      saveAddressMutation.mutate({ formData: data });
                     }}
                     isLoading={saveAddressMutation.isPending}
                   />
