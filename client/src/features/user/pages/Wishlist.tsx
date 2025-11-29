@@ -96,7 +96,7 @@ export default function Wishlist() {
   }
 
   const wishlistedProducts = products.filter((p) =>
-    wishlistItems.some((w) => w.productId === p.id),
+    wishlistItems.some((w) => w.productId === p.trackingId),
   );
 
   const isLoading = loadingWishlist || loadingProducts;
