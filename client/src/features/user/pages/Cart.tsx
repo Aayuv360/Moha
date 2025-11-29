@@ -13,7 +13,7 @@ import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { cartService } from "../services/cartService";
 import { useState } from "react";
-import { AddressModal, useFetchAddresses } from "@/features/address";
+import { AddressModal, useFetchAddresses } from "../components/address";
 
 interface CartItemWithProduct extends CartItem {
   product: Product;

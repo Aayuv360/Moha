@@ -34,7 +34,7 @@ import {
   useDeleteAddressMutation,
   setSelectedAddressId as setSelectedAddressIdAction,
   setEditingAddressId as setEditingAddressIdAction,
-} from "@/features/address";
+} from "../components/address";
 import type { RootState } from "@/lib/store";
 
 interface CartItemWithProduct extends CartItem {
@@ -199,7 +199,7 @@ export default function Checkout() {
                 <>
                   <h3 className="text-lg font-medium mb-4">Saved Addresses</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {addresses.map((addr) => (
+                    {addresses.map((addr: any) => (
                       <Card
                         key={addr.id}
                         className={`p-4 cursor-pointer transition-all ${
