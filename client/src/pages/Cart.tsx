@@ -14,7 +14,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { useState } from "react";
-import AddressModal from "@/components/Address/AddressModal";
+import { AddressModal } from "@/features/address";
 
 interface CartItemWithProduct extends CartItem {
   product: Product;
