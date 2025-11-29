@@ -14,6 +14,8 @@ import { InventoryRoutes } from "@/features/inventory/routes";
 
 // Layout imports
 import { UserLayout } from "@/features/user/layouts/UserLayout";
+import { AdminRouteWrapper } from "@/features/admin/components/AdminRouteWrapper";
+import { InventoryRouteWrapper } from "@/features/inventory/components/InventoryRouteWrapper";
 
 // Shared
 import NotFound from "@/pages/not-found";
@@ -32,9 +34,25 @@ function AppRouter() {
           }
         />
 
-        <Route path="/admin/*" element={<AdminRoutes />} />
+        {/* Admin Routes - Protected at route level */}
+        <Route
+          path="/admin/*"
+          element={
+            <AdminRouteWrapper>
+              <AdminRoutes />
+            </AdminRouteWrapper>
+          }
+        />
 
-        <Route path="/inventory/*" element={<InventoryRoutes />} />
+        {/* Inventory Routes - Protected at route level */}
+        <Route
+          path="/inventory/*"
+          element={
+            <InventoryRouteWrapper>
+              <InventoryRoutes />
+            </InventoryRouteWrapper>
+          }
+        />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
