@@ -16,11 +16,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { Product, Order, Return } from "@shared/schema";
-import { InventoryDashboardTab as DashboardTab } from "../components/InventoryDashboardTab";
-import { InventoryProductsTab as ProductsTab } from "../components/InventoryProductsTab";
-import { InventoryOrdersTab as OrdersTab } from "../components/InventoryOrdersTab";
-import { InventorySettingsTab as SettingsTab } from "../components/InventorySettingsTab";
-import { InventoryReturnsTab } from "../components/InventoryReturnsTab";
+import { InventoryDashboardTab as DashboardTab, InventoryProductsTab as ProductsTab, InventoryOrdersTab as OrdersTab, InventorySettingsTab as SettingsTab, InventoryReturnsTab } from "../components";
 import { InventoryProductDetailPage as InventoryProductDetail } from "./InventoryProductDetail";
 import { InventoryLayout } from "../layouts/InventoryLayout";
 

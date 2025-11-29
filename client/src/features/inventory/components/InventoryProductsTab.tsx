@@ -15,7 +15,6 @@ import type { Product, StoreProductInventory, Order } from "@shared/schema";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { ProductAllocationForm } from "./ProductAllocationForm";
-import InventoryProductDetail from "@/pages/InventoryProductDetail";
 
 interface StoreInventory {
   storeId: string;
