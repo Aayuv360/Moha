@@ -22,9 +22,10 @@ import {
 import { insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import type { CartItem, Product } from "@shared/schema";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
+import { cartService } from "../services/cartService";
 import { CheckCircle2, Edit2, Trash2, Plus } from "lucide-react";
 import {
   AddressForm,
@@ -71,19 +72,7 @@ export default function Checkout() {
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
-    queryFn: async () => {
-      const endpoint = isUserCart
-        ? `/api/cart/user/${user.id}`
-        : `/api/cart/${sessionId}`;
-      const options = isUserCart
-        ? {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        : undefined;
-      return await apiRequest("GET", endpoint, undefined, options);
-    },
+    queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
   });
 
   useFetchAddresses(!!token);
@@ -113,9 +102,7 @@ export default function Checkout() {
     onSuccess: (data: any) => {
       setOrderId(data.id);
       setOrderPlaced(true);
-      queryClient.invalidateQueries({
-        queryKey: ["/api/cart", cartIdentifier],
-      });
+      cartService.invalidateCartCache(cartIdentifier);
 
       toast({
         title: "Order placed successfully!",
