@@ -54,12 +54,12 @@ export function useSaveAddressMutation() {
     },
     onSuccess: (addresses: Address[], variables) => {
       dispatch(setAddresses(addresses));
+      queryClient.setQueryData(["/api/addresses"], addresses);
       if (variables.id) {
         toast({ title: "Address updated successfully" });
       } else {
         toast({ title: "Address saved successfully" });
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/addresses"] });
     },
     onError: () => {
       dispatch(setError("Failed to save address"));
@@ -82,8 +82,8 @@ export function useDeleteAddressMutation() {
     },
     onSuccess: (addresses: Address[]) => {
       dispatch(setAddresses(addresses));
+      queryClient.setQueryData(["/api/addresses"], addresses);
       toast({ title: "Address deleted successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/addresses"] });
     },
     onError: () => {
       dispatch(setError("Failed to delete address"));
