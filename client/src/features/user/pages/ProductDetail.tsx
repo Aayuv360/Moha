@@ -39,14 +39,13 @@ export default function ProductDetail() {
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
 
-  // Determine which endpoint to use based on route parameter
-  const endpoint = trackingId
-    ? `/api/onlineProducts/tracking/${trackingId}`
-    : `/api/onlineProducts/${id}`;
+  // Determine which endpoint to use - both can use the same endpoint
+  const productParam = trackingId || id;
+  const endpoint = productParam ? `/api/onlineProducts/${productParam}` : null;
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: [endpoint],
-    enabled: !!(id || trackingId),
+    enabled: !!endpoint,
   });
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
     queryKey: [`/api/wishlist/check/${product?.id}`],

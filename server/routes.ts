@@ -807,7 +807,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/onlineProducts/:id", async (req, res) => {
     try {
-      const product = await storage.getProduct(req.params.id);
+      const id = req.params.id;
+      
+      // Check if ID is a tracking ID (format: PROD-XXXXX-XXXXX)
+      const isTrackingId = id.startsWith("PROD-");
+      
+      let product;
+      if (isTrackingId) {
+        product = await storage.getProductByTrackingId(id);
+      } else {
+        product = await storage.getProduct(id);
+      }
+      
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
