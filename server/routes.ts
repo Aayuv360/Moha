@@ -669,19 +669,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const orders = await storage.getInventoryOrders(user.inventoryId);
-        
+
         // Ensure all orders have orderTrackingId, generate if missing
         const enrichedOrders = await Promise.all(
           orders.map(async (order: any) => {
             if (!order.orderTrackingId) {
               const trackingId = generateOrderTrackingId();
-              await storage.updateOrder(order.id, { orderTrackingId: trackingId });
+              await storage.updateOrder(order.id, {
+                orderTrackingId: trackingId,
+              });
               return { ...order, orderTrackingId: trackingId };
             }
             return order;
-          })
+          }),
         );
-        
+
         res.json(enrichedOrders);
       } catch (error) {
         console.error("Fetch inventory orders error:", error);
@@ -711,7 +713,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if it's a tracking ID (format: ORD-XXXXX-XXXXX)
         if (id.startsWith("ORD-")) {
           const allOrders = await storage.getAllOrders();
-          order = allOrders.find(o => o.orderTrackingId === id && o.inventoryId === user.inventoryId);
+          order = allOrders.find(
+            (o) =>
+              o.orderTrackingId === id && o.inventoryId === user.inventoryId,
+          );
         } else {
           order = await storage.getOrder(id);
         }
@@ -727,10 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (returnNotes !== undefined) updates.returnNotes = returnNotes;
         if (refundStatus !== undefined) updates.refundStatus = refundStatus;
 
-        const updatedOrder = await storage.updateOrderStatus(
-          order.id,
-          status,
-        );
+        const updatedOrder = await storage.updateOrderStatus(order.id, status);
 
         res.json(updatedOrder);
       } catch (error) {
@@ -762,7 +764,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if it's a tracking ID (format: ORD-XXXXX-XXXXX)
         if (id.startsWith("ORD-")) {
           const allOrders = await storage.getAllOrders();
-          order = allOrders.find(o => o.orderTrackingId === id && o.inventoryId === user.inventoryId);
+          order = allOrders.find(
+            (o) =>
+              o.orderTrackingId === id && o.inventoryId === user.inventoryId,
+          );
         } else {
           order = await storage.getOrder(id);
         }
@@ -837,7 +842,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/onlineProducts/tracking/:trackingId", async (req, res) => {
     try {
-      const product = await storage.getProductByTrackingId(req.params.trackingId);
+      const product = await storage.getProductByTrackingId(
+        req.params.trackingId,
+      );
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -868,17 +875,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/onlineProducts/:id", async (req, res) => {
     try {
       const id = req.params.id;
-      
+
       // Check if ID is a tracking ID (format: PROD-XXXXX-XXXXX)
       const isTrackingId = id.startsWith("PROD-");
-      
+
       let product;
       if (isTrackingId) {
         product = await storage.getProductByTrackingId(id);
       } else {
         product = await storage.getProduct(id);
       }
-      
+
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -913,11 +920,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cartItemsWithProducts = await Promise.all(
         cartItems.map(async (item) => {
           const product = await storage.getProduct(item.productId);
-          return { 
+          return {
             id: item.id,
             sessionId: item.sessionId,
             quantity: item.quantity,
-            product: product ? { ...product, id: product.trackingId } : null
+            product: product ? { ...product, id: product.trackingId } : null,
           };
         }),
       );
@@ -928,80 +935,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/cart/user/:userTrackingId", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUserById(req.userId!);
-      if (!user || user.userTrackingId !== req.params.userTrackingId) {
-        return res.status(403).json({ error: "Forbidden" });
+  app.get(
+    "/api/cart/user/:userTrackingId",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user || user.userTrackingId !== req.params.userTrackingId) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+
+        const cartItems = await storage.getCartItemsByUserId(req.userId!);
+
+        const cartItemsWithProducts = await Promise.all(
+          cartItems.map(async (item) => {
+            const product = await storage.getProduct(item.productId);
+            return {
+              id: item.id,
+              userId: user.userTrackingId,
+              quantity: item.quantity,
+              product: product ? { ...product, id: product.trackingId } : null,
+            };
+          }),
+        );
+
+        res.json(cartItemsWithProducts.filter((item) => item.product));
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch cart items" });
       }
+    },
+  );
 
-      const cartItems = await storage.getCartItemsByUserId(req.userId!);
+  app.post(
+    "/api/cart/merge-on-login",
+    authMiddleware,
+    async (req: AuthRequest, res) => {
+      try {
+        const { sessionId } = req.body;
 
-      const cartItemsWithProducts = await Promise.all(
-        cartItems.map(async (item) => {
-          const product = await storage.getProduct(item.productId);
-          return { 
-            id: item.id,
-            userId: user.userTrackingId,
-            quantity: item.quantity,
-            product: product ? { ...product, id: product.trackingId } : null
-          };
-        }),
-      );
+        if (!sessionId) {
+          return res.status(400).json({ error: "Session ID is required" });
+        }
 
-      res.json(cartItemsWithProducts.filter((item) => item.product));
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch cart items" });
-    }
-  });
+        const user = await storage.getUserById(req.userId!);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
 
-  app.post("/api/cart/merge-on-login", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const { sessionId } = req.body;
+        await storage.mergeCartsOnLogin(sessionId, req.userId!);
 
-      if (!sessionId) {
-        return res.status(400).json({ error: "Session ID is required" });
+        const mergedCartItems = await storage.getCartItemsByUserId(req.userId!);
+        const cartItemsWithProducts = await Promise.all(
+          mergedCartItems.map(async (item) => {
+            const product = await storage.getProduct(item.productId);
+            return {
+              id: item.id,
+              userId: user.userTrackingId,
+              quantity: item.quantity,
+              product: product ? { ...product, id: product.trackingId } : null,
+            };
+          }),
+        );
+
+        res.json(cartItemsWithProducts.filter((item) => item.product));
+      } catch (error) {
+        console.error("Cart merge error:", error);
+        res.status(500).json({ error: "Failed to merge carts" });
       }
-
-      const user = await storage.getUserById(req.userId!);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      await storage.mergeCartsOnLogin(sessionId, req.userId!);
-
-      const mergedCartItems = await storage.getCartItemsByUserId(req.userId!);
-      const cartItemsWithProducts = await Promise.all(
-        mergedCartItems.map(async (item) => {
-          const product = await storage.getProduct(item.productId);
-          return { 
-            id: item.id,
-            userId: user.userTrackingId,
-            quantity: item.quantity,
-            product: product ? { ...product, id: product.trackingId } : null
-          };
-        }),
-      );
-
-      res.json(cartItemsWithProducts.filter((item) => item.product));
-    } catch (error) {
-      console.error("Cart merge error:", error);
-      res.status(500).json({ error: "Failed to merge carts" });
-    }
-  });
+    },
+  );
 
   app.post("/api/cart", async (req, res) => {
     try {
       const validatedData = insertCartItemSchema.parse(req.body);
 
       if (!validatedData.sessionId && !validatedData.userId) {
-        return res.status(400).json({ error: "Either sessionId or userId must be provided" });
+        return res
+          .status(400)
+          .json({ error: "Either sessionId or userId must be provided" });
       }
 
       // Convert tracking ID to product ID if provided
       let productId = validatedData.productId;
       if (validatedData.trackingId && !productId) {
-        const product = await storage.getProductByTrackingId(validatedData.trackingId);
+        const product = await storage.getProductByTrackingId(
+          validatedData.trackingId,
+        );
         if (!product) {
           return res.status(404).json({ error: "Product not found" });
         }
@@ -1009,7 +1028,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!productId) {
-        return res.status(400).json({ error: "productId or trackingId is required" });
+        return res
+          .status(400)
+          .json({ error: "productId or trackingId is required" });
       }
 
       const product = await storage.getProduct(productId);
@@ -1027,7 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId: validatedData.sessionId,
         userId: validatedData.userId,
       });
-      
+
       let userTrackingId = cartItem.userId;
       if (cartItem.userId) {
         const user = await storage.getUserById(cartItem.userId);
@@ -1035,13 +1056,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userTrackingId = user.userTrackingId;
         }
       }
-      
+
       res.status(201).json({
         id: cartItem.id,
         userId: userTrackingId,
         sessionId: cartItem.sessionId,
         quantity: cartItem.quantity,
-        product: product ? { ...product, id: product.trackingId } : null
+        product: product ? { ...product, id: product.trackingId } : null,
       });
     } catch (error) {
       console.error("Add to cart error:", error);
@@ -1070,7 +1091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const product = await storage.getProduct(updatedItem.productId);
-      
+
       let userTrackingId = updatedItem.userId;
       if (updatedItem.userId) {
         const user = await storage.getUserById(updatedItem.userId);
@@ -1078,13 +1099,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userTrackingId = user.userTrackingId;
         }
       }
-      
+
       res.json({
         id: updatedItem.id,
         userId: userTrackingId,
         sessionId: updatedItem.sessionId,
         quantity: updatedItem.quantity,
-        product: product ? { ...product, id: product.trackingId } : null
+        product: product ? { ...product, id: product.trackingId } : null,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to update cart item" });
@@ -1109,42 +1130,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const orders = await storage.getUserOrders(req.userId!);
-      
+
       // Ensure all orders have orderTrackingId, generate if missing
       const enrichedOrders = await Promise.all(
         orders.map(async (order: any) => {
           if (!order.orderTrackingId) {
             const trackingId = generateOrderTrackingId();
-            await storage.updateOrder(order.id, { orderTrackingId: trackingId });
+            await storage.updateOrder(order.id, {
+              orderTrackingId: trackingId,
+            });
             order.orderTrackingId = trackingId;
           }
-          
+
           // Parse items and convert product IDs to tracking IDs
           let items = [];
           if (order.items) {
             try {
-              items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-              items = await Promise.all(items.map(async (item: any) => {
-                const product = await storage.getProduct(item.productId);
-                return {
-                  ...item,
-                  productId: product?.trackingId || item.productId
-                };
-              }));
+              items =
+                typeof order.items === "string"
+                  ? JSON.parse(order.items)
+                  : order.items;
+              items = await Promise.all(
+                items.map(async (item: any) => {
+                  const product = await storage.getProduct(item.productId);
+                  return {
+                    ...item,
+                    productId: product?.trackingId || item.productId,
+                  };
+                }),
+              );
             } catch (e) {
               // If parsing fails, leave items as is
             }
           }
-          
+
           return {
             id: order.orderTrackingId,
             userId: order.userId,
             ...order,
-            items: JSON.stringify(items)
+            items: JSON.stringify(items),
           };
-        })
+        }),
       );
-      
+
       res.json(enrichedOrders);
     } catch (error) {
       console.error("Fetch orders error:", error);
@@ -1246,14 +1274,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let items = [];
         if (order.items) {
           try {
-            items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-            items = await Promise.all(items.map(async (item: any) => {
-              const product = await storage.getProduct(item.productId);
-              return {
-                ...item,
-                productId: product?.trackingId || item.productId
-              };
-            }));
+            items =
+              typeof order.items === "string"
+                ? JSON.parse(order.items)
+                : order.items;
+            items = await Promise.all(
+              items.map(async (item: any) => {
+                const product = await storage.getProduct(item.productId);
+                return {
+                  ...item,
+                  productId: product?.trackingId || item.productId,
+                };
+              }),
+            );
           } catch (e) {
             // If parsing fails, leave items as is
           }
@@ -1263,7 +1296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: order.orderTrackingId,
           userId: order.userId,
           ...order,
-          items: JSON.stringify(items)
+          items: JSON.stringify(items),
         });
       } catch (error) {
         console.error("Order creation error:", error);
@@ -1285,7 +1318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if it's a tracking ID (format: ORD-XXXXX-XXXXX)
       if (id.startsWith("ORD-")) {
         const orders = await storage.getAllOrders();
-        order = orders.find(o => o.orderTrackingId === id);
+        order = orders.find((o) => o.orderTrackingId === id);
       } else {
         order = await storage.getOrder(id);
       }
@@ -1298,14 +1331,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let items = [];
       if (order.items) {
         try {
-          items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-          items = await Promise.all(items.map(async (item: any) => {
-            const product = await storage.getProduct(item.productId);
-            return {
-              ...item,
-              productId: product?.trackingId || item.productId
-            };
-          }));
+          items =
+            typeof order.items === "string"
+              ? JSON.parse(order.items)
+              : order.items;
+          items = await Promise.all(
+            items.map(async (item: any) => {
+              const product = await storage.getProduct(item.productId);
+              return {
+                ...item,
+                productId: product?.trackingId || item.productId,
+              };
+            }),
+          );
         } catch (e) {
           // If parsing fails, leave items as is
         }
@@ -1315,7 +1353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: order.orderTrackingId,
         userId: order.userId,
         ...order,
-        items: JSON.stringify(items)
+        items: JSON.stringify(items),
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch order" });
@@ -1325,21 +1363,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wishlist endpoints
   app.get("/api/wishlist", authMiddleware, async (req: AuthRequest, res) => {
     try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
       const wishlistItems = await storage.getUserWishlist(req.userId!);
-      
-      // Convert product IDs to tracking IDs
+
+      // Convert product IDs to tracking IDs and user ID to tracking ID
       const enrichedItems = await Promise.all(
         wishlistItems.map(async (item: any) => {
           const product = await storage.getProduct(item.productId);
           return {
             id: item.id,
-            userId: item.userId,
+            userId: user.userTrackingId,
             productId: product?.trackingId || item.productId,
-            createdAt: item.createdAt
+            createdAt: item.createdAt,
           };
-        })
+        }),
       );
-      
+
       res.json(enrichedItems);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch wishlist" });
@@ -1348,10 +1391,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/wishlist", authMiddleware, async (req: AuthRequest, res) => {
     try {
+      const user = await storage.getUserById(req.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
       // Convert tracking ID to product ID if provided
       let productId = req.body.productId;
       if (req.body.trackingId && !productId) {
-        const product = await storage.getProductByTrackingId(req.body.trackingId);
+        const product = await storage.getProductByTrackingId(
+          req.body.trackingId,
+        );
         if (!product) {
           return res.status(404).json({ error: "Product not found" });
         }
@@ -1366,9 +1416,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const product = await storage.getProduct(productId);
       res.status(201).json({
         id: wishlistItem.id,
-        userId: wishlistItem.userId,
+        userId: user.userTrackingId,
         productId: product?.trackingId || wishlistItem.productId,
-        createdAt: wishlistItem.createdAt
+        createdAt: wishlistItem.createdAt,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1383,8 +1433,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     authMiddleware,
     async (req: AuthRequest, res) => {
       try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
         let productId = req.params.productIdOrTrackingId;
-        
+
         // Check if it's a tracking ID and convert to product ID
         if (productId.startsWith("PROD-")) {
           const product = await storage.getProductByTrackingId(productId);
@@ -1413,9 +1468,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     authMiddleware,
     async (req: AuthRequest, res) => {
       try {
+        const user = await storage.getUserById(req.userId!);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
         let productId = req.params.productIdOrTrackingId;
-        
-        // Check if it's a tracking ID and convert to product ID
+
         if (productId.startsWith("PROD-")) {
           const product = await storage.getProductByTrackingId(productId);
           if (!product) {
@@ -1424,11 +1483,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           productId = product.id;
         }
 
-        const isInWishlist = await storage.isInWishlist(
-          req.userId!,
-          productId,
-        );
-        res.json({ isInWishlist });
+        const isInWishlist = await storage.isInWishlist(req.userId!, productId);
+        res.json({ isInWishlist, userId: user.userTrackingId });
       } catch (error) {
         res.status(500).json({ error: "Failed to check wishlist" });
       }
@@ -1567,7 +1623,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const validatedData = insertAddressSchema.partial().parse(req.body);
-        const updated = await storage.updateAddress(req.params.id, validatedData);
+        const updated = await storage.updateAddress(
+          req.params.id,
+          validatedData,
+        );
         res.json(updated);
       } catch (error) {
         if (error instanceof z.ZodError) {
