@@ -160,14 +160,16 @@ export default function Cart() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setModalOpen(true), setMode("select");
-              }}
-            >
-              Change Address
-            </Button>
+            <div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setModalOpen(true), setMode("select");
+                }}
+              >
+                Change Address
+              </Button>
+            </div>
             {modalOpen && (
               <AddressModal
                 modalOpen={modalOpen}

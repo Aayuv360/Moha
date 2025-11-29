@@ -11,30 +11,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { insertAddressSchema } from "@shared/schema";
-import { z } from "zod";
+import { addressFormSchema, type AddressFormData } from "../services/addressService";
 import type { Address } from "@shared/schema";
-
-const addressFormSchema = insertAddressSchema.omit({ userId: true }).extend({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  address: z.string().min(10, "Address must be at least 10 characters"),
-  city: z.string().min(2, "City is required"),
-  state: z.string().min(2, "State is required"),
-  pincode: z.string().regex(/^\d{6}$/, "Pincode must be 6 digits"),
-  isDefault: z.boolean().default(false),
-});
-
-type AddressFormData = z.infer<typeof addressFormSchema>;
 
 export default function AddressForm({
   addressId,
   onSave,
+  onBack,
   isLoading,
   defaultValues,
 }: {
   addressId?: string | null;
   onSave: (data: AddressFormData) => void;
+  onBack?: () => void;
   isLoading: boolean;
   defaultValues?: Address;
 }) {
@@ -55,7 +44,6 @@ export default function AddressForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit((data) => {
-          console.log("Form submitted with data:", data);
           onSave(data);
         })}
         className="space-y-4"
@@ -167,6 +155,7 @@ export default function AddressForm({
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="isDefault"
@@ -185,14 +174,27 @@ export default function AddressForm({
           )}
         />
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={isLoading}
-          data-testid="button-save-address"
-        >
-          {isLoading ? "Saving..." : "Save Address"}
-        </Button>
+        <div className="flex gap-2">
+          {onBack && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              className="flex-1"
+            >
+              Back
+            </Button>
+          )}
+
+          <Button
+            type="submit"
+            className="flex-1"
+            disabled={isLoading}
+            data-testid="button-save-address"
+          >
+            {isLoading ? "Saving..." : "Save Address"}
+          </Button>
+        </div>
       </form>
     </Form>
   );
