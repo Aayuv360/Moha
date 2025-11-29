@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { HeroSection } from "@/components/HeroSection";
-import { Navigation } from "@/components/Navigation";
+import { HeroSection } from "../components/HeroSection";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";

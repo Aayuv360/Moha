@@ -1,11 +1,10 @@
 import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Navigation } from "@/components/Navigation";
-import { ProductCard } from "@/components/ProductCard";
-import { FilterSidebar } from "@/components/FilterSidebar";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { EmptyState } from "@/components/EmptyState";
+import { ProductCard } from "../components/ProductCard";
+import { FilterSidebar } from "../components/FilterSidebar";
+import { LoadingSpinner } from "../components/LoadingSpinner";
+import { EmptyState } from "../components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
