@@ -159,13 +159,23 @@ export const insertCartItemSchema = createInsertSchema(cartItems)
   .omit({ id: true })
   .extend({
     trackingId: z.string().optional(),
+    productId: z.string().optional(),
+  })
+  .refine(
+    (data) => data.productId || data.trackingId,
+    "Either productId or trackingId must be provided"
+  );
+
+export const insertOrderSchema = createInsertSchema(orders)
+  .omit({
+    id: true,
+    createdAt: true,
+    shippedAt: true,
+    deliveredAt: true,
+  })
+  .extend({
+    orderTrackingId: z.string().optional(),
   });
-export const insertOrderSchema = createInsertSchema(orders).omit({
-  id: true,
-  createdAt: true,
-  status: true,
-  channel: true,
-});
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems)
   .omit({ id: true, createdAt: true })
   .extend({

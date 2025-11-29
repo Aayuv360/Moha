@@ -655,8 +655,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const orders = await storage.getInventoryOrders(user.inventoryId);
-        res.json(orders);
+        
+        // Ensure all orders have orderTrackingId, generate if missing
+        const enrichedOrders = await Promise.all(
+          orders.map(async (order: any) => {
+            if (!order.orderTrackingId) {
+              const trackingId = generateOrderTrackingId();
+              await storage.updateOrder(order.id, { orderTrackingId: trackingId });
+              return { ...order, orderTrackingId: trackingId };
+            }
+            return order;
+          })
+        );
+        
+        res.json(enrichedOrders);
       } catch (error) {
+        console.error("Fetch inventory orders error:", error);
         res.status(500).json({ error: "Failed to fetch orders" });
       }
     },
@@ -959,6 +973,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         productId = product.id;
       }
 
+      if (!productId) {
+        return res.status(400).json({ error: "productId or trackingId is required" });
+      }
+
       const product = await storage.getProduct(productId);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
@@ -969,8 +987,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const cartItem = await storage.addToCart({
-        ...validatedData,
         productId: productId,
+        quantity: validatedData.quantity || 1,
+        sessionId: validatedData.sessionId,
+        userId: validatedData.userId,
       });
       res.status(201).json(cartItem);
     } catch (error) {
@@ -1023,8 +1043,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const orders = await storage.getUserOrders(req.userId!);
-      res.json(orders);
+      
+      // Ensure all orders have orderTrackingId, generate if missing
+      const enrichedOrders = await Promise.all(
+        orders.map(async (order: any) => {
+          if (!order.orderTrackingId) {
+            const trackingId = generateOrderTrackingId();
+            await storage.updateOrder(order.id, { orderTrackingId: trackingId });
+            return { ...order, orderTrackingId: trackingId };
+          }
+          return order;
+        })
+      );
+      
+      res.json(enrichedOrders);
     } catch (error) {
+      console.error("Fetch orders error:", error);
       res.status(500).json({ error: "Failed to fetch orders" });
     }
   });
