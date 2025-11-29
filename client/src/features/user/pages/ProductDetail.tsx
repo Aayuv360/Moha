@@ -20,7 +20,7 @@ import type { Product, CartItem, WishlistItem } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
-import { wishlistService } from "@/services/wishlist";
+import { wishlistService } from "../services/wishlist";
 
 export default function ProductDetail() {
   const { id, trackingId } = useParams<{ id?: string; trackingId?: string }>();
@@ -53,7 +53,9 @@ export default function ProductDetail() {
     enabled: !!token,
   });
 
-  const isInWishlist = product ? wishlistItems.some((w) => w.productId === product.trackingId) : false;
+  const isInWishlist = product
+    ? wishlistItems.some((w) => w.productId === product.trackingId)
+    : false;
   const { data: cart = [] } = useQuery<CartItem[]>({
     queryKey: ["/api/cart", cartIdentifier],
     queryFn: async () => {
@@ -145,11 +147,20 @@ export default function ProductDetail() {
 
   const toggleWishlistMutation = useMutation({
     mutationFn: () =>
-      product ? wishlistService.toggleWishlist(product.trackingId, isInWishlist, token!) : Promise.reject(),
+      product
+        ? wishlistService.toggleWishlist(
+            product.trackingId,
+            isInWishlist,
+            token!,
+          )
+        : Promise.reject(),
     onSuccess: (response) => {
       const isNowInWishlist = response?.isInWishlist !== false;
       if (product) {
-        wishlistService.updateWishlistCache(product.trackingId, isNowInWishlist);
+        wishlistService.updateWishlistCache(
+          product.trackingId,
+          isNowInWishlist,
+        );
       }
       toast({
         title: isNowInWishlist ? "Added to wishlist" : "Removed from wishlist",
