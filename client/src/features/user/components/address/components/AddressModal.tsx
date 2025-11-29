@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
@@ -45,13 +46,14 @@ export default function AddressModal({
       formData: data,
       id: editingAddressId || undefined,
     });
-    if (!editingAddressId) {
-      setMode("select");
-    } else {
+  };
+
+  useEffect(() => {
+    if (saveAddressMutation.isSuccess && mode === "add") {
       dispatch(setEditingAddressId(null));
       setMode("select");
     }
-  };
+  }, [saveAddressMutation.isSuccess, mode, dispatch]);
 
   return (
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -138,6 +140,7 @@ export default function AddressModal({
                           dispatch(setEditingAddressId(addr.id));
                           setMode("add");
                         }}
+                        data-testid={`button-edit-address-${addr.id}`}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -146,6 +149,7 @@ export default function AddressModal({
                         size="icon"
                         variant="destructive"
                         onClick={() => deleteAddressMutation.mutate(addr.id)}
+                        data-testid={`button-delete-address-${addr.id}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -162,6 +166,7 @@ export default function AddressModal({
                 dispatch(setEditingAddressId(null));
                 setMode("add");
               }}
+              data-testid="button-add-new-address"
             >
               <Plus className="h-4 w-4 mr-2" /> Add New Address
             </Button>
