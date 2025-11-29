@@ -77,17 +77,15 @@ export default function ProductDetail() {
         newQuantity,
         isUserCart,
         token,
+        cartIdentifier,
       );
     },
-    onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
   });
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: any) =>
-      await cartService.addToCart(item, isUserCart, token),
+      await cartService.addToCart(item, isUserCart, token, cartIdentifier),
     onSuccess: () => {
-      cartService.invalidateCartCache(cartIdentifier);
-
       if (buttonRef.current) {
         gsap
           .timeline()
@@ -109,9 +107,13 @@ export default function ProductDetail() {
   const removeFromCartMutation = useMutation({
     mutationFn: async () => {
       if (!cartItem) return;
-      return await cartService.removeFromCart(cartItem.id, isUserCart, token);
+      return await cartService.removeFromCart(
+        cartItem.id,
+        isUserCart,
+        token,
+        cartIdentifier,
+      );
     },
-    onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
   });
 
   const toggleWishlistMutation = useMutation({

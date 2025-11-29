@@ -22,7 +22,7 @@ import {
 import { insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import type { CartItem, Product } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { cartService } from "../services/cartService";
@@ -102,7 +102,7 @@ export default function Checkout() {
     onSuccess: (data: any) => {
       setOrderId(data.id);
       setOrderPlaced(true);
-      cartService.invalidateCartCache(cartIdentifier);
+      queryClient.setQueryData(["/api/cart", cartIdentifier], []);
 
       toast({
         title: "Order placed successfully!",

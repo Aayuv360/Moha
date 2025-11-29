@@ -53,6 +53,10 @@ export default function Products() {
   const { user, token } = useAuth();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const sessionId = getOrCreateSessionId();
+
+  const cartIdentifier = user?.id || sessionId;
+  const isUserCart = !!user?.id;
 
   const filters = useMemo(
     () => parseUrlParams(location.search),
@@ -86,10 +90,9 @@ export default function Products() {
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: InsertCartItem) => {
-      return await cartService.addToCart(item, isUserCart, token);
+      return await cartService.addToCart(item, isUserCart, token, cartIdentifier);
     },
     onSuccess: () => {
-      cartService.invalidateCartCache(cartIdentifier);
       toast({
         title: "Added to cart",
         description: "Item has been added to your cart successfully.",

@@ -42,10 +42,8 @@ export default function Cart() {
         quantity,
         isUserCart,
         token,
+        cartIdentifier,
       );
-    },
-    onSuccess: () => {
-      cartService.invalidateCartCache(cartIdentifier);
     },
     onError: () => {
       toast({
@@ -58,10 +56,9 @@ export default function Cart() {
 
   const removeItemMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await cartService.removeFromCart(id, isUserCart, token);
+      return await cartService.removeFromCart(id, isUserCart, token, cartIdentifier);
     },
     onSuccess: () => {
-      cartService.invalidateCartCache(cartIdentifier);
       toast({
         title: "Removed from cart",
         description: "Item has been removed from your cart.",

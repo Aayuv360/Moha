@@ -63,17 +63,21 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
         newQuantity,
         isUserCart,
         token,
+        cartIdentifier,
       );
     },
-    onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
   });
 
   const removeFromCartMutation = useMutation({
     mutationFn: async () => {
       if (!cartItem) return;
-      return await cartService.removeFromCart(cartItem.id, isUserCart, token);
+      return await cartService.removeFromCart(
+        cartItem.id,
+        isUserCart,
+        token,
+        cartIdentifier,
+      );
     },
-    onSuccess: () => cartService.invalidateCartCache(cartIdentifier),
   });
 
   const toggleWishlistMutation = useMutation({
