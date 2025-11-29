@@ -1644,8 +1644,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pincode: req.body.pincode,
         isDefault: req.body.isDefault || false,
       });
-      const address = await storage.createAddress(validatedData);
-      res.status(201).json(address);
+      await storage.createAddress(validatedData);
+      const addresses = await storage.getUserAddresses(req.userId!);
+      res.status(201).json(addresses);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
@@ -1669,11 +1670,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const validatedData = insertAddressSchema.partial().parse(req.body);
-        const updated = await storage.updateAddress(
+        await storage.updateAddress(
           req.params.id,
           validatedData,
         );
-        res.json(updated);
+        const addresses = await storage.getUserAddresses(req.userId!);
+        res.json(addresses);
       } catch (error) {
         if (error instanceof z.ZodError) {
           return res.status(400).json({ error: error.errors });
@@ -1698,7 +1700,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         await storage.deleteAddress(req.params.id);
-        res.status(204).send();
+        const addresses = await storage.getUserAddresses(req.userId!);
+        res.json(addresses);
       } catch (error) {
         res.status(500).json({ error: "Failed to delete address" });
       }

@@ -52,12 +52,11 @@ export function useSaveAddressMutation() {
       }
       return await apiRequest("POST", "/api/addresses", data.formData);
     },
-    onSuccess: (newAddress: Address, variables) => {
+    onSuccess: (addresses: Address[], variables) => {
+      dispatch(setAddresses(addresses));
       if (variables.id) {
-        dispatch(updateAddress(newAddress));
         toast({ title: "Address updated successfully" });
       } else {
-        dispatch(addAddress(newAddress));
         toast({ title: "Address saved successfully" });
       }
       queryClient.invalidateQueries({ queryKey: ["/api/addresses"] });
@@ -81,8 +80,8 @@ export function useDeleteAddressMutation() {
     mutationFn: async (id: string) => {
       return await apiRequest("DELETE", `/api/addresses/${id}`, {});
     },
-    onSuccess: (_, addressId) => {
-      dispatch(deleteAddress(addressId));
+    onSuccess: (addresses: Address[]) => {
+      dispatch(setAddresses(addresses));
       toast({ title: "Address deleted successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/addresses"] });
     },
