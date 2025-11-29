@@ -46,9 +46,12 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
       return await apiRequest("GET", endpoint, undefined, options);
     },
   });
-
-  const cartItem = cart.find((item) => item.productId === product.id);
+  const cartItem = cart.find(
+    (item) => item.product.trackingId === product.trackingId,
+  );
   const cartQuantity = cartItem?.quantity || 0;
+  console.log("Cart Itemspp:", product);
+  console.log("Cart Items:", cart);
 
   const { data: wishlistData } = useQuery<{ isInWishlist: boolean }>({
     queryKey: [`/api/wishlist/check/${product.trackingId}`],
@@ -98,7 +101,10 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const toggleWishlistMutation = useMutation({
     mutationFn: async () => {
       if (isInWishlist) {
-        return await apiRequest("DELETE", `/api/wishlist/${product.trackingId}`);
+        return await apiRequest(
+          "DELETE",
+          `/api/wishlist/${product.trackingId}`,
+        );
       } else {
         return await apiRequest("POST", "/api/wishlist", {
           trackingId: product.trackingId,
