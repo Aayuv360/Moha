@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
 
+// User Role Pages
 import Home from "@/pages/Home";
 import Products from "@/pages/Products";
 import ProductDetail from "@/pages/ProductDetail";
@@ -16,31 +17,42 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Orders from "@/pages/Orders";
 import Wishlist from "@/pages/Wishlist";
-import AdminLogin from "@/pages/AdminLogin";
-import AdminDashboard from "@/pages/AdminDashboard";
-import InventoryLogin from "@/pages/InventoryLogin";
-import InventoryDashboard from "@/pages/InventoryDashboard";
-import InventoryProductDetail from "@/pages/InventoryProductDetail";
+import { UserLayout } from "@/features/user/layouts/UserLayout";
 import NotFound from "@/pages/not-found";
+
+// Admin Role Pages
+import { AdminLoginPage } from "@/features/admin/pages/AdminLogin";
+import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboard";
+
+// Inventory Role Pages
+import { InventoryLoginPage } from "@/features/inventory/pages/InventoryLogin";
+import { InventoryDashboardPage } from "@/features/inventory/pages/InventoryDashboard";
+import InventoryProductDetail from "@/pages/InventoryProductDetail";
 
 function AppRouter() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/product/:id" element={<ProductDetail />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/wishlist" element={<Wishlist />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/inventory/login" element={<InventoryLogin />} />
-        <Route path="/inventory/dashboard" element={<InventoryDashboard />} />
+        {/* User Routes */}
+        <Route path="/" element={<UserLayout><Home /></UserLayout>} />
+        <Route path="/products" element={<UserLayout><Products /></UserLayout>} />
+        <Route path="/product/:id" element={<UserLayout><ProductDetail /></UserLayout>} />
+        <Route path="/cart" element={<UserLayout><Cart /></UserLayout>} />
+        <Route path="/checkout" element={<UserLayout><Checkout /></UserLayout>} />
+        <Route path="/wishlist" element={<UserLayout><Wishlist /></UserLayout>} />
+        <Route path="/orders" element={<UserLayout><Orders /></UserLayout>} />
+        <Route path="/login" element={<UserLayout><Login /></UserLayout>} />
+        <Route path="/register" element={<UserLayout><Register /></UserLayout>} />
 
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+
+        {/* Inventory Routes */}
+        <Route path="/inventory/login" element={<InventoryLoginPage />} />
+        <Route path="/inventory/dashboard" element={<InventoryDashboardPage />} />
+
+        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
