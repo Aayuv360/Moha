@@ -15,7 +15,7 @@ import { insertAddressSchema } from "@shared/schema";
 import { z } from "zod";
 import type { Address } from "@shared/schema";
 
-const addressFormSchema = insertAddressSchema.extend({
+const addressFormSchema = insertAddressSchema.omit({ userId: true }).extend({
   name: z.string().min(2, "Name must be at least 2 characters"),
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
   address: z.string().min(10, "Address must be at least 10 characters"),
@@ -53,7 +53,13 @@ export default function AddressForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSave)} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit((data) => {
+          console.log("Form submitted with data:", data);
+          onSave(data);
+        })}
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="name"
