@@ -8,7 +8,7 @@ import { ArrowLeft, Trash2, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product } from "@shared/schema";
-import { ProductAllocationForm } from "@/components/ProductAllocationForm";
+import { ProductAllocationForm } from "../components/ProductAllocationForm";
 
 interface InventoryProductDetailProps {
   product: Product;

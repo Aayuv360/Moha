@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Navigation } from "@/components/Navigation";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -61,7 +60,6 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
       <div className="flex items-center justify-center px-4 py-12 md:py-20">
         <Card className="w-full max-w-md">
           <CardHeader>
