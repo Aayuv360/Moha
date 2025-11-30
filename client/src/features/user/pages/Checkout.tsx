@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -56,10 +57,12 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 export default function Checkout() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
   const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [localSelectedAddressId, setLocalSelectedAddressId] = useState<string | null>(null);
   const sessionId = getOrCreateSessionId();
   const { user, token } = useAuth();
 
@@ -69,6 +72,23 @@ export default function Checkout() {
   const { selectedAddressId, editingAddressId, addresses } = useSelector(
     (state: RootState) => state.address,
   );
+
+  // Get addressId from Cart page state
+  const passedAddressId = (location.state as any)?.selectedAddressId;
+  useEffect(() => {
+    if (passedAddressId) {
+      setLocalSelectedAddressId(passedAddressId);
+      const addressToUse = addresses.find((a) => a.id === passedAddressId);
+      if (addressToUse) {
+        form.setValue("customerName", addressToUse.name);
+        form.setValue("phone", addressToUse.phone);
+        form.setValue("address", addressToUse.address);
+        form.setValue("city", addressToUse.city);
+        form.setValue("state", addressToUse.state);
+        form.setValue("pincode", addressToUse.pincode);
+      }
+    }
+  }, [passedAddressId, addresses, form]);
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
@@ -137,7 +157,7 @@ export default function Checkout() {
 
     placeOrderMutation.mutate({
       ...data,
-      addressId: selectedAddressId || undefined,
+      addressId: localSelectedAddressId || selectedAddressId || undefined,
       totalAmount: total.toString(),
       items: JSON.stringify(orderItems),
     });
@@ -196,31 +216,77 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <Card className="p-6 md:p-8">
-              {token && addresses.length > 0 ? (
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Select Address</h3>
+                {token && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      dispatch(setEditingAddressIdAction(null));
+                      setShowAddressDialog(true);
+                    }}
+                    data-testid="button-add-address"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Address
+                  </Button>
+                )}
+              </div>
+
+              {token && addresses.length > 0 && !localSelectedAddressId ? (
                 <>
-                  <h3 className="text-lg font-medium mb-4">Saved Addresses</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {addresses.map((addr: any) => (
-                      <Card
-                        key={addr.id}
-                        className={`p-4 cursor-pointer transition-all ${
-                          selectedAddressId === addr.id
-                            ? "ring-2 ring-primary"
-                            : "hover-elevate"
-                        }`}
-                        onClick={() => {
-                          dispatch(setSelectedAddressIdAction(addr.id));
-                          form.setValue("customerName", addr.name);
-                          form.setValue("phone", addr.phone);
-                          form.setValue("address", addr.address);
-                          form.setValue("city", addr.city);
-                          form.setValue("state", addr.state);
-                          form.setValue("pincode", addr.pincode);
-                        }}
-                        data-testid={`card-address-${addr.id}`}
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <h4 className="font-medium">{addr.name}</h4>
+                  <RadioGroup
+                    value={localSelectedAddressId || ""}
+                    onValueChange={(value) => {
+                      setLocalSelectedAddressId(value);
+                      const selectedAddr = addresses.find((a) => a.id === value);
+                      if (selectedAddr) {
+                        form.setValue("customerName", selectedAddr.name);
+                        form.setValue("phone", selectedAddr.phone);
+                        form.setValue("address", selectedAddr.address);
+                        form.setValue("city", selectedAddr.city);
+                        form.setValue("state", selectedAddr.state);
+                        form.setValue("pincode", selectedAddr.pincode);
+                      }
+                    }}
+                  >
+                    <div className="space-y-3 mb-6">
+                      {addresses.map((addr: any) => (
+                        <div
+                          key={addr.id}
+                          className="flex items-start gap-3 p-4 border rounded-md hover-elevate cursor-pointer"
+                          onClick={() => {
+                            setLocalSelectedAddressId(addr.id);
+                            form.setValue("customerName", addr.name);
+                            form.setValue("phone", addr.phone);
+                            form.setValue("address", addr.address);
+                            form.setValue("city", addr.city);
+                            form.setValue("state", addr.state);
+                            form.setValue("pincode", addr.pincode);
+                          }}
+                          data-testid={`card-address-${addr.id}`}
+                        >
+                          <RadioGroupItem
+                            value={addr.id}
+                            id={`address-${addr.id}`}
+                            className="mt-1"
+                          />
+                          <label
+                            htmlFor={`address-${addr.id}`}
+                            className="flex-1 cursor-pointer"
+                          >
+                            <p className="font-medium">{addr.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {addr.address}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {addr.city}, {addr.state} {addr.pincode}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {addr.phone}
+                            </p>
+                          </label>
                           <div className="flex gap-2">
                             <button
                               onClick={(e) => {
@@ -245,25 +311,28 @@ export default function Checkout() {
                             </button>
                           </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {addr.address}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {addr.city}, {addr.state} {addr.pincode}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {addr.phone}
-                        </p>
-                      </Card>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
                   <Separator className="my-6" />
                 </>
               ) : (
                 <>
+                  {localSelectedAddressId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mb-4"
+                      onClick={() => setLocalSelectedAddressId(null)}
+                      data-testid="button-change-address-checkout"
+                    >
+                      Change Address
+                    </Button>
+                  )}
                   <AddressForm
                     onSave={(data) => {
                       saveAddressMutation.mutate({ formData: data });
+                      setLocalSelectedAddressId(null);
                     }}
                     isLoading={saveAddressMutation.isPending}
                   />
@@ -343,7 +412,7 @@ export default function Checkout() {
               type="submit"
               size="lg"
               className="w-full mt-8"
-              disabled={placeOrderMutation.isPending}
+              disabled={placeOrderMutation.isPending || !form.formState.isValid}
               data-testid="button-place-order"
             >
               {placeOrderMutation.isPending

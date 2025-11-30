@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { ShoppingBag, MapPin, Package } from "lucide-react";
 import type { CartItem, Product } from "@shared/schema";
 import { getOrCreateSessionId } from "@/lib/session";
@@ -25,6 +25,7 @@ interface CartItemWithProduct extends CartItem {
 export default function Cart() {
   const { toast } = useToast();
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const sessionId = getOrCreateSessionId();
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"select" | "add">("select");
@@ -269,21 +270,25 @@ export default function Cart() {
                 </span>
               </div>
 
-              <Link
-                to={selectedAddress || selectedPincode ? "/checkout" : "#"}
-                className="block w-full"
-                data-testid="link-checkout"
+              <Button
+                size="lg"
+                className="w-full"
+                style={{ backgroundColor: "#9b083a" }}
+                disabled={!selectedAddress && !selectedPincode}
+                data-testid="button-proceed-checkout"
+                onClick={() => {
+                  if (selectedAddress || selectedPincode) {
+                    navigate("/checkout", {
+                      state: {
+                        selectedAddressId: selectedAddress?.id || null,
+                        selectedPincode: selectedPincode,
+                      },
+                    });
+                  }
+                }}
               >
-                <Button
-                  size="lg"
-                  className="w-full"
-                  style={{ backgroundColor: "#9b083a" }}
-                  disabled={!selectedAddress && !selectedPincode}
-                  data-testid="button-proceed-checkout"
-                >
-                  Proceed to Checkout
-                </Button>
-              </Link>
+                Proceed to Checkout
+              </Button>
 
               <Link to="/products" className="block w-full mt-3" data-testid="link-continue-shopping">
                 <Button variant="outline" size="lg" className="w-full">
