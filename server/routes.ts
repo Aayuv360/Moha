@@ -1661,6 +1661,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pincode: req.body.pincode,
         isDefault: req.body.isDefault || false,
       });
+
+      // If setting this as default, unset other defaults for this user
+      if (validatedData.isDefault) {
+        await storage.updateUserAddressesDefault(req.userId!, null);
+      }
+
       await storage.createAddress(validatedData);
       const addresses = await storage.getUserAddresses(req.userId!);
       res.status(201).json(addresses);
@@ -1687,6 +1693,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const validatedData = insertAddressSchema.partial().parse(req.body);
+
+        // If setting this as default, unset other defaults for this user (except this address)
+        if (validatedData.isDefault) {
+          await storage.updateUserAddressesDefault(req.userId!, req.params.id);
+        }
+
         await storage.updateAddress(
           req.params.id,
           validatedData,

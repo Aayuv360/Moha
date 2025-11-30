@@ -731,6 +731,18 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(addresses).where(eq(addresses.id, id));
     return !!result;
   }
+
+  async updateUserAddressesDefault(userId: string, excludeAddressId: string | null): Promise<void> {
+    // Set all addresses for this user to isDefault: false, except the excluded one
+    await db
+      .update(addresses)
+      .set({ isDefault: false })
+      .where(
+        excludeAddressId
+          ? and(eq(addresses.userId, userId), sql`${addresses.id} != ${excludeAddressId}`)
+          : eq(addresses.userId, userId),
+      );
+  }
 }
 
 export const storage = new DatabaseStorage();
