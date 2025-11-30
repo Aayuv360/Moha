@@ -58,13 +58,20 @@ export function useSaveAddressMutation() {
     onSuccess: (addresses: Address[], variables) => {
       console.log("Address saved successfully", variables);
       dispatch(setAddresses(addresses));
-      dispatch(setSelectedAddressId(variables.id));
-      queryClient.setQueryData(["/api/addresses"], addresses);
+      
+      // For new address (POST), select the first address; for edit (PATCH), select the edited one
       if (variables.id) {
+        dispatch(setSelectedAddressId(variables.id));
         toast({ title: "Address updated successfully" });
       } else {
+        // For new address, select the first one from the returned list
+        if (addresses.length > 0) {
+          dispatch(setSelectedAddressId(addresses[0].id));
+        }
         toast({ title: "Address saved successfully" });
       }
+      
+      queryClient.setQueryData(["/api/addresses"], addresses);
     },
     onError: () => {
       dispatch(setError("Failed to save address"));
