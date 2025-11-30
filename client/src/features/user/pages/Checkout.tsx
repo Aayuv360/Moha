@@ -62,7 +62,9 @@ export default function Checkout() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
   const [showAddressDialog, setShowAddressDialog] = useState(false);
-  const [localSelectedAddressId, setLocalSelectedAddressId] = useState<string | null>(null);
+  const [localSelectedAddressId, setLocalSelectedAddressId] = useState<
+    string | null
+  >(null);
   const sessionId = getOrCreateSessionId();
   const { user, token } = useAuth();
 
@@ -72,7 +74,7 @@ export default function Checkout() {
   const { selectedAddressId, editingAddressId, addresses } = useSelector(
     (state: RootState) => state.address,
   );
-
+  console.log(selectedAddressId);
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
     queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
@@ -95,7 +97,6 @@ export default function Checkout() {
     },
   });
 
-  // Get addressId from Cart page state - AFTER form is initialized
   const passedAddressId = (location.state as any)?.selectedAddressId;
   useEffect(() => {
     if (passedAddressId && addresses.length > 0) {
@@ -240,7 +241,9 @@ export default function Checkout() {
                     value={localSelectedAddressId || ""}
                     onValueChange={(value) => {
                       setLocalSelectedAddressId(value);
-                      const selectedAddr = addresses.find((a) => a.id === value);
+                      const selectedAddr = addresses.find(
+                        (a) => a.id === value,
+                      );
                       if (selectedAddr) {
                         form.setValue("customerName", selectedAddr.name);
                         form.setValue("phone", selectedAddr.phone);

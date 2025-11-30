@@ -13,7 +13,11 @@ import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { cartService } from "../services/cartService";
 import { useState, useEffect } from "react";
-import { AddressModal, useFetchAddresses, PincodeModal } from "../components/address";
+import {
+  AddressModal,
+  useFetchAddresses,
+  PincodeModal,
+} from "../components/address";
 import { getSelectedAddress } from "../services/addressSelectionService";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/store";
@@ -39,7 +43,6 @@ export default function Cart() {
   useFetchAddresses(!!token);
 
   useEffect(() => {
-    // Load selected address and pincode on mount or when addresses change
     const loadAddress = async () => {
       const result = await getSelectedAddress(addresses, token);
       setSelectedAddress(result.address);
@@ -76,7 +79,12 @@ export default function Cart() {
 
   const removeItemMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await cartService.removeFromCart(id, isUserCart, token, cartIdentifier);
+      return await cartService.removeFromCart(
+        id,
+        isUserCart,
+        token,
+        cartIdentifier,
+      );
     },
     onSuccess: () => {
       toast({
@@ -151,10 +159,13 @@ export default function Cart() {
                       <div className="flex-1">
                         {selectedAddress ? (
                           <div>
-                            <p className="font-medium">{selectedAddress.name}</p>
+                            <p className="font-medium">
+                              {selectedAddress.name}
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               {selectedAddress.address}, {selectedAddress.city},{" "}
-                              {selectedAddress.state} - {selectedAddress.pincode}
+                              {selectedAddress.state} -{" "}
+                              {selectedAddress.pincode}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Ph: {selectedAddress.phone}
@@ -191,7 +202,8 @@ export default function Cart() {
                       <p className="font-medium">Check Delivery</p>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      No saved addresses. Enter your pincode to check delivery availability.
+                      No saved addresses. Enter your pincode to check delivery
+                      availability.
                     </p>
                     <Button
                       onClick={() => setPincodeModalOpen(true)}
@@ -290,7 +302,11 @@ export default function Cart() {
                 Proceed to Checkout
               </Button>
 
-              <Link to="/products" className="block w-full mt-3" data-testid="link-continue-shopping">
+              <Link
+                to="/products"
+                className="block w-full mt-3"
+                data-testid="link-continue-shopping"
+              >
                 <Button variant="outline" size="lg" className="w-full">
                   Continue Shopping
                 </Button>
