@@ -35,6 +35,7 @@ import {
   useDeleteAddressMutation,
   setSelectedAddressId as setSelectedAddressIdAction,
   setEditingAddressId as setEditingAddressIdAction,
+  AddressModal,
 } from "../components/address";
 import type { RootState } from "@/lib/store";
 
@@ -61,6 +62,7 @@ export default function Checkout() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
   const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [mode, setMode] = useState<"select" | "add" | "edit">("select");
   const [localSelectedAddressId, setLocalSelectedAddressId] = useState<
     string | null
   >(null);
@@ -73,7 +75,6 @@ export default function Checkout() {
   const { selectedAddressId, editingAddressId, addresses } = useSelector(
     (state: RootState) => state.address,
   );
-
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
     queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
@@ -96,11 +97,11 @@ export default function Checkout() {
     },
   });
 
-  // Sync Redux selectedAddressId to component state and pre-fill form
   useEffect(() => {
     if (selectedAddressId && addresses.length > 0) {
       setLocalSelectedAddressId(selectedAddressId);
       const addressToUse = addresses.find((a) => a.id === selectedAddressId);
+      console.log(addressToUse);
       if (addressToUse) {
         form.setValue("customerName", addressToUse.name);
         form.setValue("phone", addressToUse.phone);
@@ -225,6 +226,7 @@ export default function Checkout() {
                     onClick={() => {
                       dispatch(setEditingAddressIdAction(null));
                       setShowAddressDialog(true);
+                      setMode("add");
                     }}
                     data-testid="button-add-address"
                   >
@@ -235,6 +237,18 @@ export default function Checkout() {
               </div>
 
               {token && addresses.length > 0 && !localSelectedAddressId ? (
+                <>
+                  <AddressForm
+                    onSave={(data) => {
+                      saveAddressMutation.mutate({ formData: data });
+                      setLocalSelectedAddressId(null);
+                    }}
+                    isLoading={saveAddressMutation.isPending}
+                  />
+
+                  <Separator className="my-6" />
+                </>
+              ) : (
                 <>
                   <RadioGroup
                     value={localSelectedAddressId || ""}
@@ -294,6 +308,7 @@ export default function Checkout() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 dispatch(setEditingAddressIdAction(addr.id));
+                                setMode("edit");
                                 setShowAddressDialog(true);
                               }}
                               className="p-1 hover-elevate"
@@ -316,28 +331,6 @@ export default function Checkout() {
                       ))}
                     </div>
                   </RadioGroup>
-                  <Separator className="my-6" />
-                </>
-              ) : (
-                <>
-                  {localSelectedAddressId && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mb-4"
-                      onClick={() => setLocalSelectedAddressId(null)}
-                      data-testid="button-change-address-checkout"
-                    >
-                      Change Address
-                    </Button>
-                  )}
-                  <AddressForm
-                    onSave={(data) => {
-                      saveAddressMutation.mutate({ formData: data });
-                      setLocalSelectedAddressId(null);
-                    }}
-                    isLoading={saveAddressMutation.isPending}
-                  />
                 </>
               )}
             </Card>
@@ -416,6 +409,7 @@ export default function Checkout() {
               className="w-full mt-8"
               disabled={placeOrderMutation.isPending || !localSelectedAddressId}
               data-testid="button-place-order"
+              onClick={() => onSubmit()}
             >
               {placeOrderMutation.isPending
                 ? "Placing Order..."
@@ -424,6 +418,15 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+
+      {showAddressDialog && (
+        <AddressModal
+          modalOpen={showAddressDialog}
+          setModalOpen={setShowAddressDialog}
+          mode={mode}
+          setMode={setMode}
+        />
+      )}
     </div>
   );
 }
