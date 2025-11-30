@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { InventoryReturnsTab } from "./InventoryReturnsTab";
 import type { Order, Return } from "@shared/schema";
-import { FixedSizeList as List } from "react-virtualized";
 import {
   Clock,
   Truck,
@@ -263,7 +262,7 @@ export function OrdersTab({
         <InventoryReturnsTab returns={inventoryReturns} />
       ) : (
         /* Orders List */
-        <VirtualizedOrdersList
+        <PaginatedOrdersList
           displayOrders={displayOrders}
           ordersSubTab={ordersSubTab}
           selectedOrderIds={selectedOrderIds}
@@ -277,7 +276,7 @@ export function OrdersTab({
   );
 }
 
-function VirtualizedOrdersList({
+function PaginatedOrdersList({
   displayOrders,
   ordersSubTab,
   selectedOrderIds,
@@ -286,23 +285,27 @@ function VirtualizedOrdersList({
   getNextStatus,
   inventoryReturns,
 }: any) {
-  const itemSize = 300;
+  const [page, setPage] = useState(0);
+  const itemsPerPage = 3;
+  const start = page * itemsPerPage;
+  const end = Math.min(start + itemsPerPage, displayOrders.length);
+  const paginatedOrders = displayOrders.slice(start, end);
 
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const order = displayOrders[index];
-    const items = order.items
-      ? typeof order.items === "string"
-        ? JSON.parse(order.items)
-        : order.items
-      : [];
-    const approvedReturn = inventoryReturns.find(
-      (ret: Return) => ret.orderId === order.id && ret.status === "approved"
-    );
-    const hasReturn = order.status && order.returnNotes;
-    const isReturned = ordersSubTab === "delivered" && approvedReturn;
+  return (
+    <div className="space-y-4">
+      {paginatedOrders.map((order: any) => {
+        const items = order.items
+          ? typeof order.items === "string"
+            ? JSON.parse(order.items)
+            : order.items
+          : [];
+        const approvedReturn = inventoryReturns.find(
+          (ret: Return) => ret.orderId === order.id && ret.status === "approved"
+        );
+        const hasReturn = order.status && order.returnNotes;
+        const isReturned = ordersSubTab === "delivered" && approvedReturn;
 
-    return (
-      <div style={style} className="pr-4">
+        return (
         <Card
           className="overflow-hidden h-full"
           data-testid={`card-order-${order.id}`}
@@ -624,13 +627,9 @@ function VirtualizedOrdersList({
                   </div>
                 </div>
         </Card>
-      </div>
-    );
-  };
-
-  return (
-    <div className="w-full">
-      {displayOrders.length === 0 ? (
+        );
+      })}
+      {displayOrders.length === 0 && (
         <Card>
           <CardContent className="pt-8 text-center">
             <p className="text-muted-foreground">
@@ -642,16 +641,29 @@ function VirtualizedOrdersList({
             </p>
           </CardContent>
         </Card>
-      ) : (
-        <List
-          width="100%"
-          height={600}
-          itemCount={displayOrders.length}
-          itemSize={300}
-          overscanCount={3}
-        >
-          {Row}
-        </List>
+      )}
+      {displayOrders.length > itemsPerPage && (
+        <div className="flex gap-2 justify-center mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(Math.max(0, page - 1))}
+            disabled={page === 0}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground py-2">
+            Page {page + 1} of {Math.ceil(displayOrders.length / itemsPerPage)}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(Math.min(Math.ceil(displayOrders.length / itemsPerPage) - 1, page + 1))}
+            disabled={end >= displayOrders.length}
+          >
+            Next
+          </Button>
+        </div>
       )}
     </div>
   );
