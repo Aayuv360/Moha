@@ -22,9 +22,9 @@ import {
   useDeleteAddressMutation,
   setSelectedAddressId,
   setEditingAddressId,
-  AddressModal,
 } from "../components/address";
 import type { RootState } from "@/lib/store";
+import CheckoutAddressModal from "../components/address/components/CheckoutAddressModal";
 
 interface CartItemWithProduct extends CartItem {
   product: Product;
@@ -218,7 +218,14 @@ export default function Checkout() {
                             htmlFor={`address-${addr.id}`}
                             className="flex-1 cursor-pointer"
                           >
-                            <p className="font-medium">{addr.name}</p>
+                            <p className="font-medium">
+                              {addr.name}{" "}
+                              {addr.isDefault && (
+                                <span className="px-2 py-0.5 text-[10px] sm:text-xs bg-primary text-white rounded">
+                                  Default
+                                </span>
+                              )}
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               {addr.address}
                             </p>
@@ -346,11 +353,9 @@ export default function Checkout() {
       </div>
 
       {showAddressDialog && (
-        <AddressModal
+        <CheckoutAddressModal
           modalOpen={showAddressDialog}
           setModalOpen={setShowAddressDialog}
-          mode={mode}
-          setMode={setMode}
         />
       )}
     </div>

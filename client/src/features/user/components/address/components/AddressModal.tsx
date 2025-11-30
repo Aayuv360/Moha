@@ -54,7 +54,6 @@ export default function AddressModal({
       setMode("select");
     }
   }, [saveAddressMutation.isSuccess, mode, dispatch]);
-  console.log(selectedAddress);
   return (
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
       <DialogContent
@@ -173,17 +172,18 @@ export default function AddressModal({
           </div>
         )}
 
-        {mode === "add" && (
-          <AddressForm
-            defaultValues={selectedAddress || undefined}
-            onSave={handleSaveAddress}
-            isLoading={saveAddressMutation.isPending}
-            onBack={() => {
-              dispatch(setEditingAddressId(null));
-              setMode("select");
-            }}
-          />
-        )}
+        {mode === "add" ||
+          (mode === "edit" && (
+            <AddressForm
+              defaultValues={selectedAddress || undefined}
+              onSave={handleSaveAddress}
+              isLoading={saveAddressMutation.isPending}
+              onBack={() => {
+                dispatch(setEditingAddressId(null));
+                setMode("select");
+              }}
+            />
+          ))}
       </DialogContent>
     </Dialog>
   );
