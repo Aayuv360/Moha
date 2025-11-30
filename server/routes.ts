@@ -1054,7 +1054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return full updated cart instead of just the added item
       const cartIdentifier = cartItem.userId || cartItem.sessionId;
       let allCartItems;
-      
+
       if (cartItem.userId) {
         allCartItems = await storage.getCartItemsByUserId(cartItem.userId);
       } else {
@@ -1080,7 +1080,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }),
       );
 
-      res.status(201).json(cartItemsWithProducts.filter((item) => item.product));
+      res
+        .status(201)
+        .json(cartItemsWithProducts.filter((item) => item.product));
     } catch (error) {
       console.error("Add to cart error:", error);
       if (error instanceof z.ZodError) {
@@ -1109,7 +1111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return full updated cart instead of just the updated item
       let allCartItems;
-      
+
       if (updatedItem.userId) {
         allCartItems = await storage.getCartItemsByUserId(updatedItem.userId);
       } else {
@@ -1158,9 +1160,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return full updated cart after deletion
       let remainingCartItems;
-      
+
       if (cartItem.userId) {
-        remainingCartItems = await storage.getCartItemsByUserId(cartItem.userId);
+        remainingCartItems = await storage.getCartItemsByUserId(
+          cartItem.userId,
+        );
       } else {
         remainingCartItems = await storage.getCartItems(cartItem.sessionId!);
       }
@@ -1196,7 +1200,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const orders = await storage.getUserOrders(req.userId!);
 
-      // Ensure all orders have orderTrackingId, generate if missing
       const enrichedOrders = await Promise.all(
         orders.map(async (order: any) => {
           if (!order.orderTrackingId) {
@@ -1207,7 +1210,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             order.orderTrackingId = trackingId;
           }
 
-          // Parse items and convert product IDs to tracking IDs
           let items = [];
           if (order.items) {
             try {
@@ -1266,7 +1268,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return {
                   ...item,
                   name: product.name,
-                  imageUrl: product.imageUrl,
                   fabric: product.fabric,
                   color: product.color,
                   occasion: product.occasion,
@@ -1292,9 +1293,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...validatedData,
           orderTrackingId: generateOrderTrackingId(),
           items: JSON.stringify(enrichedItems),
-          userId: req.userId || null,
-          addressId: validatedData.addressId || null,
-          inventoryId: inventoryId || null,
+          userId: req.userId || undefined,
+          addressId: validatedData.addressId || undefined,
+          inventoryId: inventoryId || undefined,
         };
         const order = await storage.createOrder(orderData);
 
@@ -1336,7 +1337,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.clearCart(sessionId);
         }
 
-        // Convert order response to use tracking IDs
         let items = [];
         if (order.items) {
           try {
@@ -1416,8 +1416,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({
-        id: order.orderTrackingId,
-        userId: order.userId,
         ...order,
         items: JSON.stringify(items),
       });
@@ -1486,7 +1484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         productId: productId,
       });
       const wishlistItem = await storage.addToWishlist(validatedData);
-      
+
       // Verify the item belongs to the authenticated user
       if (wishlistItem.userId !== req.userId!) {
         return res.status(403).json({ error: "Unauthorized" });
@@ -1626,7 +1624,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pincode validation endpoint
   app.post("/api/validate-pincode", async (req, res) => {
     try {
-      const { pincode } = z.object({ pincode: z.string().regex(/^\d{6}$/, "Pincode must be 6 digits") }).parse(req.body);
+      const { pincode } = z
+        .object({
+          pincode: z.string().regex(/^\d{6}$/, "Pincode must be 6 digits"),
+        })
+        .parse(req.body);
       // Simple validation - pincode between 100000-999999
       const pincodeNum = parseInt(pincode);
       const isValid = pincodeNum >= 100000 && pincodeNum <= 999999;
@@ -1699,10 +1701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateUserAddressesDefault(req.userId!, req.params.id);
         }
 
-        await storage.updateAddress(
-          req.params.id,
-          validatedData,
-        );
+        await storage.updateAddress(req.params.id, validatedData);
         const addresses = await storage.getUserAddresses(req.userId!);
         res.json(addresses);
       } catch (error) {
