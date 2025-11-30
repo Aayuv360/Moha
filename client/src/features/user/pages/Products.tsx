@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ProductCard } from "../components/ProductCard";
@@ -14,6 +14,7 @@ import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { cartService } from "../services/cartService";
 import gsap from "gsap";
+import { VariableSizeGrid as Grid } from "react-virtualized";
 
 interface ProductFilters {
   fabric: string;
@@ -276,20 +277,63 @@ export default function Products() {
                 actionHref="/products"
               />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
-                {products.map((product, index) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onAddToCart={handleAddToCart}
-                    index={index}
-                  />
-                ))}
-              </div>
+              <VirtualizedProductGrid 
+                products={products} 
+                onAddToCart={handleAddToCart} 
+              />
             )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function VirtualizedProductGrid({ products, onAddToCart }: { products: Product[], onAddToCart: (product: Product, quantity: number) => void }) {
+  const columnCount = 3;
+  const rowHeight = 500;
+  const columnWidth = 400;
+  const gapSize = 24;
+
+  const getColumnCount = (containerWidth: number) => {
+    if (containerWidth < 640) return 1;
+    if (containerWidth < 1024) return 2;
+    return 3;
+  };
+
+  const columnSetter = ({ index }: { index: number }) => columnWidth + gapSize;
+  const rowSetter = ({ index }: { index: number }) => rowHeight + gapSize;
+
+  const cellRenderer = ({ columnIndex, key, rowIndex, style }: any) => {
+    const index = rowIndex * columnCount + columnIndex;
+    if (index >= products.length) return null;
+
+    const product = products[index];
+    return (
+      <div key={key} style={{ ...style, paddingRight: columnIndex < columnCount - 1 ? gapSize : 0 }}>
+        <ProductCard
+          product={product}
+          onAddToCart={onAddToCart}
+          index={index}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ width: "100%" }}>
+      <Grid
+        columnCount={columnCount}
+        columnWidth={columnSetter}
+        height={Math.ceil((products.length / columnCount) * (rowHeight + gapSize))}
+        rowCount={Math.ceil(products.length / columnCount)}
+        rowHeight={rowSetter}
+        width={typeof window !== "undefined" ? Math.min(window.innerWidth - 40, 1280) : 1200}
+        overscanColumnCount={1}
+        overscanRowCount={3}
+      >
+        {cellRenderer}
+      </Grid>
     </div>
   );
 }

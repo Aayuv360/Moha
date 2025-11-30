@@ -623,11 +623,35 @@ function VirtualizedOrdersList({
                     </div>
                   </div>
                 </div>
-              </Card>
-            );
-          })
-        )}
-        </div>
+        </Card>
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full">
+      {displayOrders.length === 0 ? (
+        <Card>
+          <CardContent className="pt-8 text-center">
+            <p className="text-muted-foreground">
+              {ordersSubTab === "pending"
+                ? "No pending orders"
+                : ordersSubTab === "shipped"
+                  ? "No shipped orders"
+                  : "No delivered orders"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <List
+          width="100%"
+          height={600}
+          itemCount={displayOrders.length}
+          itemSize={300}
+          overscanCount={3}
+        >
+          {Row}
+        </List>
       )}
     </div>
   );
