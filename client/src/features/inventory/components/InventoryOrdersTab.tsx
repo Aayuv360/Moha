@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { InventoryReturnsTab } from "./InventoryReturnsTab";
 import type { Order, Return } from "@shared/schema";
+import { FixedSizeList as List } from "react-virtualized";
 import {
   Clock,
   Truck,
@@ -262,38 +263,50 @@ export function OrdersTab({
         <InventoryReturnsTab returns={inventoryReturns} />
       ) : (
         /* Orders List */
-        <div className="space-y-4">
-        {displayOrders.length === 0 ? (
-          <Card>
-            <CardContent className="pt-8 text-center">
-              <p className="text-muted-foreground">
-                {ordersSubTab === "pending"
-                  ? "No pending orders"
-                  : ordersSubTab === "shipped"
-                    ? "No shipped orders"
-                    : "No delivered orders"}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          displayOrders.map((order: any) => {
-            const items = order.items
-              ? typeof order.items === "string"
-                ? JSON.parse(order.items)
-                : order.items
-              : [];
-            const approvedReturn = inventoryReturns.find(
-              (ret: Return) => ret.orderId === order.id && ret.status === "approved"
-            );
-            const hasReturn = order.status && order.returnNotes;
-            const isReturned = ordersSubTab === "delivered" && approvedReturn;
+        <VirtualizedOrdersList
+          displayOrders={displayOrders}
+          ordersSubTab={ordersSubTab}
+          selectedOrderIds={selectedOrderIds}
+          toggleOrderSelection={toggleOrderSelection}
+          updateOrderStatusMutation={updateOrderStatusMutation}
+          getNextStatus={getNextStatus}
+          inventoryReturns={inventoryReturns}
+        />
+      )}
+    </div>
+  );
+}
 
-            return (
-              <Card
-                key={order.id}
-                className="overflow-hidden"
-                data-testid={`card-order-${order.id}`}
-              >
+function VirtualizedOrdersList({
+  displayOrders,
+  ordersSubTab,
+  selectedOrderIds,
+  toggleOrderSelection,
+  updateOrderStatusMutation,
+  getNextStatus,
+  inventoryReturns,
+}: any) {
+  const itemSize = 300;
+
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const order = displayOrders[index];
+    const items = order.items
+      ? typeof order.items === "string"
+        ? JSON.parse(order.items)
+        : order.items
+      : [];
+    const approvedReturn = inventoryReturns.find(
+      (ret: Return) => ret.orderId === order.id && ret.status === "approved"
+    );
+    const hasReturn = order.status && order.returnNotes;
+    const isReturned = ordersSubTab === "delivered" && approvedReturn;
+
+    return (
+      <div style={style} className="pr-4">
+        <Card
+          className="overflow-hidden h-full"
+          data-testid={`card-order-${order.id}`}
+        >
                 {/* Order Header */}
                 <div className="p-4 border-b bg-muted/30">
                   <div className="flex items-start justify-between gap-4">
