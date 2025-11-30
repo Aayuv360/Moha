@@ -59,14 +59,24 @@ export function useSaveAddressMutation() {
       console.log("Address saved successfully", variables);
       dispatch(setAddresses(addresses));
       
-      // For new address (POST), select the first address; for edit (PATCH), select the edited one
+      // For new address (POST), find and select the newly created address by matching form data
       if (variables.id) {
+        // Edit mode: select the edited address
         dispatch(setSelectedAddressId(variables.id));
         toast({ title: "Address updated successfully" });
       } else {
-        // For new address, select the first one from the returned list
-        if (addresses.length > 0) {
-          dispatch(setSelectedAddressId(addresses[0].id));
+        // New address mode: find the address that matches the form data we just posted
+        const newAddress = addresses.find(
+          (addr) =>
+            addr.name === variables.formData.name &&
+            addr.phone === variables.formData.phone &&
+            addr.address === variables.formData.address &&
+            addr.city === variables.formData.city &&
+            addr.state === variables.formData.state &&
+            addr.pincode === variables.formData.pincode
+        );
+        if (newAddress) {
+          dispatch(setSelectedAddressId(newAddress.id));
         }
         toast({ title: "Address saved successfully" });
       }
