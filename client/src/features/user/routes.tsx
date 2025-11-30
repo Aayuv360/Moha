@@ -11,6 +11,7 @@ import {
   WishlistPage,
 } from "@/features/user/pages";
 import { ProtectedRoute } from "@/features/user/components/ProtectedRoute";
+import { PublicRoute } from "@/features/user/components/PublicRoute";
 import NotFound from "@/pages/not-found";
 
 export function UserRoutes() {
@@ -19,8 +20,22 @@ export function UserRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/product/:id" element={<ProductDetailPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        }
+      />
 
       <Route
         path="/cart"
