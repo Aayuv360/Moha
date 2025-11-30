@@ -242,12 +242,8 @@ export default function ProductDetail() {
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) {
-      toast({
-        title: "Login required",
-        description: "Please login to add items to wishlist",
-        variant: "destructive",
-      });
+    if (!token) {
+      navigate("/login");
       return;
     }
     toggleWishlistMutation.mutate();
