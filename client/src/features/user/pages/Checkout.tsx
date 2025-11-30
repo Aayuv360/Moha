@@ -73,23 +73,6 @@ export default function Checkout() {
     (state: RootState) => state.address,
   );
 
-  // Get addressId from Cart page state
-  const passedAddressId = (location.state as any)?.selectedAddressId;
-  useEffect(() => {
-    if (passedAddressId) {
-      setLocalSelectedAddressId(passedAddressId);
-      const addressToUse = addresses.find((a) => a.id === passedAddressId);
-      if (addressToUse) {
-        form.setValue("customerName", addressToUse.name);
-        form.setValue("phone", addressToUse.phone);
-        form.setValue("address", addressToUse.address);
-        form.setValue("city", addressToUse.city);
-        form.setValue("state", addressToUse.state);
-        form.setValue("pincode", addressToUse.pincode);
-      }
-    }
-  }, [passedAddressId, addresses, form]);
-
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
     queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
@@ -111,6 +94,23 @@ export default function Checkout() {
       items: "",
     },
   });
+
+  // Get addressId from Cart page state - AFTER form is initialized
+  const passedAddressId = (location.state as any)?.selectedAddressId;
+  useEffect(() => {
+    if (passedAddressId && addresses.length > 0) {
+      setLocalSelectedAddressId(passedAddressId);
+      const addressToUse = addresses.find((a) => a.id === passedAddressId);
+      if (addressToUse) {
+        form.setValue("customerName", addressToUse.name);
+        form.setValue("phone", addressToUse.phone);
+        form.setValue("address", addressToUse.address);
+        form.setValue("city", addressToUse.city);
+        form.setValue("state", addressToUse.state);
+        form.setValue("pincode", addressToUse.pincode);
+      }
+    }
+  }, [passedAddressId, addresses]);
 
   const saveAddressMutation = useSaveAddressMutation();
   const deleteAddressMutation = useDeleteAddressMutation();
