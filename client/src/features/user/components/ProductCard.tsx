@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Heart, ShoppingCart } from "lucide-react";
@@ -23,7 +23,7 @@ interface ProductCardProps {
   index: number;
 }
 
-export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
+function ProductCardComponent({ product, onAddToCart, index }: ProductCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -201,6 +201,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
             <img
               src={images[currentImageIndex]}
               alt={product.name}
+              loading="lazy"
               className="w-full h-80 object-cover object-center transition-all duration-500 group-hover:scale-102"
             />
 
@@ -336,3 +337,11 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
     </div>
   );
 }
+
+export const ProductCard = memo(ProductCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.product.inStock === nextProps.product.inStock &&
+    prevProps.index === nextProps.index
+  );
+});
