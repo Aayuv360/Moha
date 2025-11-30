@@ -1359,8 +1359,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         res.status(201).json({
-          id: order.orderTrackingId,
-          userId: order.userId,
           ...order,
           items: JSON.stringify(items),
         });

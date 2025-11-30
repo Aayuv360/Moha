@@ -8,9 +8,6 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
   setAddresses,
   setError,
-  addAddress,
-  updateAddress,
-  deleteAddress,
   setSelectedAddressId,
 } from "../store/addressSlice";
 import { RootState } from "@/lib/store";
@@ -59,7 +56,9 @@ export function useSaveAddressMutation() {
       return await apiRequest("POST", "/api/addresses", data.formData);
     },
     onSuccess: (addresses: Address[], variables) => {
+      console.log("Address saved successfully", variables);
       dispatch(setAddresses(addresses));
+      dispatch(setSelectedAddressId(variables.id));
       queryClient.setQueryData(["/api/addresses"], addresses);
       if (variables.id) {
         toast({ title: "Address updated successfully" });

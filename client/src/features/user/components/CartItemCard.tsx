@@ -19,7 +19,7 @@ export function CartItemCard({
   onRemove,
 }: CartItemCardProps) {
   const { product, quantity } = item;
-  const subtotal = parseFloat(product.price) * quantity;
+  const subtotal = parseFloat(product.price);
   const image = product.images
     .replace(/[{}]/g, "")
     .split(",")

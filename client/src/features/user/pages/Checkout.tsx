@@ -163,7 +163,7 @@ export default function Checkout() {
             <Card className="p-6 md:p-8">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium">Select Address</h3>
-                {token && (
+                {addresses.length !== 0 && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -180,7 +180,7 @@ export default function Checkout() {
                 )}
               </div>
 
-              {token && addresses.length > 0 && !selectedAddressId ? (
+              {token && addresses.length === 0 && !selectedAddressId ? (
                 <>
                   <AddressForm
                     onSave={(data) => {
@@ -188,8 +188,6 @@ export default function Checkout() {
                     }}
                     isLoading={saveAddressMutation.isPending}
                   />
-
-                  <Separator className="my-6" />
                 </>
               ) : (
                 <>

@@ -158,7 +158,7 @@ export default function Cart() {
             {user && (
               <Card className="p-4 md:p-6">
                 {selectedAddress || selectedPincode ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3 flex justify-between">
                     <div className="flex items-start gap-3">
                       <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
@@ -190,11 +190,12 @@ export default function Cart() {
                     </div>
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="lg"
                       onClick={() => {
                         setModalOpen(true);
                         setMode("select");
                       }}
+                      className="hover:bg-primary/10 hover:text-primary"
                       data-testid="button-change-address"
                     >
                       Change Address
@@ -307,7 +308,11 @@ export default function Cart() {
                 className="block w-full mt-3"
                 data-testid="link-continue-shopping"
               >
-                <Button variant="outline" size="lg" className="w-full">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full hover:bg-primary/10 hover:text-primary"
+                >
                   Continue Shopping
                 </Button>
               </Link>

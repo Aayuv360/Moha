@@ -9,22 +9,26 @@ export async function getSelectedAddress(
   pincode: string | null;
   source: "recent_order" | "default" | "first" | "pincode" | null;
 }> {
-  // Get pincode from sessionStorage if available
   const savedPincode = sessionStorage.getItem("checkout_pincode");
+
+  // 1. If user manually entered pincode
   if (savedPincode) {
     return { address: null, pincode: savedPincode, source: "pincode" };
   }
 
+  // 2. If no addresses, NEVER call /api/orders
   if (!addresses || addresses.length === 0) {
     return { address: null, pincode: null, source: null };
   }
 
-  // Try to get most recent order address
+  // 3. If token exists AND addresses exist → fetch orders
   if (token) {
     try {
       const orders = await apiRequest("GET", "/api/orders", undefined);
+
       if (orders && orders.length > 0) {
-        const mostRecentOrder = orders[0]; // Assuming orders are sorted by date
+        const mostRecentOrder = orders[0];
+
         if (mostRecentOrder.addressId) {
           const addressFromOrder = addresses.find(
             (a) => a.id === mostRecentOrder.addressId,
@@ -43,16 +47,12 @@ export async function getSelectedAddress(
     }
   }
 
-  // Get default address
+  // 4. Default address
   const defaultAddress = addresses.find((a) => a.isDefault);
   if (defaultAddress) {
     return { address: defaultAddress, pincode: null, source: "default" };
   }
 
-  // Get first saved address
-  if (addresses.length > 0) {
-    return { address: addresses[0], pincode: null, source: "first" };
-  }
-
-  return { address: null, pincode: null, source: null };
+  // 5. First address
+  return { address: addresses[0], pincode: null, source: "first" };
 }
