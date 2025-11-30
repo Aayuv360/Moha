@@ -121,7 +121,10 @@ export interface IStorage {
   createAddress(address: InsertAddress): Promise<Address>;
   getUserAddresses(userId: string): Promise<Address[]>;
   getAddress(id: string): Promise<Address | undefined>;
-  updateAddress(id: string, updates: Partial<Address>): Promise<Address | undefined>;
+  updateAddress(
+    id: string,
+    updates: Partial<Address>,
+  ): Promise<Address | undefined>;
   deleteAddress(id: string): Promise<boolean>;
 }
 
@@ -262,7 +265,9 @@ export class DatabaseStorage implements IStorage {
     return product || undefined;
   }
 
-  async getProductByTrackingId(trackingId: string): Promise<Product | undefined> {
+  async getProductByTrackingId(
+    trackingId: string,
+  ): Promise<Product | undefined> {
     const [product] = await db
       .select()
       .from(products)
@@ -329,16 +334,16 @@ export class DatabaseStorage implements IStorage {
 
   async addToCart(insertItem: InsertCartItem): Promise<CartItem> {
     let whereCondition: any;
-    
+
     if (insertItem.sessionId) {
       whereCondition = and(
         eq(cartItems.productId, insertItem.productId),
-        eq(cartItems.sessionId, insertItem.sessionId)
+        eq(cartItems.sessionId, insertItem.sessionId),
       );
     } else if (insertItem.userId) {
       whereCondition = and(
         eq(cartItems.productId, insertItem.productId),
-        eq(cartItems.userId, insertItem.userId)
+        eq(cartItems.userId, insertItem.userId),
       );
     } else {
       throw new Error("Either sessionId or userId must be provided");
@@ -380,8 +385,7 @@ export class DatabaseStorage implements IStorage {
         await db
           .update(cartItems)
           .set({
-            quantity:
-              existingUserItem.quantity + sessionItem.quantity,
+            quantity: existingUserItem.quantity + sessionItem.quantity,
           })
           .where(eq(cartItems.id, existingUserItem.id));
       } else {
@@ -616,7 +620,7 @@ export class DatabaseStorage implements IStorage {
   ): Promise<StoreProductInventory> {
     const existing = await this.getProductInventoryByStore(productId, storeId);
     console.log("Existing inventory:", existing);
-    
+
     // Delete if quantity is 0
     if (quantity === 0 && existing) {
       await db
@@ -629,7 +633,7 @@ export class DatabaseStorage implements IStorage {
         );
       return existing;
     }
-    
+
     if (existing) {
       const [updated] = await db
         .update(storeProductInventory)
@@ -732,14 +736,19 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
-  async updateUserAddressesDefault(userId: string, excludeAddressId: string | null): Promise<void> {
-    // Set all addresses for this user to isDefault: false, except the excluded one
+  async updateUserAddressesDefault(
+    userId: string,
+    excludeAddressId: string | null,
+  ): Promise<void> {
     await db
       .update(addresses)
       .set({ isDefault: false })
       .where(
         excludeAddressId
-          ? and(eq(addresses.userId, userId), sql`${addresses.id} != ${excludeAddressId}`)
+          ? and(
+              eq(addresses.userId, userId),
+              sql`${addresses.id} != ${excludeAddressId}`,
+            )
           : eq(addresses.userId, userId),
       );
   }
