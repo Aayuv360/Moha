@@ -102,6 +102,7 @@ export default function Checkout() {
     placeOrderMutation.mutate({
       ...selectedAddress,
       customerName: selectedAddress?.name,
+      email: user?.email || "guest@example.com",
       addressId: selectedAddressId || undefined,
       totalAmount: total.toString(),
       items: JSON.stringify(orderItems),
