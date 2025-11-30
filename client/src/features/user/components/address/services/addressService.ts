@@ -88,8 +88,8 @@ export function useDeleteAddressMutation() {
     mutationFn: async (id: string) => {
       return await apiRequest("DELETE", `/api/addresses/${id}`, {});
     },
-    onSuccess: (addresses: Address[]) => {
-      if (selectedAddressId === id) {
+    onSuccess: (addresses: Address[], deletedId: string) => {
+      if (selectedAddressId === deletedId) {
         dispatch(setSelectedAddressId(null));
       }
       dispatch(setAddresses(addresses));
