@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useToast } from "@/hooks/use-toast";
 import type { Address } from "@shared/schema";
 import { insertAddressSchema } from "@shared/schema";
@@ -11,7 +11,9 @@ import {
   addAddress,
   updateAddress,
   deleteAddress,
+  setSelectedAddressId,
 } from "../store/addressSlice";
+import { RootState } from "@/lib/store";
 
 export const addressFormSchema = insertAddressSchema
   .omit({ userId: true })
@@ -79,12 +81,17 @@ export function useSaveAddressMutation() {
 export function useDeleteAddressMutation() {
   const { toast } = useToast();
   const dispatch = useDispatch();
-
+  const { selectedAddressId } = useSelector(
+    (state: RootState) => state.address,
+  );
   return useMutation({
     mutationFn: async (id: string) => {
       return await apiRequest("DELETE", `/api/addresses/${id}`, {});
     },
     onSuccess: (addresses: Address[]) => {
+      if (selectedAddressId === id) {
+        dispatch(setSelectedAddressId(null));
+      }
       dispatch(setAddresses(addresses));
       queryClient.setQueryData(["/api/addresses"], addresses);
       toast({ title: "Address deleted successfully" });

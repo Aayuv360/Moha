@@ -52,7 +52,7 @@ export default function Checkout() {
     queryKey: ["/api/cart", cartIdentifier],
     queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
   });
-
+  console.log(selectedAddressId);
   useFetchAddresses(!!token);
 
   const saveAddressMutation = useSaveAddressMutation();
@@ -120,7 +120,6 @@ export default function Checkout() {
     navigate("/cart");
     return null;
   }
-
   if (orderPlaced) {
     return (
       <div className="min-h-screen bg-background">
