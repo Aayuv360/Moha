@@ -23,6 +23,7 @@ import { cartService } from "../services/cartService";
 import { wishlistService } from "../services/wishlist";
 
 export default function ProductDetail() {
+  const navigate = useNavigate();
   const { id, trackingId } = useParams<{ id?: string; trackingId?: string }>();
   const { toast } = useToast();
   const { user, token } = useAuth();
@@ -160,6 +161,10 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = useCallback(() => {
+    if (!user && !token) {
+      navigate("/login");
+      return;
+    }
     if (!product) return;
     const sessionId = getOrCreateSessionId();
     addToCartMutation.mutate({
@@ -168,7 +173,7 @@ export default function ProductDetail() {
       sessionId: user ? undefined : sessionId,
       userId: user?.id,
     });
-  }, [product, addToCartMutation, user]);
+  }, [product, addToCartMutation, user, token, navigate]);
 
   const handleImageMove = useCallback((e: any) => {
     if (!zoomRef.current) return;

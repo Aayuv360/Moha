@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { cartService } from "@/features/user/services/cartService";
 import type { WishlistItem } from "@shared/schema";
 
 export function UserHeader() {
+  const navigate = useNavigate();
   const { user, logout, token } = useAuth();
   const sessionId = getOrCreateSessionId();
   const cartIdentifier = user?.id || sessionId;
@@ -51,7 +52,17 @@ export function UserHeader() {
         {/* RIGHT SECTION */}
         <div className="flex items-center gap-8">
           {/* WISHLIST */}
-          <Link to="/wishlist" className="flex flex-col items-center">
+          <button
+            onClick={() => {
+              if (!token) {
+                navigate("/login");
+              } else {
+                navigate("/wishlist");
+              }
+            }}
+            className="flex flex-col items-center hover:text-primary cursor-pointer"
+            data-testid="button-wishlist-header"
+          >
             <div className="relative">
               <Heart className="h-5 w-5 md:h-6 md:w-6" />
               {wishlistCount > 0 && (
@@ -69,7 +80,7 @@ export function UserHeader() {
             <span className="text-[10px] md:text-xs lg:text-sm mt-1">
               Wishlist
             </span>
-          </Link>
+          </button>
 
           {/* CART */}
           <Link

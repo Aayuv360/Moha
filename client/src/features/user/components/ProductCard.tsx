@@ -4,7 +4,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Heart, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -30,6 +30,7 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const navigate = useNavigate();
   const { user, token } = useAuth();
   const { toast } = useToast();
   const sessionId = getOrCreateSessionId();
@@ -156,6 +157,10 @@ export function ProductCard({ product, onAddToCart, index }: ProductCardProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (!user && !token) {
+      navigate("/login");
+      return;
+    }
     onAddToCart(product, quantity);
     setQuantity(1);
   };
