@@ -1667,9 +1667,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUserAddressesDefault(req.userId!, null);
       }
 
-      await storage.createAddress(validatedData);
+      const createdAddress = await storage.createAddress(validatedData);
       const addresses = await storage.getUserAddresses(req.userId!);
-      res.status(201).json(addresses);
+      res.status(201).json({ createdAddressId: createdAddress.id, addresses });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });

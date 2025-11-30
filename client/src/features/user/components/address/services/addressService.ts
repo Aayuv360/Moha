@@ -55,28 +55,23 @@ export function useSaveAddressMutation() {
       }
       return await apiRequest("POST", "/api/addresses", data.formData);
     },
-    onSuccess: (addresses: Address[], variables) => {
+    onSuccess: (response: any, variables) => {
       console.log("Address saved successfully", variables);
+      
+      // Handle both POST (returns { createdAddressId, addresses }) and PATCH (returns addresses array)
+      const addresses = Array.isArray(response) ? response : response.addresses;
+      const createdAddressId = response.createdAddressId;
+
       dispatch(setAddresses(addresses));
       
-      // For new address (POST), find and select the newly created address by matching form data
       if (variables.id) {
         // Edit mode: select the edited address
         dispatch(setSelectedAddressId(variables.id));
         toast({ title: "Address updated successfully" });
       } else {
-        // New address mode: find the address that matches the form data we just posted
-        const newAddress = addresses.find(
-          (addr) =>
-            addr.name === variables.formData.name &&
-            addr.phone === variables.formData.phone &&
-            addr.address === variables.formData.address &&
-            addr.city === variables.formData.city &&
-            addr.state === variables.formData.state &&
-            addr.pincode === variables.formData.pincode
-        );
-        if (newAddress) {
-          dispatch(setSelectedAddressId(newAddress.id));
+        // New address mode: use the createdAddressId returned from backend
+        if (createdAddressId) {
+          dispatch(setSelectedAddressId(createdAddressId));
         }
         toast({ title: "Address saved successfully" });
       }
