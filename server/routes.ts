@@ -1293,6 +1293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderTrackingId: generateOrderTrackingId(),
           items: JSON.stringify(enrichedItems),
           userId: req.userId || null,
+          addressId: validatedData.addressId || null,
           inventoryId: inventoryId || null,
         };
         const order = await storage.createOrder(orderData);

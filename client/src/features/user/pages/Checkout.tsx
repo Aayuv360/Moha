@@ -137,6 +137,7 @@ export default function Checkout() {
 
     placeOrderMutation.mutate({
       ...data,
+      addressId: selectedAddressId || undefined,
       totalAmount: total.toString(),
       items: JSON.stringify(orderItems),
     });

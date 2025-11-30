@@ -71,6 +71,7 @@ export const orders = pgTable("orders", {
     .default(sql`gen_random_uuid()`),
   orderTrackingId: varchar("order_tracking_id").notNull().unique(),
   userId: varchar("user_id"),
+  addressId: varchar("address_id"),
   customerName: text("customer_name").notNull(),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
@@ -176,6 +177,7 @@ export const insertOrderSchema = createInsertSchema(orders)
   })
   .extend({
     orderTrackingId: z.string().optional(),
+    addressId: z.string().optional(),
   });
 export const insertWishlistItemSchema = createInsertSchema(wishlistItems)
   .omit({ id: true, createdAt: true })
