@@ -11,17 +11,14 @@ export async function getSelectedAddress(
 }> {
   const savedPincode = sessionStorage.getItem("checkout_pincode");
 
-  // 1. If user manually entered pincode
   if (savedPincode) {
     return { address: null, pincode: savedPincode, source: "pincode" };
   }
 
-  // 2. If no addresses, NEVER call /api/orders
   if (!addresses || addresses.length === 0) {
     return { address: null, pincode: null, source: null };
   }
 
-  // 3. If token exists AND addresses exist → fetch orders
   if (token) {
     try {
       const orders = await apiRequest("GET", "/api/orders", undefined);
@@ -47,12 +44,10 @@ export async function getSelectedAddress(
     }
   }
 
-  // 4. Default address
   const defaultAddress = addresses.find((a) => a.isDefault);
   if (defaultAddress) {
     return { address: defaultAddress, pincode: null, source: "default" };
   }
 
-  // 5. First address
   return { address: addresses[0], pincode: null, source: "first" };
 }

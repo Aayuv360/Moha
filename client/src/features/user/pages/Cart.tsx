@@ -51,6 +51,7 @@ export default function Cart() {
       setSelectedPincode(result.pincode);
       if (result.address?.id) {
         dispatch(setSelectedAddressId(result.address.id));
+        sessionStorage.removeItem("checkout_pincode");
       }
     };
     if (token) {

@@ -95,6 +95,7 @@ export default function AddressModal({
               value={selectedAddressId || ""}
               onValueChange={(value) => {
                 dispatch(setSelectedAddressId(value));
+                sessionStorage.removeItem("checkout_pincode");
               }}
             >
               <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
@@ -160,7 +161,7 @@ export default function AddressModal({
 
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full hover:bg-primary/10 hover:text-primary"
               onClick={() => {
                 dispatch(setEditingAddressId(null));
                 setMode("add");
@@ -172,18 +173,17 @@ export default function AddressModal({
           </div>
         )}
 
-        {mode === "add" ||
-          (mode === "edit" && (
-            <AddressForm
-              defaultValues={selectedAddress || undefined}
-              onSave={handleSaveAddress}
-              isLoading={saveAddressMutation.isPending}
-              onBack={() => {
-                dispatch(setEditingAddressId(null));
-                setMode("select");
-              }}
-            />
-          ))}
+        {mode === "add" && (
+          <AddressForm
+            defaultValues={selectedAddress || undefined}
+            onSave={handleSaveAddress}
+            isLoading={saveAddressMutation.isPending}
+            onBack={() => {
+              dispatch(setEditingAddressId(null));
+              setMode("select");
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

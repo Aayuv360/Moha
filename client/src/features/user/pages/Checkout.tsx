@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { cartService } from "../services/cartService";
-import { CheckCircle2, Edit2, Trash2, Plus } from "lucide-react";
+import { CheckCircle2, Edit2, Trash2, Plus, ArrowLeft } from "lucide-react";
 import {
   AddressForm,
   useFetchAddresses,
@@ -154,9 +154,18 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light mb-8 md:mb-12">
-          Checkout
-        </h1>
+        <div className="flex items-center gap-3 mb-8 md:mb-12">
+          <button
+            onClick={() => navigate("/cart")}
+            className="p-2 hover:bg-muted rounded-full"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light">
+            Checkout
+          </h1>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -195,6 +204,7 @@ export default function Checkout() {
                     value={selectedAddressId || ""}
                     onValueChange={(value) => {
                       dispatch(setSelectedAddressId(value));
+                      sessionStorage.removeItem("checkout_pincode");
                     }}
                   >
                     <div className="space-y-3 mb-6">
@@ -204,6 +214,7 @@ export default function Checkout() {
                           className="flex items-start gap-3 p-4 border rounded-md hover-elevate cursor-pointer"
                           onClick={() => {
                             dispatch(setSelectedAddressId(addr.id));
+                            sessionStorage.removeItem("checkout_pincode");
                           }}
                           data-testid={`card-address-${addr.id}`}
                         >
@@ -267,8 +278,8 @@ export default function Checkout() {
             </Card>
           </div>
 
-          <div className="lg:col-span-1">
-            <Card className="p-6 sticky top-24">
+          <div className="lg:col-span-1 ">
+            <Card className="p-6 sticky top-16">
               <h2 className="text-xl font-serif font-medium mb-6">
                 Order Summary
               </h2>
@@ -337,7 +348,7 @@ export default function Checkout() {
             <Button
               type="submit"
               size="lg"
-              className="w-full mt-8"
+              className="w-full mt-4"
               disabled={placeOrderMutation.isPending || !selectedAddressId}
               data-testid="button-place-order"
               onClick={() => onSubmit()}
