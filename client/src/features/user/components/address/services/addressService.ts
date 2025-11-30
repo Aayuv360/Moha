@@ -48,7 +48,11 @@ export function useSaveAddressMutation() {
   return useMutation({
     mutationFn: async (data: { formData: AddressFormData; id?: string }) => {
       if (data.id) {
-        return await apiRequest("PATCH", `/api/addresses/${data.id}`, data.formData);
+        return await apiRequest(
+          "PATCH",
+          `/api/addresses/${data.id}`,
+          data.formData,
+        );
       }
       return await apiRequest("POST", "/api/addresses", data.formData);
     },

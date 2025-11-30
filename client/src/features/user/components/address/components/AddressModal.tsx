@@ -54,7 +54,7 @@ export default function AddressModal({
       setMode("select");
     }
   }, [saveAddressMutation.isSuccess, mode, dispatch]);
-
+  console.log(selectedAddress);
   return (
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
       <DialogContent

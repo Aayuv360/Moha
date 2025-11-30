@@ -11,22 +11,24 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { addressFormSchema, type AddressFormData } from "../services/addressService";
+import {
+  addressFormSchema,
+  type AddressFormData,
+} from "../services/addressService";
 import type { Address } from "@shared/schema";
 
 export default function AddressForm({
-  addressId,
   onSave,
   onBack,
   isLoading,
   defaultValues,
 }: {
-  addressId?: string | null;
   onSave: (data: AddressFormData) => void;
   onBack?: () => void;
   isLoading: boolean;
   defaultValues?: Address;
 }) {
+  console.log(defaultValues);
   const form = useForm<AddressFormData>({
     resolver: zodResolver(addressFormSchema),
     defaultValues: defaultValues || {

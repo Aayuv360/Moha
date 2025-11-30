@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -6,22 +6,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { insertOrderSchema } from "@shared/schema";
-import { z } from "zod";
 import type { CartItem, Product } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getOrCreateSessionId } from "@/lib/session";
@@ -33,8 +20,8 @@ import {
   useFetchAddresses,
   useSaveAddressMutation,
   useDeleteAddressMutation,
-  setSelectedAddressId as setSelectedAddressIdAction,
-  setEditingAddressId as setEditingAddressIdAction,
+  setSelectedAddressId,
+  setEditingAddressId,
   AddressModal,
 } from "../components/address";
 import type { RootState } from "@/lib/store";
@@ -42,18 +29,6 @@ import type { RootState } from "@/lib/store";
 interface CartItemWithProduct extends CartItem {
   product: Product;
 }
-
-const checkoutSchema = insertOrderSchema.extend({
-  customerName: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  address: z.string().min(10, "Address must be at least 10 characters"),
-  city: z.string().min(2, "City is required"),
-  state: z.string().min(2, "State is required"),
-  pincode: z.string().regex(/^\d{6}$/, "Pincode must be 6 digits"),
-});
-
-type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function Checkout() {
   const { toast } = useToast();
@@ -63,16 +38,14 @@ export default function Checkout() {
   const [orderId, setOrderId] = useState<string>("");
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [mode, setMode] = useState<"select" | "add" | "edit">("select");
-  const [localSelectedAddressId, setLocalSelectedAddressId] = useState<
-    string | null
-  >(null);
+
   const sessionId = getOrCreateSessionId();
   const { user, token } = useAuth();
 
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
 
-  const { selectedAddressId, editingAddressId, addresses } = useSelector(
+  const { selectedAddressId, addresses } = useSelector(
     (state: RootState) => state.address,
   );
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
@@ -82,42 +55,11 @@ export default function Checkout() {
 
   useFetchAddresses(!!token);
 
-  const form = useForm<CheckoutFormData>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      customerName: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      state: "",
-      pincode: "",
-      totalAmount: "0",
-      items: "",
-    },
-  });
-
-  useEffect(() => {
-    if (selectedAddressId && addresses.length > 0) {
-      setLocalSelectedAddressId(selectedAddressId);
-      const addressToUse = addresses.find((a) => a.id === selectedAddressId);
-      console.log(addressToUse);
-      if (addressToUse) {
-        form.setValue("customerName", addressToUse.name);
-        form.setValue("phone", addressToUse.phone);
-        form.setValue("address", addressToUse.address);
-        form.setValue("city", addressToUse.city);
-        form.setValue("state", addressToUse.state);
-        form.setValue("pincode", addressToUse.pincode);
-      }
-    }
-  }, [selectedAddressId, addresses, form]);
-
   const saveAddressMutation = useSaveAddressMutation();
   const deleteAddressMutation = useDeleteAddressMutation();
 
   const placeOrderMutation = useMutation({
-    mutationFn: async (data: CheckoutFormData) => {
+    mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/orders", data);
     },
     onSuccess: (data: any) => {
@@ -147,7 +89,8 @@ export default function Checkout() {
   const shipping = subtotal >= 5000 ? 0 : 200;
   const total = subtotal + shipping;
 
-  const onSubmit = (data: CheckoutFormData) => {
+  const onSubmit = () => {
+    const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
     const orderItems = cartItems.map((item) => ({
       productId: item.productId,
       productName: item.product.name,
@@ -157,8 +100,9 @@ export default function Checkout() {
     }));
 
     placeOrderMutation.mutate({
-      ...data,
-      addressId: localSelectedAddressId || selectedAddressId || undefined,
+      ...selectedAddress,
+      customerName: selectedAddress?.name,
+      addressId: selectedAddressId || undefined,
       totalAmount: total.toString(),
       items: JSON.stringify(orderItems),
     });
@@ -224,7 +168,7 @@ export default function Checkout() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      dispatch(setEditingAddressIdAction(null));
+                      dispatch(setEditingAddressId(null));
                       setShowAddressDialog(true);
                       setMode("add");
                     }}
@@ -236,12 +180,11 @@ export default function Checkout() {
                 )}
               </div>
 
-              {token && addresses.length > 0 && !localSelectedAddressId ? (
+              {token && addresses.length > 0 && !selectedAddressId ? (
                 <>
                   <AddressForm
                     onSave={(data) => {
                       saveAddressMutation.mutate({ formData: data });
-                      setLocalSelectedAddressId(null);
                     }}
                     isLoading={saveAddressMutation.isPending}
                   />
@@ -251,20 +194,9 @@ export default function Checkout() {
               ) : (
                 <>
                   <RadioGroup
-                    value={localSelectedAddressId || ""}
+                    value={selectedAddressId || ""}
                     onValueChange={(value) => {
-                      setLocalSelectedAddressId(value);
-                      const selectedAddr = addresses.find(
-                        (a) => a.id === value,
-                      );
-                      if (selectedAddr) {
-                        form.setValue("customerName", selectedAddr.name);
-                        form.setValue("phone", selectedAddr.phone);
-                        form.setValue("address", selectedAddr.address);
-                        form.setValue("city", selectedAddr.city);
-                        form.setValue("state", selectedAddr.state);
-                        form.setValue("pincode", selectedAddr.pincode);
-                      }
+                      dispatch(setSelectedAddressId(value));
                     }}
                   >
                     <div className="space-y-3 mb-6">
@@ -273,13 +205,7 @@ export default function Checkout() {
                           key={addr.id}
                           className="flex items-start gap-3 p-4 border rounded-md hover-elevate cursor-pointer"
                           onClick={() => {
-                            setLocalSelectedAddressId(addr.id);
-                            form.setValue("customerName", addr.name);
-                            form.setValue("phone", addr.phone);
-                            form.setValue("address", addr.address);
-                            form.setValue("city", addr.city);
-                            form.setValue("state", addr.state);
-                            form.setValue("pincode", addr.pincode);
+                            dispatch(setSelectedAddressId(addr.id));
                           }}
                           data-testid={`card-address-${addr.id}`}
                         >
@@ -307,7 +233,7 @@ export default function Checkout() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                dispatch(setEditingAddressIdAction(addr.id));
+                                dispatch(setEditingAddressId(addr.id));
                                 setMode("edit");
                                 setShowAddressDialog(true);
                               }}
@@ -407,7 +333,7 @@ export default function Checkout() {
               type="submit"
               size="lg"
               className="w-full mt-8"
-              disabled={placeOrderMutation.isPending || !localSelectedAddressId}
+              disabled={placeOrderMutation.isPending || !selectedAddressId}
               data-testid="button-place-order"
               onClick={() => onSubmit()}
             >
