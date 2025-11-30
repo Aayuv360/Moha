@@ -1,50 +1,76 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { LogOut, User as UserIcon, BarChart3 } from "lucide-react";
+import { LogOut, User as UserIcon, BarChart3, Menu } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 export function AdminHeader() {
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-6 w-6" />
-          <Link to="/admin/dashboard" className="text-2xl font-bold">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" />
+          <Link to="/admin/dashboard" className="text-sm sm:text-lg md:text-2xl font-bold truncate">
             Admin Panel
           </Link>
         </div>
 
-        <nav className="flex items-center gap-6">
-          <Link to="/admin/dashboard" className="text-sm hover:text-primary">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-3 md:gap-4 lg:gap-6">
+          <Link to="/admin/dashboard" className="text-xs sm:text-sm md:text-base hover:text-primary transition-colors">
             Dashboard
           </Link>
-          <Link to="/admin/dashboard" className="text-sm hover:text-primary">
+          <Link to="/admin/dashboard" className="text-xs sm:text-sm md:text-base hover:text-primary transition-colors">
             Products
           </Link>
-          <Link to="/admin/dashboard" className="text-sm hover:text-primary">
+          <Link to="/admin/dashboard" className="text-xs sm:text-sm md:text-base hover:text-primary transition-colors">
             Orders
           </Link>
-          <Link to="/admin/dashboard" className="text-sm hover:text-primary">
+          <Link to="/admin/dashboard" className="text-xs sm:text-sm md:text-base hover:text-primary transition-colors">
             Users
           </Link>
         </nav>
 
-        <div className="flex items-center gap-4">
+        {/* Mobile Menu */}
+        <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 sm:h-10 sm:w-10" data-testid="button-admin-menu-mobile">
+              <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem asChild>
+              <Link to="/admin/dashboard" className="cursor-pointer">Dashboard</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/admin/dashboard" className="cursor-pointer">Products</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/admin/dashboard" className="cursor-pointer">Orders</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/admin/dashboard" className="cursor-pointer">Users</Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="flex items-center gap-2 sm:gap-3">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" data-testid="button-admin-menu">
-                  <UserIcon className="h-5 w-5" />
+                <Button variant="ghost" size="icon" data-testid="button-admin-menu" className="h-9 w-9 sm:h-10 sm:w-10">
+                  <UserIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem disabled className="text-xs text-muted-foreground break-all">
                   {user.email}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => logout()}>
+                <DropdownMenuItem onClick={() => logout()} className="text-xs sm:text-sm">
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout
                 </DropdownMenuItem>
@@ -52,7 +78,7 @@ export function AdminHeader() {
             </DropdownMenu>
           ) : (
             <Link to="/admin/login">
-              <Button size="sm" data-testid="button-admin-login">
+              <Button size="sm" data-testid="button-admin-login" className="text-xs sm:text-sm">
                 Login
               </Button>
             </Link>
