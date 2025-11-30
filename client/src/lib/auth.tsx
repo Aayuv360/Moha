@@ -108,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
+    sessionStorage.removeItem("checkout_pincode");
   };
 
   return (

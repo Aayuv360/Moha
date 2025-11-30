@@ -7,13 +7,16 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, MapPin, Package } from "lucide-react";
 import type { CartItem, Product } from "@shared/schema";
 import { getOrCreateSessionId } from "@/lib/session";
 import { useAuth } from "@/lib/auth";
 import { cartService } from "../services/cartService";
-import { useState } from "react";
-import { AddressModal, useFetchAddresses } from "../components/address";
+import { useState, useEffect } from "react";
+import { AddressModal, useFetchAddresses, PincodeModal } from "../components/address";
+import { getSelectedAddress } from "../services/addressSelectionService";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/lib/store";
 
 interface CartItemWithProduct extends CartItem {
   product: Product;
@@ -25,10 +28,26 @@ export default function Cart() {
   const sessionId = getOrCreateSessionId();
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"select" | "add">("select");
+  const [pincodeModalOpen, setPincodeModalOpen] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [selectedPincode, setSelectedPincode] = useState<string | null>(null);
   const cartIdentifier = user?.id || sessionId;
   const isUserCart = !!user?.id;
+  const { addresses } = useSelector((state: RootState) => state.address);
 
   useFetchAddresses(!!token);
+
+  useEffect(() => {
+    // Load selected address and pincode on mount or when addresses change
+    const loadAddress = async () => {
+      const result = await getSelectedAddress(addresses, token);
+      setSelectedAddress(result.address);
+      setSelectedPincode(result.pincode);
+    };
+    if (token) {
+      loadAddress();
+    }
+  }, [addresses, token]);
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
@@ -121,17 +140,69 @@ export default function Cart() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
-            <div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setModalOpen(true);
-                  setMode("select");
-                }}
-              >
-                Change Address
-              </Button>
-            </div>
+            {/* Address Section */}
+            {user && (
+              <Card className="p-4 md:p-6">
+                {selectedAddress || selectedPincode ? (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        {selectedAddress ? (
+                          <div>
+                            <p className="font-medium">{selectedAddress.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedAddress.address}, {selectedAddress.city},{" "}
+                              {selectedAddress.state} - {selectedAddress.pincode}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Ph: {selectedAddress.phone}
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="font-medium">
+                              Delivery to: {selectedPincode}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Pincode verified
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setModalOpen(true);
+                        setMode("select");
+                      }}
+                      data-testid="button-change-address"
+                    >
+                      Change Address
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Package className="h-5 w-5" />
+                      <p className="font-medium">Check Delivery</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      No saved addresses. Enter your pincode to check delivery availability.
+                    </p>
+                    <Button
+                      onClick={() => setPincodeModalOpen(true)}
+                      data-testid="button-enter-pincode"
+                    >
+                      Enter Pincode
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )}
+
             {modalOpen && (
               <AddressModal
                 modalOpen={modalOpen}
@@ -140,6 +211,13 @@ export default function Cart() {
                 setMode={setMode}
               />
             )}
+
+            <PincodeModal
+              open={pincodeModalOpen}
+              onClose={() => setPincodeModalOpen(false)}
+              onValidPincode={(pincode) => setSelectedPincode(pincode)}
+            />
+
             {cartItems.map((item) => (
               <CartItemCard
                 key={item.id}
@@ -191,11 +269,17 @@ export default function Cart() {
                 </span>
               </div>
 
-              <Link to="/checkout" className="block w-full" data-testid="link-checkout">
+              <Link
+                to={selectedAddress || selectedPincode ? "/checkout" : "#"}
+                className="block w-full"
+                data-testid="link-checkout"
+              >
                 <Button
                   size="lg"
                   className="w-full"
                   style={{ backgroundColor: "#9b083a" }}
+                  disabled={!selectedAddress && !selectedPincode}
+                  data-testid="button-proceed-checkout"
                 >
                   Proceed to Checkout
                 </Button>

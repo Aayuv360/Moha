@@ -1,5 +1,6 @@
 export { default as AddressForm } from "./components/AddressForm";
 export { default as AddressModal } from "./components/AddressModal";
+export { default as PincodeModal } from "./components/PincodeModal";
 export { default as addressReducer } from "./store/addressSlice";
 export {
   useFetchAddresses,

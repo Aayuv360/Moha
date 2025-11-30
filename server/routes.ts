@@ -1623,6 +1623,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Pincode validation endpoint
+  app.post("/api/validate-pincode", async (req, res) => {
+    try {
+      const { pincode } = z.object({ pincode: z.string().regex(/^\d{6}$/, "Pincode must be 6 digits") }).parse(req.body);
+      // Simple validation - pincode between 100000-999999
+      const pincodeNum = parseInt(pincode);
+      const isValid = pincodeNum >= 100000 && pincodeNum <= 999999;
+      res.json({ valid: isValid, pincode });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to validate pincode" });
+    }
+  });
+
   // Address endpoints
   app.get("/api/addresses", authMiddleware, async (req: AuthRequest, res) => {
     try {
