@@ -17,9 +17,10 @@ import {
   AddressModal,
   useFetchAddresses,
   PincodeModal,
+  setSelectedAddressId,
 } from "../components/address";
 import { getSelectedAddress } from "../services/addressSelectionService";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/lib/store";
 
 interface CartItemWithProduct extends CartItem {
@@ -30,6 +31,7 @@ export default function Cart() {
   const { toast } = useToast();
   const { user, token } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const sessionId = getOrCreateSessionId();
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"select" | "add">("select");
@@ -47,11 +49,14 @@ export default function Cart() {
       const result = await getSelectedAddress(addresses, token);
       setSelectedAddress(result.address);
       setSelectedPincode(result.pincode);
+      if (result.address?.id) {
+        dispatch(setSelectedAddressId(result.address.id));
+      }
     };
     if (token) {
       loadAddress();
     }
-  }, [addresses, token]);
+  }, [addresses, token, dispatch]);
 
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
@@ -290,12 +295,7 @@ export default function Cart() {
                 data-testid="button-proceed-checkout"
                 onClick={() => {
                   if (selectedAddress || selectedPincode) {
-                    navigate("/checkout", {
-                      state: {
-                        selectedAddressId: selectedAddress?.id || null,
-                        selectedPincode: selectedPincode,
-                      },
-                    });
+                    navigate("/checkout");
                   }
                 }}
               >

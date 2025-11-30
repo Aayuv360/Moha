@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,6 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 export default function Checkout() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useDispatch();
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
@@ -74,7 +73,7 @@ export default function Checkout() {
   const { selectedAddressId, editingAddressId, addresses } = useSelector(
     (state: RootState) => state.address,
   );
-  console.log(selectedAddressId);
+
   const { data: cartItems = [], isLoading } = useQuery<CartItemWithProduct[]>({
     queryKey: ["/api/cart", cartIdentifier],
     queryFn: () => cartService.getCart(cartIdentifier, isUserCart, token),
@@ -97,11 +96,11 @@ export default function Checkout() {
     },
   });
 
-  const passedAddressId = (location.state as any)?.selectedAddressId;
+  // Sync Redux selectedAddressId to component state and pre-fill form
   useEffect(() => {
-    if (passedAddressId && addresses.length > 0) {
-      setLocalSelectedAddressId(passedAddressId);
-      const addressToUse = addresses.find((a) => a.id === passedAddressId);
+    if (selectedAddressId && addresses.length > 0) {
+      setLocalSelectedAddressId(selectedAddressId);
+      const addressToUse = addresses.find((a) => a.id === selectedAddressId);
       if (addressToUse) {
         form.setValue("customerName", addressToUse.name);
         form.setValue("phone", addressToUse.phone);
@@ -111,7 +110,7 @@ export default function Checkout() {
         form.setValue("pincode", addressToUse.pincode);
       }
     }
-  }, [passedAddressId, addresses]);
+  }, [selectedAddressId, addresses, form]);
 
   const saveAddressMutation = useSaveAddressMutation();
   const deleteAddressMutation = useDeleteAddressMutation();
