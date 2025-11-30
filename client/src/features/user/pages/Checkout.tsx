@@ -412,7 +412,7 @@ export default function Checkout() {
               type="submit"
               size="lg"
               className="w-full mt-8"
-              disabled={placeOrderMutation.isPending || !form.formState.isValid}
+              disabled={placeOrderMutation.isPending || !localSelectedAddressId}
               data-testid="button-place-order"
             >
               {placeOrderMutation.isPending
