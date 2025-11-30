@@ -64,122 +64,118 @@ function VirtualizedProductTable({
           {visibleProducts.map((product) => {
             const isExpanded = expandedProducts.has(product.id);
             return (
-              <tr
-                key={product.id}
-                className="border-b hover:bg-muted/30 transition-colors"
-                data-testid={`card-product-${product.id}`}
-              >
-                <td className="px-4 py-3 w-8">
-                  <input
-                    type="checkbox"
-                    checked={selectedProducts.has(product.id)}
-                    onChange={(e) => {
-                      const updated = new Set(selectedProducts);
-                      if (e.target.checked) updated.add(product.id);
-                      else updated.delete(product.id);
-                      setSelectedProducts(updated);
-                    }}
-                  />
-                </td>
-                <td className="px-4 py-3 font-semibold">{product.name}</td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">
-                  <button
-                    onClick={() => setProductDetails(product)}
-                    className="text-primary hover:underline cursor-pointer"
-                    data-testid={`link-product-id-${product.id}`}
-                  >
-                    {product.trackingId}
-                  </button>
-                </td>
-                <td className="px-4 py-3">{product.fabric}</td>
-                <td className="px-4 py-3">{product.color}</td>
-                <td className="px-4 py-3">{product.occasion}</td>
-                <td className="px-4 py-3 font-bold text-primary">
-                  ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
-                </td>
-                <td className="px-4 py-3 font-medium">
-                  {product.inStock + calculateSoldStock(product.id)}
-                </td>
-                <td className="px-4 py-3 font-medium">
-                  {product.inStock}
-                </td>
-                <td className="px-4 py-3 font-medium">
-                  {calculateSoldStock(product.id)}
-                </td>
-                <td className="px-4 py-3 font-medium">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => toggleExpanded(product.id)}
-                    data-testid={`button-expand-allocation-${product.id}`}
-                  >
-                    {calculateAllocatedStock(product)}
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 ml-1" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 ml-1" />
-                    )}
-                  </Button>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1">
+              <>
+                <tr
+                  key={product.id}
+                  className="border-b hover:bg-muted/30 transition-colors"
+                  data-testid={`card-product-${product.id}`}
+                >
+                  <td className="px-4 py-3 w-8">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.has(product.id)}
+                      onChange={(e) => {
+                        const updated = new Set(selectedProducts);
+                        if (e.target.checked) updated.add(product.id);
+                        else updated.delete(product.id);
+                        setSelectedProducts(updated);
+                      }}
+                    />
+                  </td>
+                  <td className="px-4 py-3 font-semibold">{product.name}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    <button
+                      onClick={() => setProductDetails(product)}
+                      className="text-primary hover:underline cursor-pointer"
+                      data-testid={`link-product-id-${product.id}`}
+                    >
+                      {product.trackingId}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">{product.fabric}</td>
+                  <td className="px-4 py-3">{product.color}</td>
+                  <td className="px-4 py-3">{product.occasion}</td>
+                  <td className="px-4 py-3 font-bold text-primary">
+                    ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
+                  </td>
+                  <td className="px-4 py-3 font-medium">
+                    {product.inStock + calculateSoldStock(product.id)}
+                  </td>
+                  <td className="px-4 py-3 font-medium">
+                    {product.inStock}
+                  </td>
+                  <td className="px-4 py-3 font-medium">
+                    {calculateSoldStock(product.id)}
+                  </td>
+                  <td className="px-4 py-3 font-medium">
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => handleEditProduct(product)}
-                      data-testid={`button-edit-product-${product.id}`}
+                      variant="ghost"
+                      onClick={() => toggleExpanded(product.id)}
+                      data-testid={`button-expand-allocation-${product.id}`}
                     >
-                      <Edit2 className="h-3 w-3" />
+                      {calculateAllocatedStock(product)}
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4 ml-1" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 ml-1" />
+                      )}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDeleteProduct(product.id)}
-                      data-testid={`button-delete-product-${product.id}`}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditProduct(product)}
+                        data-testid={`button-edit-product-${product.id}`}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeleteProduct(product.id)}
+                        data-testid={`button-delete-product-${product.id}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+                {isExpanded && product.storeInventory && (
+                  <tr className="bg-muted/20 border-b">
+                    <td colSpan={11} className="px-4 py-4">
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-sm">Stock Allocation by Store:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {product.storeInventory.map((allocation: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="bg-white dark:bg-slate-900 p-3 rounded border"
+                              data-testid={`allocation-item-${product.id}-${idx}`}
+                            >
+                              <div className="text-sm font-medium">
+                                {storeMap[allocation.storeId] || allocation.storeId}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Channel: {allocation.channel}
+                              </div>
+                              <div className="text-sm font-semibold mt-2">
+                                Quantity: {allocation.quantity}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             );
           })}
         </tbody>
       </table>
-      {isExpanded && visibleProducts.map((product) => {
-        const isExpanded = expandedProducts.has(product.id);
-        return (
-          isExpanded &&
-          product.storeInventory && (
-            <tr key={`expanded-${product.id}`} className="bg-muted/20 border-b">
-              <td colSpan={11} className="px-4 py-4">
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-sm">Stock Allocation by Store:</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {product.storeInventory.map((allocation: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="bg-white dark:bg-slate-900 p-3 rounded border"
-                        data-testid={`allocation-item-${product.id}-${idx}`}
-                      >
-                        <div className="text-sm font-medium">
-                          {storeMap[allocation.storeId] || allocation.storeId}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Channel: {allocation.channel}
-                        </div>
-                        <div className="text-sm font-semibold mt-2">
-                          Quantity: {allocation.quantity}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </td>
-            </tr>
-          )
-        );
-      })}
       {products.length > itemsPerPage && (
         <div className="flex gap-2 justify-center mt-4">
           <Button
