@@ -15,6 +15,7 @@ import type { Product, StoreProductInventory, Order } from "@shared/schema";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { ProductAllocationForm } from "./ProductAllocationForm";
+import InventoryProductDetail from "../pages/InventoryProductDetail";
 
 interface StoreInventory {
   storeId: string;
@@ -96,14 +97,15 @@ function VirtualizedProductTable({
                   <td className="px-4 py-3">{product.color}</td>
                   <td className="px-4 py-3">{product.occasion}</td>
                   <td className="px-4 py-3 font-bold text-primary">
-                    ₹{parseFloat(product.price.toString()).toLocaleString("en-IN")}
+                    ₹
+                    {parseFloat(product.price.toString()).toLocaleString(
+                      "en-IN",
+                    )}
                   </td>
                   <td className="px-4 py-3 font-medium">
                     {product.inStock + calculateSoldStock(product.id)}
                   </td>
-                  <td className="px-4 py-3 font-medium">
-                    {product.inStock}
-                  </td>
+                  <td className="px-4 py-3 font-medium">{product.inStock}</td>
                   <td className="px-4 py-3 font-medium">
                     {calculateSoldStock(product.id)}
                   </td>
@@ -147,25 +149,30 @@ function VirtualizedProductTable({
                   <tr className="bg-muted/20 border-b">
                     <td colSpan={11} className="px-4 py-4">
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-sm">Stock Allocation by Store:</h4>
+                        <h4 className="font-semibold text-sm">
+                          Stock Allocation by Store:
+                        </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {product.storeInventory.map((allocation: any, idx: number) => (
-                            <div
-                              key={idx}
-                              className="bg-white dark:bg-slate-900 p-3 rounded border"
-                              data-testid={`allocation-item-${product.id}-${idx}`}
-                            >
-                              <div className="text-sm font-medium">
-                                {storeMap[allocation.storeId] || allocation.storeId}
+                          {product.storeInventory.map(
+                            (allocation: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="bg-white dark:bg-slate-900 p-3 rounded border"
+                                data-testid={`allocation-item-${product.id}-${idx}`}
+                              >
+                                <div className="text-sm font-medium">
+                                  {storeMap[allocation.storeId] ||
+                                    allocation.storeId}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Channel: {allocation.channel}
+                                </div>
+                                <div className="text-sm font-semibold mt-2">
+                                  Quantity: {allocation.quantity}
+                                </div>
                               </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Channel: {allocation.channel}
-                              </div>
-                              <div className="text-sm font-semibold mt-2">
-                                Quantity: {allocation.quantity}
-                              </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       </div>
                     </td>
@@ -181,7 +188,9 @@ function VirtualizedProductTable({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setVisibleStart(Math.max(0, visibleStart - itemsPerPage))}
+            onClick={() =>
+              setVisibleStart(Math.max(0, visibleStart - itemsPerPage))
+            }
             disabled={visibleStart === 0}
           >
             Previous
@@ -192,7 +201,14 @@ function VirtualizedProductTable({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setVisibleStart(Math.min(products.length - itemsPerPage, visibleStart + itemsPerPage))}
+            onClick={() =>
+              setVisibleStart(
+                Math.min(
+                  products.length - itemsPerPage,
+                  visibleStart + itemsPerPage,
+                ),
+              )
+            }
             disabled={visibleEnd >= products.length}
           >
             Next
@@ -440,7 +456,8 @@ export function ProductsTab({
                           <input
                             type="checkbox"
                             checked={
-                              selectedProducts.size === categoryProducts.length &&
+                              selectedProducts.size ===
+                                categoryProducts.length &&
                               categoryProducts.length > 0
                             }
                             onChange={(e) => {
@@ -454,17 +471,39 @@ export function ProductsTab({
                             }}
                           />
                         </th>
-                        <th className="px-4 py-3 text-left font-semibold">Product Name</th>
-                        <th className="px-4 py-3 text-left font-semibold">ID</th>
-                        <th className="px-4 py-3 text-left font-semibold">Fabric</th>
-                        <th className="px-4 py-3 text-left font-semibold">Color</th>
-                        <th className="px-4 py-3 text-left font-semibold">Occasion</th>
-                        <th className="px-4 py-3 text-left font-semibold">Price</th>
-                        <th className="px-4 py-3 text-left font-semibold">Initial Stock</th>
-                        <th className="px-4 py-3 text-left font-semibold">Current Stock</th>
-                        <th className="px-4 py-3 text-left font-semibold">Sold Stock</th>
-                        <th className="px-4 py-3 text-left font-semibold">Allocated</th>
-                        <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Product Name
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          ID
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Fabric
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Color
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Occasion
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Price
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Initial Stock
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Current Stock
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Sold Stock
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Allocated
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                   </table>
