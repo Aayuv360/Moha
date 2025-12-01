@@ -2,7 +2,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, LogOut, User as UserIcon, Heart, Menu, X } from "lucide-react";
+import {
+  ShoppingCart,
+  LogOut,
+  User as UserIcon,
+  Heart,
+  Menu,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -40,7 +47,10 @@ export function UserHeader() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
         {/* LEFT SECTION */}
         <div className="flex items-center gap-2 sm:gap-4 md:gap-6 lg:gap-10 flex-1">
-          <Link to="/" className="text-lg sm:text-xl md:text-2xl font-bold shrink-0">
+          <Link
+            to="/"
+            className="text-lg sm:text-xl md:text-2xl font-bold shrink-0"
+          >
             Moha
           </Link>
           <Link
@@ -104,7 +114,9 @@ export function UserHeader() {
                 ></span>
               )}
             </div>
-            <span className="text-[8px] sm:text-[10px] md:text-xs lg:text-sm mt-0.5">Cart</span>
+            <span className="text-[8px] sm:text-[10px] md:text-xs lg:text-sm mt-0.5">
+              Cart
+            </span>
           </Link>
 
           {/* USER MENU */}
@@ -112,9 +124,7 @@ export function UserHeader() {
             <div className="flex flex-col items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10">
-                    <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-                  </Button>
+                  <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent
@@ -128,10 +138,7 @@ export function UserHeader() {
                     {user.email}
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem
-                    asChild
-                    className="text-xs sm:text-sm"
-                  >
+                  <DropdownMenuItem asChild className="text-xs sm:text-sm">
                     <Link to="/orders">Orders</Link>
                   </DropdownMenuItem>
 
@@ -150,7 +157,9 @@ export function UserHeader() {
             </div>
           ) : (
             <Link to="/login">
-              <Button size="sm" className="text-xs sm:text-sm">Login</Button>
+              <Button size="sm" className="text-xs sm:text-sm">
+                Login
+              </Button>
             </Link>
           )}
         </div>
