@@ -202,19 +202,19 @@ function ProductCardComponent({ product, onAddToCart, index }: ProductCardProps)
               src={images[currentImageIndex]}
               alt={product.name}
               loading="lazy"
-              className="w-full h-80 object-cover object-center transition-all duration-500 group-hover:scale-102"
+              className="w-full h-48 sm:h-56 md:h-64 lg:h-80 object-cover object-center transition-all duration-500 group-hover:scale-102"
             />
 
             {/* Image indicators */}
             {images.length > 1 && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 {images.map((_: any, idx: number) => (
                   <div
                     key={idx}
-                    className={`h-1.5 rounded-full transition-all ${
+                    className={`h-1 sm:h-1.5 rounded-full transition-all ${
                       idx === currentImageIndex
-                        ? "w-6 bg-white shadow-sm"
-                        : "w-1.5 bg-white/60"
+                        ? "w-4 sm:w-6 bg-white shadow-sm"
+                        : "w-1 sm:w-1.5 bg-white/60"
                     }`}
                   />
                 ))}
@@ -223,10 +223,10 @@ function ProductCardComponent({ product, onAddToCart, index }: ProductCardProps)
 
             {/* Sold out badge */}
             {product.inStock === 0 && (
-              <div className="absolute top-2 right-2">
+              <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2">
                 <Badge
                   variant="secondary"
-                  className="bg-black/75 text-white text-sm"
+                  className="bg-black/75 text-white text-xs sm:text-sm"
                 >
                   Sold out
                 </Badge>
@@ -235,10 +235,10 @@ function ProductCardComponent({ product, onAddToCart, index }: ProductCardProps)
 
             {/* Low-stock badge */}
             {product.inStock > 0 && product.inStock <= 5 && (
-              <div className="absolute top-2 right-2" ref={badgeRef}>
+              <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2" ref={badgeRef}>
                 <Badge
                   variant="destructive"
-                  className="text-white text-sm bg-red-600/90"
+                  className="text-white text-xs sm:text-sm bg-red-600/90"
                 >
                   Only {product.inStock} left!
                 </Badge>
@@ -247,14 +247,14 @@ function ProductCardComponent({ product, onAddToCart, index }: ProductCardProps)
           </div>
 
           {/* Product details */}
-          <div className="p-1.5 md:p-2 space-y-2">
-            <div className="flex items-center justify-between">
+          <div className="p-1 sm:p-1.5 md:p-2 space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between gap-1">
               <h3
                 className="
-                  text-sm leading-snug h-[2.2rem]
-                  sm:text-base sm:h-[2.6rem]
-                  md:text-lg md:h-[3rem]
-                  lg:text-xl lg:h-[3.4rem]
+                  text-xs leading-tight h-[1.8rem]
+                  sm:text-sm sm:h-[2.2rem]
+                  md:text-base md:h-[2.6rem]
+                  lg:text-lg lg:h-[3rem]
                   font-medium
                   line-clamp-2
                 "
@@ -265,20 +265,20 @@ function ProductCardComponent({ product, onAddToCart, index }: ProductCardProps)
               <Button
                 variant="ghost"
                 size="icon"
-                className="bg-white"
+                className="bg-white h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
                 onClick={handleWishlistToggle}
                 disabled={toggleWishlistMutation.isPending}
                 data-testid={`button-wishlist-${product.id}`}
               >
                 <Heart
-                  className={`h-4 w-4 transition-all ${isInWishlist ? "fill-primary text-primary" : ""}`}
+                  className={`h-3.5 w-3.5 sm:h-4 sm:w-4 transition-all ${isInWishlist ? "fill-primary text-primary" : ""}`}
                 />
               </Button>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-1">
               <div>
-                <p className="text-base md:text-lg font-semibold">
+                <p className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold">
                   ₹{Number(product.price).toLocaleString("en-IN")}
                 </p>
               </div>

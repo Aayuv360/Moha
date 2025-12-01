@@ -68,22 +68,22 @@ export default function Home() {
 
   const features = [
     {
-      icon: <Sparkles className="h-6 w-6" />,
+      icon: <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />,
       title: "Handcrafted Quality",
       description: "Every saree is crafted by skilled artisans",
     },
     {
-      icon: <Truck className="h-6 w-6" />,
+      icon: <Truck className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />,
       title: "Free Shipping",
       description: "On orders above ₹5,000",
     },
     {
-      icon: <Shield className="h-6 w-6" />,
+      icon: <Shield className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />,
       title: "Authentic Products",
       description: "100% genuine textiles guaranteed",
     },
     {
-      icon: <Clock className="h-6 w-6" />,
+      icon: <Clock className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />,
       title: "Easy Returns",
       description: "7-day hassle-free returns",
     },
@@ -132,11 +132,11 @@ export default function Home() {
           >
             {features.map((feature) => (
               <div key={feature.title} className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   {feature.icon}
                 </div>
-                <h3 className="text-lg font-medium mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <h3 className="text-sm sm:text-base md:text-lg font-medium mb-1 sm:mb-2">{feature.title}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
               </div>

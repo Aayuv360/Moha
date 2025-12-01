@@ -60,99 +60,103 @@ function VirtualizedProductTable({
 
   return (
     <div className="w-full space-y-4">
-      <table className="w-full text-sm">
-        <tbody>
-          {visibleProducts.map((product) => {
-            const isExpanded = expandedProducts.has(product.id);
-            return (
-              <>
-                <tr
-                  key={product.id}
-                  className="border-b hover:bg-muted/30 transition-colors"
-                  data-testid={`card-product-${product.id}`}
-                >
-                  <td className="px-4 py-3 w-8">
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.has(product.id)}
-                      onChange={(e) => {
-                        const updated = new Set(selectedProducts);
-                        if (e.target.checked) updated.add(product.id);
-                        else updated.delete(product.id);
-                        setSelectedProducts(updated);
-                      }}
-                    />
-                  </td>
-                  <td className="px-4 py-3 font-semibold">{product.name}</td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    <button
-                      onClick={() => setProductDetails(product)}
-                      className="text-primary hover:underline cursor-pointer"
-                      data-testid={`link-product-id-${product.id}`}
-                    >
-                      {product.trackingId}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">{product.fabric}</td>
-                  <td className="px-4 py-3">{product.color}</td>
-                  <td className="px-4 py-3">{product.occasion}</td>
-                  <td className="px-4 py-3 font-bold text-primary">
-                    ₹
-                    {parseFloat(product.price.toString()).toLocaleString(
-                      "en-IN",
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-medium">
-                    {product.inStock + calculateSoldStock(product.id)}
-                  </td>
-                  <td className="px-4 py-3 font-medium">{product.inStock}</td>
-                  <td className="px-4 py-3 font-medium">
-                    {calculateSoldStock(product.id)}
-                  </td>
-                  <td className="px-4 py-3 font-medium">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => toggleExpanded(product.id)}
-                      data-testid={`button-expand-allocation-${product.id}`}
-                    >
-                      {calculateAllocatedStock(product)}
-                      {isExpanded ? (
-                        <ChevronUp className="h-4 w-4 ml-1" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 ml-1" />
+      <div className="overflow-x-auto border rounded-lg">
+        <table className="w-full text-xs sm:text-sm">
+          <tbody>
+            {visibleProducts.map((product) => {
+              const isExpanded = expandedProducts.has(product.id);
+              return (
+                <>
+                  <tr
+                    key={product.id}
+                    className="border-b hover:bg-muted/30 transition-colors"
+                    data-testid={`card-product-${product.id}`}
+                  >
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 w-6 sm:w-8">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.has(product.id)}
+                        onChange={(e) => {
+                          const updated = new Set(selectedProducts);
+                          if (e.target.checked) updated.add(product.id);
+                          else updated.delete(product.id);
+                          setSelectedProducts(updated);
+                        }}
+                      />
+                    </td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap truncate max-w-xs">{product.name}</td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-[10px] sm:text-xs text-muted-foreground hidden sm:table-cell">
+                      <button
+                        onClick={() => setProductDetails(product)}
+                        className="text-primary hover:underline cursor-pointer break-all"
+                        data-testid={`link-product-id-${product.id}`}
+                      >
+                        {product.trackingId}
+                      </button>
+                    </td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden md:table-cell text-xs whitespace-nowrap">{product.fabric}</td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden lg:table-cell text-xs whitespace-nowrap">{product.color}</td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden lg:table-cell text-xs whitespace-nowrap">{product.occasion}</td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-bold text-primary text-xs sm:text-sm whitespace-nowrap">
+                      ₹
+                      {parseFloat(product.price.toString()).toLocaleString(
+                        "en-IN",
                       )}
-                    </Button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
+                    </td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden sm:table-cell text-xs whitespace-nowrap">
+                      {product.inStock + calculateSoldStock(product.id)}
+                    </td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden sm:table-cell text-xs whitespace-nowrap">{product.inStock}</td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden md:table-cell text-xs whitespace-nowrap">
+                      {calculateSoldStock(product.id)}
+                    </td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => handleEditProduct(product)}
-                        data-testid={`button-edit-product-${product.id}`}
+                        variant="ghost"
+                        onClick={() => toggleExpanded(product.id)}
+                        className="h-7 sm:h-8 px-1 sm:px-2 text-xs sm:text-sm"
+                        data-testid={`button-expand-allocation-${product.id}`}
                       >
-                        <Edit2 className="h-3 w-3" />
+                        {calculateAllocatedStock(product)}
+                        {isExpanded ? (
+                          <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+                        )}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDeleteProduct(product.id)}
-                        data-testid={`button-delete-product-${product.id}`}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3">
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditProduct(product)}
+                          className="h-7 sm:h-8 w-7 sm:w-8 p-0"
+                          data-testid={`button-edit-product-${product.id}`}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="h-7 sm:h-8 w-7 sm:w-8 p-0"
+                          data-testid={`button-delete-product-${product.id}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
                 {isExpanded && product.storeInventory && (
                   <tr className="bg-muted/20 border-b">
-                    <td colSpan={11} className="px-4 py-4">
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-sm">
+                    <td colSpan={11} className="px-2 sm:px-3 md:px-4 py-2 sm:py-4">
+                      <div className="space-y-2 sm:space-y-3">
+                        <h4 className="font-semibold text-xs sm:text-sm">
                           Stock Allocation by Store:
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                           {product.storeInventory.map(
                             (allocation: any, idx: number) => (
                               <div
@@ -183,8 +187,9 @@ function VirtualizedProductTable({
           })}
         </tbody>
       </table>
+      </div>
       {products.length > itemsPerPage && (
-        <div className="flex gap-2 justify-center mt-4">
+        <div className="flex gap-1 sm:gap-2 justify-center mt-3 sm:mt-4 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -192,10 +197,11 @@ function VirtualizedProductTable({
               setVisibleStart(Math.max(0, visibleStart - itemsPerPage))
             }
             disabled={visibleStart === 0}
+            className="text-xs sm:text-sm"
           >
             Previous
           </Button>
-          <span className="text-sm text-muted-foreground py-2">
+          <span className="text-xs sm:text-sm text-muted-foreground py-2 px-2 sm:px-3">
             {visibleStart + 1}-{visibleEnd} of {products.length}
           </span>
           <Button
@@ -210,6 +216,7 @@ function VirtualizedProductTable({
               )
             }
             disabled={visibleEnd >= products.length}
+            className="text-xs sm:text-sm"
           >
             Next
           </Button>

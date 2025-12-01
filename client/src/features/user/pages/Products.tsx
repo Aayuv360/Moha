@@ -199,43 +199,43 @@ export default function Products() {
   return (
     <div className="min-h-screen bg-background">
       {isLoading && <LoadingSpinner />}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
-        <div className="mb-8 md:mb-12">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-light mb-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
+        <div className="mb-6 sm:mb-8 md:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-light mb-2 sm:mb-4">
             Our Collection
           </h1>
-          <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl">
+          <p className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl mb-4 sm:mb-6">
             Explore our curated selection of handcrafted sarees, each piece a
             testament to India's rich textile heritage.
           </p>
 
-          <div className="relative max-w-md w-full sm:w-auto">
+          <div className="relative w-full max-w-md">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search sarees..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-xs sm:text-sm"
               data-testid="input-search-products"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-6 md:mb-8">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 gap-2 flex-wrap">
           <p
-            className="text-sm text-muted-foreground"
+            className="text-xs sm:text-sm text-muted-foreground"
             data-testid="text-product-count"
           >
             {products.length} {products.length === 1 ? "saree" : "sarees"} found
           </p>
           <Button
             variant="outline"
-            className="md:hidden gap-2"
+            className="md:hidden gap-2 text-xs sm:text-sm h-8 sm:h-9"
             onClick={() => setShowMobileFilters(true)}
             data-testid="button-show-filters"
           >
-            <Filter className="h-4 w-4" />
+            <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
             Filters
           </Button>
         </div>
